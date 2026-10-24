@@ -1,0 +1,13 @@
+{
+  "name": "courier-service-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Courier Service Backend API Server",
+  "main": "server.js",
+  "scripts": {
+    "clean-ports": "node ../scripts/clean-ports.js 5000",
+    "predev": "node ../scripts/clean-ports.js 5000",
+    "dev": "node ../scripts/clean-ports.js 5000 && node server.js",
+    "start": "node server.js"
+  }
+}

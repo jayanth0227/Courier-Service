@@ -16,8 +16,21 @@ const getHeaders = () => {
 const handleResponse = async (response) => {
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
+    if (response.status === 401 && !response.url?.includes('/auth/login')) {
+      // Signal cross-tab auth state invalidation without broadcasting any credentials
+      try {
+        if (typeof window !== 'undefined' && window.BroadcastChannel) {
+          const channel = new BroadcastChannel('courier_auth_sync_channel');
+          channel.postMessage({ type: 'SESSION_REVOKED', timestamp: Date.now() });
+          channel.close();
+        }
+      } catch {}
+    }
     const errorMsg = data.message || `Request failed with status ${response.status}`;
-    throw new Error(errorMsg);
+    const err = new Error(errorMsg);
+    err.status = response.status;
+    err.code = data.code;
+    throw err;
   }
   return data;
 };
@@ -30,6 +43,13 @@ export const api = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(credentials),
+      });
+      return handleResponse(res);
+    },
+    logout: async () => {
+      const res = await fetch(`${API_BASE}/auth/logout`, {
+        method: 'POST',
+        headers: getHeaders(),
       });
       return handleResponse(res);
     },

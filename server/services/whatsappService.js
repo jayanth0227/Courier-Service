@@ -46,7 +46,12 @@ class WhatsAppNotificationService {
     let detailsList = [];
     detailsList.push(`• Bus Number: ${busNumber}${travelsStr}`);
     if (route) detailsList.push(`• Route: ${route}`);
-    if (destinationAddress) detailsList.push(`• Delivery Counter: ${destinationAddress}`);
+    if (destinationAddress) {
+      const fullDestAddr = toCity && !destinationAddress.toLowerCase().includes(toCity.toLowerCase())
+        ? `${toCity} - ${destinationAddress}`
+        : destinationAddress;
+      detailsList.push(`• Delivery Counter / To Address: ${fullDestAddr}`);
+    }
     if (departureTime) detailsList.push(`• Departure Time: ${departureTime}${platformNumber ? ` (Platform: ${platformNumber})` : ''}`);
     if (arrivalTime) detailsList.push(`• Est. Arrival: ${arrivalTime}`);
     if (driverName || driverPhone) detailsList.push(`• Driver Contact: ${driverName ? `${driverName} - ` : ''}${driverPhone || 'N/A'}`);

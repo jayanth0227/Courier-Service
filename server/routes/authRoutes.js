@@ -1,13 +1,17 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const Tenant = require('../models/Tenant');
 const { protect, authorize } = require('../middleware/auth');
 const { logSecurityEvent } = require('../services/auditService');
 const { passwordResetLimiter } = require('../middleware/security');
 
-// Generate JWT with tenant information in payload
+// Precomputed dummy hash for constant-time comparison against timing-based user enumeration
+const DUMMY_HASH = '$2a$10$w8TfJ3j2vM85dZ/rT7k1s.D8k9H0a1B2c3D4e5F6G7H8I9J0K1L2M';
+
+// Generate JWT with tenant information and tokenVersion in payload
 const generateToken = (user) => {
   return jwt.sign(
     {
@@ -15,6 +19,7 @@ const generateToken = (user) => {
       role: user.role,
       username: user.username,
       tenantId: user.tenantId?._id || user.tenantId || null,
+      tokenVersion: typeof user.tokenVersion === 'number' ? user.tokenVersion : 0,
     },
     process.env.JWT_SECRET || 'courier_dispatch_secret_jwt_key_2025_secure',
     {
@@ -50,6 +55,9 @@ router.post('/login', async (req, res, next) => {
     }).populate('tenantId');
 
     if (!user) {
+      // Perform constant-time dummy comparison to prevent timing attacks
+      await bcrypt.compare(safePassword, DUMMY_HASH).catch(() => {});
+
       await logSecurityEvent({
         req,
         action: 'LOGIN_FAILED',
@@ -58,7 +66,7 @@ router.post('/login', async (req, res, next) => {
       });
       return res.status(401).json({
         success: false,
-        message: 'Invalid credentials. User not found.',
+        message: 'Invalid username/email or password',
       });
     }
 
@@ -102,7 +110,7 @@ router.post('/login', async (req, res, next) => {
       });
       return res.status(401).json({
         success: false,
-        message: 'Invalid credentials. Incorrect password.',
+        message: 'Invalid username/email or password',
       });
     }
 
@@ -182,6 +190,31 @@ router.get('/me', protect, async (req, res) => {
       tenant: tenantInfo,
     },
   });
+});
+
+// @route   POST /api/auth/logout
+// @desc    Invalidate active session & revoke tokens
+// @access  Private
+router.post('/logout', protect, async (req, res, next) => {
+  try {
+    // Invalidate active session by incrementing user's tokenVersion
+    await User.findByIdAndUpdate(req.user._id, { $inc: { tokenVersion: 1 } });
+
+    await logSecurityEvent({
+      req,
+      action: 'LOGOUT_SUCCESS',
+      severity: 'INFO',
+      customUser: req.user,
+      details: { role: req.user.role, username: req.user.username },
+    });
+
+    res.json({
+      success: true,
+      message: 'Logged out successfully. Session invalidated.',
+    });
+  } catch (error) {
+    next(error);
+  }
 });
 
 // @route   GET /api/auth/users
@@ -320,8 +353,16 @@ router.put('/users/:id', protect, authorize('admin', 'superadmin'), async (req, 
     if (name) user.name = name.trim();
     if (phone !== undefined) user.phone = phone.trim();
     if (branch !== undefined) user.branch = branch.trim();
-    if (active !== undefined) user.active = Boolean(active);
-    if (password) user.password = password;
+    if (active !== undefined) {
+      user.active = Boolean(active);
+      if (!user.active) {
+        user.tokenVersion = (user.tokenVersion || 0) + 1;
+      }
+    }
+    if (password) {
+      user.password = password;
+      user.tokenVersion = (user.tokenVersion || 0) + 1;
+    }
 
     await user.save();
 
@@ -361,6 +402,9 @@ router.delete('/users/:id', protect, authorize('admin', 'superadmin'), async (re
       return res.status(403).json({ success: false, message: 'Cannot delete primary tenant administrator account' });
     }
 
+    // Invalidate any active sessions before deletion
+    user.tokenVersion = (user.tokenVersion || 0) + 1;
+    await user.save().catch(() => {});
     await User.deleteOne({ _id: user._id });
 
     res.json({
@@ -375,7 +419,7 @@ router.delete('/users/:id', protect, authorize('admin', 'superadmin'), async (re
 // @route   PUT /api/auth/change-password
 // @desc    Change password for the authenticated user (Admin, Staff, or Super Admin)
 // @access  Private
-router.put('/change-password', protect, async (req, res, next) => {
+router.put('/change-password', protect, passwordResetLimiter, async (req, res, next) => {
   try {
     const { currentPassword, newPassword } = req.body || {};
 
@@ -413,7 +457,11 @@ router.put('/change-password', protect, async (req, res, next) => {
     }
 
     user.password = newPassword;
+    user.tokenVersion = (user.tokenVersion || 0) + 1;
     await user.save();
+
+    // Generate new token for the active tab so current tab remains authenticated
+    const newToken = generateToken(user);
 
     await logSecurityEvent({
       req,
@@ -425,6 +473,7 @@ router.put('/change-password', protect, async (req, res, next) => {
     res.json({
       success: true,
       message: 'Password has been updated successfully',
+      token: newToken,
     });
   } catch (error) {
     next(error);
@@ -465,6 +514,7 @@ router.put('/users/:id/reset-password', protect, authorize('admin', 'superadmin'
     }
 
     targetUser.password = newPassword;
+    targetUser.tokenVersion = (targetUser.tokenVersion || 0) + 1;
     await targetUser.save();
 
     await logSecurityEvent({
@@ -516,15 +566,16 @@ router.post('/forgot-password', passwordResetLimiter, async (req, res, next) => 
     });
 
     if (!user || user.email.toLowerCase() !== cleanEmail) {
+      await bcrypt.compare(newPassword, DUMMY_HASH).catch(() => {});
       await logSecurityEvent({
         req,
         action: 'FORGOT_PASSWORD_FAILED',
         severity: 'WARN',
         details: { identifier: cleanIdentifier, email: cleanEmail, reason: 'Credentials mismatch' },
       });
-      return res.status(404).json({
+      return res.status(400).json({
         success: false,
-        message: 'No account found matching this username and registered email address',
+        message: 'Invalid username or registered email address',
       });
     }
 
@@ -536,6 +587,7 @@ router.post('/forgot-password', passwordResetLimiter, async (req, res, next) => 
     }
 
     user.password = newPassword;
+    user.tokenVersion = (user.tokenVersion || 0) + 1;
     await user.save();
 
     await logSecurityEvent({

@@ -35,6 +35,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useCompanySettings } from '../../context/CompanyContext';
 import { CitySearchInput } from '../../components/CitySearchInput';
+import { SuggestInput } from '../../components/SuggestInput';
 
 export const SettingsPage = ({ onRefreshGlobalDestinations }) => {
   const { user } = useAuth();
@@ -55,6 +56,7 @@ export const SettingsPage = ({ onRefreshGlobalDestinations }) => {
     companyPhone: '',
     companyEmail: '',
     companyAddress: '',
+    fromCity: '',
     gstin: '',
     receiptFooterNote: '',
     whatsappProvider: 'MOCK',
@@ -286,6 +288,32 @@ export const SettingsPage = ({ onRefreshGlobalDestinations }) => {
       }
     } catch (error) {
       showToast(error.message || 'Failed to save settings', 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveFromAddress = async (e) => {
+    e.preventDefault();
+    if (!settings.fromCity || !settings.fromCity.trim()) {
+      showToast('Please enter a valid From Address / Origin Station', 'error');
+      return;
+    }
+    try {
+      setSaving(true);
+      const res = await api.settings.update({
+        ...settings,
+        fromCity: settings.fromCity.trim(),
+      });
+      if (res.success) {
+        showToast(`From Address '${settings.fromCity.trim()}' saved successfully to database!`, 'success');
+        if (setGlobalCompanySettings && res.data) {
+          setGlobalCompanySettings(res.data);
+        }
+        if (onRefreshGlobalDestinations) onRefreshGlobalDestinations();
+      }
+    } catch (error) {
+      showToast(error.message || 'Failed to save From Address', 'error');
     } finally {
       setSaving(false);
     }
@@ -698,6 +726,30 @@ export const SettingsPage = ({ onRefreshGlobalDestinations }) => {
     );
   });
 
+  // Intelligent Suggestions for Adding/Editing Buses (Strictly existing database records - NO hardcoding)
+  const travelAgencySuggestions = Array.from(
+    new Set(
+      buses
+        .map((b) => (b.busName || b.operator || '').trim())
+        .filter(Boolean)
+    )
+  );
+
+  const destinationSuggestions = Array.from(
+    new Set([
+      ...buses.map((b) => (b.toCity || b.route || '').trim()).filter(Boolean),
+      ...cities.map((c) => (c.name || '').trim()).filter(Boolean),
+    ])
+  );
+
+  const departureTimeSuggestions = Array.from(
+    new Set(
+      buses
+        .map((b) => (b.defaultDepartureTime || '').trim())
+        .filter(Boolean)
+    )
+  );
+
   // Filtered drivers list (Personnel Only)
   const filteredDrivers = drivers.filter((d) => {
     const q = driverSearch.toLowerCase().trim();
@@ -716,7 +768,7 @@ export const SettingsPage = ({ onRefreshGlobalDestinations }) => {
       <div className="page-header">
         <div>
           <h1 className="page-title">System Settings & Operations Management</h1>
-          <p className="page-subtitle">Configure dynamic from/to cities, parcel types, bus vehicles, driver roster, company profile, and WhatsApp alerts</p>
+          <p className="page-subtitle">Configure terminal origin address, destination cities & stops, parcel types, bus fleet, driver roster, and company profile</p>
         </div>
       </div>
 
@@ -760,13 +812,6 @@ export const SettingsPage = ({ onRefreshGlobalDestinations }) => {
           </button>
         )}
         <button
-          className={`btn btn-sm ${activeTab === 'whatsapp' ? 'btn-primary' : 'btn-secondary'}`}
-          onClick={() => setActiveTab('whatsapp')}
-        >
-          <MessageSquare size={14} />
-          <span>WhatsApp Notification Setup</span>
-        </button>
-        <button
           className={`btn btn-sm ${activeTab === 'users' ? 'btn-primary' : 'btn-secondary'}`}
           onClick={() => setActiveTab('users')}
         >
@@ -778,93 +823,223 @@ export const SettingsPage = ({ onRefreshGlobalDestinations }) => {
       {/* 1. Cities & Destination Locations Tab */}
       {activeTab === 'cities' && (
         <div>
-          {/* Add / Edit City Form */}
+          {/* 2-Column Responsive Operational Grid: Origin Station & Destination Hubs */}
           <div
             style={{
-              backgroundColor: '#ffffff',
-              border: editingCityId ? '2px solid #2563eb' : '1px solid #e2e8f0',
-              borderRadius: '8px',
-              padding: '1.5rem',
-              boxShadow: 'var(--shadow-sm)',
-              marginBottom: '2rem',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))',
+              gap: '1.25rem',
+              marginBottom: '1.75rem',
+              alignItems: 'stretch',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <MapPin size={18} color="#1b3d63" />
-                <h3 style={{ fontSize: '1rem', color: '#0d2137' }}>
-                  {editingCityId ? 'Edit City & Delivery Address Details' : 'Add New City / Destination Hub'}
-                </h3>
+            {/* Card 1: Terminal Origin / From Address (Database Persisted) */}
+            <div
+              style={{
+                backgroundColor: '#ffffff',
+                border: '1.5px solid #bfdbfe',
+                borderRadius: '10px',
+                padding: '1.25rem 1.5rem',
+                boxShadow: 'var(--shadow-sm)',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+              }}
+            >
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.625rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
+                    <div
+                      style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '8px',
+                        backgroundColor: '#eff6ff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        border: '1px solid #bfdbfe',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <MapPin size={17} color="#2563eb" />
+                    </div>
+                    <div>
+                      <h3 style={{ fontSize: '0.95rem', color: '#0f172a', margin: 0, fontWeight: 700 }}>
+                        Terminal Origin / From Address
+                      </h3>
+                      <span style={{ fontSize: '0.72rem', color: '#64748b' }}>Primary Dispatch Origin Counter</span>
+                    </div>
+                  </div>
+                  <span
+                    style={{
+                      fontSize: '0.72rem',
+                      color: '#15803d',
+                      backgroundColor: '#dcfce7',
+                      padding: '2px 8px',
+                      borderRadius: '999px',
+                      fontWeight: 600,
+                      border: '1px solid #bbf7d0',
+                    }}
+                  >
+                    ✓ Database Persisted
+                  </span>
+                </div>
+
+                <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0.35rem 0 1rem 0', lineHeight: 1.4 }}>
+                  Configure your booking dispatch counter address. It saves directly to MongoDB and dynamically prints on receipts and waybills.
+                </p>
+
+                <form onSubmit={handleSaveFromAddress}>
+                  <div className="form-group" style={{ marginBottom: '0.75rem' }}>
+                    <label className="form-label" style={{ fontSize: '0.8rem', marginBottom: '0.35rem', fontWeight: 600 }}>
+                      From Address / Origin Terminal <span className="required">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="e.g. KPHB Metro Station Counter #1"
+                      value={settings.fromCity || ''}
+                      onChange={(e) => setSettings({ ...settings, fromCity: e.target.value })}
+                      required
+                    />
+                    <div className="form-hint" style={{ fontSize: '0.72rem', marginTop: '0.3rem', color: '#64748b' }}>
+                      Change anytime — updates dynamically without hardcoded values.
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.25rem' }}>
+                    <button
+                      type="submit"
+                      className="btn btn-primary"
+                      disabled={saving}
+                      style={{ padding: '0.5rem 1.25rem', height: '38px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      <Save size={15} />
+                      <span>{saving ? 'Saving...' : 'Save From Address'}</span>
+                    </button>
+                  </div>
+                </form>
               </div>
-              {editingCityId && (
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-sm"
-                  onClick={handleResetCityForm}
-                >
-                  <RotateCcw size={13} />
-                  Cancel Edit
-                </button>
-              )}
             </div>
 
-            <form onSubmit={handleSaveCity} autoComplete="off" data-lpignore="true">
-              <div className="form-row">
-                <CitySearchInput
-                  id="settings_city_name"
-                  name="settings_city_name"
-                  label="City / Destination Name *"
-                  placeholder="Search existing city or enter new city..."
-                  value={cityForm.name}
-                  onChange={(name) => setCityForm((prev) => ({ ...prev, name }))}
-                  onSelectNext={() => {
-                    document.getElementById('settings_city_address')?.focus();
-                  }}
-                  cities={cities}
-                  required
-                  helperText="Search to add a new stop to an existing city, or type to create a new city"
-                />
-
-                <div className="form-group" style={{ flex: '2' }}>
-                  <label className="form-label">
-                    Delivery Address / Stop Location <span className="required">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    id="settings_city_address"
-                    name="settings_city_address"
-                    className="form-control"
-                    placeholder="e.g. Main Bus Stand Counter #4, Benz Circle / Fire Station Road"
-                    value={cityForm.deliveryAddress}
-                    onChange={(e) => setCityForm({ ...cityForm, deliveryAddress: e.target.value })}
-                    required
-                    autoComplete="new-password"
-                    data-lpignore="true"
-                  />
-                  <div className="form-hint">
-                    {cities.some((c) => (c.name || '').trim().toLowerCase() === (cityForm.name || '').trim().toLowerCase())
-                      ? `Adding this new location under '${cityForm.name.trim()}'`
-                      : `Will create '${cityForm.name.trim() || 'New City'}' with this location`}
+            {/* Card 2: Add / Edit Destination City & Hub Stop */}
+            <div
+              style={{
+                backgroundColor: '#ffffff',
+                border: editingCityId ? '2px solid #2563eb' : '1px solid #e2e8f0',
+                borderRadius: '10px',
+                padding: '1.25rem 1.5rem',
+                boxShadow: 'var(--shadow-sm)',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+              }}
+            >
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.625rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
+                    <div
+                      style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '8px',
+                        backgroundColor: editingCityId ? '#dbeafe' : '#f1f5f9',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        border: '1px solid #e2e8f0',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <MapPin size={17} color={editingCityId ? '#2563eb' : '#0f172a'} />
+                    </div>
+                    <div>
+                      <h3 style={{ fontSize: '0.95rem', color: '#0f172a', margin: 0, fontWeight: 700 }}>
+                        {editingCityId ? 'Edit Destination City & Stop' : 'Add Destination City & Stop'}
+                      </h3>
+                      <span style={{ fontSize: '0.72rem', color: '#64748b' }}>Delivery Drop-off Hubs</span>
+                    </div>
                   </div>
-                </div>
-              </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
-                {editingCityId && (
-                  <button type="button" className="btn btn-secondary" onClick={handleResetCityForm} disabled={saving}>
-                    Cancel
-                  </button>
-                )}
-                <button type="submit" className="btn btn-primary" disabled={saving}>
-                  <Save size={16} />
-                  {saving
-                    ? 'Saving...'
-                    : editingCityId
-                    ? 'Update City'
-                    : 'Save Location'}
-                </button>
+                  {editingCityId && (
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      onClick={handleResetCityForm}
+                      style={{ padding: '2px 8px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                    >
+                      <RotateCcw size={12} />
+                      Cancel Edit
+                    </button>
+                  )}
+                </div>
+
+                <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0.35rem 0 1rem 0', lineHeight: 1.4 }}>
+                  Add destination cities with exact stop locations. Multiple stops can be registered under each city.
+                </p>
+
+                <form onSubmit={handleSaveCity} autoComplete="off" data-lpignore="true">
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    <CitySearchInput
+                      id="settings_city_name"
+                      name="settings_city_name"
+                      label="City / Destination Hub Name *"
+                      placeholder="Search existing or type new city..."
+                      value={cityForm.name}
+                      onChange={(name) => setCityForm((prev) => ({ ...prev, name }))}
+                      onSelectNext={() => {
+                        document.getElementById('settings_city_address')?.focus();
+                      }}
+                      cities={cities}
+                      required
+                    />
+
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="form-label" style={{ fontSize: '0.8rem', marginBottom: '0.35rem', fontWeight: 600 }}>
+                        Delivery Address / Stop Location <span className="required">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        id="settings_city_address"
+                        name="settings_city_address"
+                        className="form-control"
+                        placeholder="e.g. Main Bus Stand Counter #4, Benz Circle"
+                        value={cityForm.deliveryAddress}
+                        onChange={(e) => setCityForm({ ...cityForm, deliveryAddress: e.target.value })}
+                        required
+                        autoComplete="new-password"
+                        data-lpignore="true"
+                      />
+                      <div className="form-hint" style={{ fontSize: '0.72rem', marginTop: '0.3rem' }}>
+                        {cities.some((c) => (c.name || '').trim().toLowerCase() === (cityForm.name || '').trim().toLowerCase())
+                          ? `Will append this location under '${cityForm.name.trim()}'`
+                          : `Will create '${cityForm.name.trim() || 'New City'}' with this location`}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '1rem' }}>
+                    {editingCityId && (
+                      <button type="button" className="btn btn-secondary" onClick={handleResetCityForm} disabled={saving} style={{ height: '38px', padding: '0.5rem 1rem' }}>
+                        Cancel
+                      </button>
+                    )}
+                    <button type="submit" className="btn btn-primary" disabled={saving} style={{ height: '38px', padding: '0.5rem 1.25rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                      <Save size={15} />
+                      <span>
+                        {saving
+                          ? 'Saving...'
+                          : editingCityId
+                          ? 'Update Location'
+                          : 'Save Destination'}
+                      </span>
+                    </button>
+                  </div>
+                </form>
               </div>
-            </form>
+            </div>
           </div>
 
           {/* Directory of Saved Cities & Multiple Locations */}
@@ -1335,53 +1510,38 @@ export const SettingsPage = ({ onRefreshGlobalDestinations }) => {
                   <div className="form-hint">Vehicle number plate</div>
                 </div>
 
-                <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label">Bus / Travels Agency Name</label>
-                  <input
-                    type="text"
-                    id="bus_agency_name"
-                    name="bus_agency_name"
-                    className="form-control"
-                    placeholder="e.g. Kaveri Travels / Morning Star / APSRTC"
-                    value={busForm.busName}
-                    onChange={(e) => setBusForm({ ...busForm, busName: e.target.value })}
-                    autoComplete="off"
-                    data-lpignore="true"
-                  />
-                  <div className="form-hint">Operator or travel company</div>
-                </div>
+                <SuggestInput
+                  id="bus_agency_name"
+                  name="bus_agency_name"
+                  label="Bus / Travels Agency Name"
+                  placeholder="e.g. Kaveri Travels / Morning Star / APSRTC"
+                  value={busForm.busName}
+                  onChange={(val) => setBusForm({ ...busForm, busName: val })}
+                  suggestions={travelAgencySuggestions}
+                  hint="Type to match existing agencies or enter new"
+                />
 
-                <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label">Destination Route / City</label>
-                  <input
-                    type="text"
-                    id="bus_to_city"
-                    name="bus_to_city"
-                    className="form-control"
-                    placeholder="e.g. Vijayawada / Eluru / Visakhapatnam"
-                    value={busForm.toCity}
-                    onChange={(e) => setBusForm({ ...busForm, toCity: e.target.value })}
-                    autoComplete="off"
-                    data-lpignore="true"
-                  />
-                  <div className="form-hint">Destination city or route</div>
-                </div>
+                <SuggestInput
+                  id="bus_to_city"
+                  name="bus_to_city"
+                  label="Destination Route / City"
+                  placeholder="e.g. Vijayawada / Eluru / Visakhapatnam"
+                  value={busForm.toCity}
+                  onChange={(val) => setBusForm({ ...busForm, toCity: val })}
+                  suggestions={destinationSuggestions}
+                  hint="Type to match existing destinations or enter new"
+                />
 
-                <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label">Scheduled Departure Time</label>
-                  <input
-                    type="text"
-                    id="bus_dep_time"
-                    name="bus_dep_time"
-                    className="form-control"
-                    placeholder="e.g. 08:30 PM"
-                    value={busForm.defaultDepartureTime}
-                    onChange={(e) => setBusForm({ ...busForm, defaultDepartureTime: e.target.value })}
-                    autoComplete="off"
-                    data-lpignore="true"
-                  />
-                  <div className="form-hint">Default scheduled departure time</div>
-                </div>
+                <SuggestInput
+                  id="bus_dep_time"
+                  name="bus_dep_time"
+                  label="Scheduled Departure Time"
+                  placeholder="e.g. 08:30 PM"
+                  value={busForm.defaultDepartureTime}
+                  onChange={(val) => setBusForm({ ...busForm, defaultDepartureTime: val })}
+                  suggestions={departureTimeSuggestions}
+                  hint="Type or select standard departure schedule"
+                />
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
@@ -2011,15 +2171,35 @@ export const SettingsPage = ({ onRefreshGlobalDestinations }) => {
               </div>
             </div>
 
-            <div className="form-group">
-              <label className="form-label">Main Office & Booking Counter Address <span className="required">*</span></label>
-              <input
-                type="text"
-                className="form-control"
-                value={settings.companyAddress || ''}
-                onChange={(e) => setSettings({ ...settings, companyAddress: e.target.value })}
-                required
-              />
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">
+                  Admin Fixed Origin Hub / From Station <span className="required">*</span>
+                </label>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Enter terminal origin address..."
+                  value={settings.fromCity || ''}
+                  onChange={(e) => setSettings({ ...settings, fromCity: e.target.value })}
+                  required
+                />
+                <div className="form-hint" style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '3px' }}>
+                  This fixed origin station is prefilled automatically for all new bookings and printed on LR receipts.
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Main Office & Booking Counter Address <span className="required">*</span></label>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="e.g. Central Bus Terminal Office, Complex #4"
+                  value={settings.companyAddress || ''}
+                  onChange={(e) => setSettings({ ...settings, companyAddress: e.target.value })}
+                  required
+                />
+              </div>
             </div>
 
             <div className="form-group" style={{ marginBottom: 0 }}>
@@ -2042,105 +2222,7 @@ export const SettingsPage = ({ onRefreshGlobalDestinations }) => {
         </form>
       )}
 
-      {/* 3. WhatsApp Notification Tab */}
-      {activeTab === 'whatsapp' && (
-        <form onSubmit={handleSaveSettings}>
-          <div style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '1.5rem', boxShadow: 'var(--shadow-sm)', marginBottom: '1.5rem' }}>
-            <h3 style={{ fontSize: '1rem', color: '#0d2137', marginBottom: '0.25rem' }}>
-              WhatsApp Notification Service Configuration
-            </h3>
-            <p style={{ fontSize: '0.8125rem', color: '#64748b', marginBottom: '1.25rem' }}>
-              The system automatically sends dispatch notifications when parcels are assigned to a bus. Configure the delivery provider below or use direct WhatsApp Web links.
-            </p>
 
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">WhatsApp Provider Mode</label>
-                <select
-                  className="form-control"
-                  value={settings.whatsappProvider || 'MOCK'}
-                  onChange={(e) => setSettings({ ...settings, whatsappProvider: e.target.value })}
-                >
-                  <option value="MOCK">MOCK / Console Logger (Development & Direct Links)</option>
-                  <option value="TWILIO">Twilio WhatsApp API</option>
-                  <option value="META">Meta WhatsApp Cloud API</option>
-                  <option value="WEBHOOK">Custom HTTP Webhook API</option>
-                </select>
-                <div className="form-hint">
-                  All modes support 1-click Direct WhatsApp Web dispatch links out of the box.
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Sender Phone / Business Number</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  value={settings.whatsappSenderNumber || ''}
-                  onChange={(e) => setSettings({ ...settings, whatsappSenderNumber: e.target.value })}
-                  placeholder="+919876543210"
-                />
-              </div>
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">API Key / Auth Token (Configurable in .env)</label>
-                <input
-                  type="password"
-                  className="form-control"
-                  value={settings.whatsappApiKey || ''}
-                  onChange={(e) => setSettings({ ...settings, whatsappApiKey: e.target.value })}
-                  placeholder="Enter API token or leave blank to use .env"
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">API Endpoint URL (if Custom Webhook)</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  value={settings.whatsappApiUrl || ''}
-                  onChange={(e) => setSettings({ ...settings, whatsappApiUrl: e.target.value })}
-                  placeholder="https://api.yourprovider.com/v1/send"
-                />
-              </div>
-            </div>
-
-            {/* Test WhatsApp Link Generator */}
-            <div style={{ marginTop: '1rem', padding: '1rem', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px' }}>
-              <div style={{ fontWeight: 600, fontSize: '0.8125rem', color: '#0f172a', marginBottom: '0.5rem' }}>
-                Test WhatsApp Notification Trigger:
-              </div>
-              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                <input
-                  type="text"
-                  className="form-control"
-                  style={{ width: '200px' }}
-                  placeholder="Enter 10-digit mobile"
-                  value={testPhone}
-                  onChange={(e) => setTestPhone(e.target.value)}
-                />
-                <button
-                  type="button"
-                  className="btn btn-primary btn-sm"
-                  onClick={handleTestWhatsApp}
-                >
-                  <Send size={14} />
-                  Send Test WhatsApp Message
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <button type="submit" className="btn btn-primary" disabled={saving}>
-              <Save size={16} />
-              {saving ? 'Saving...' : 'Save WhatsApp Configuration'}
-            </button>
-          </div>
-        </form>
-      )}
 
       {/* 4. Admin Account Profile & Change Password Tab */}
       {activeTab === 'users' && (

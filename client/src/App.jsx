@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import { CompanyProvider, useCompanySettings } from './context/CompanyContext';
+import { LiveDataProvider } from './context/LiveDataContext';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { HomePage } from './pages/HomePage';
@@ -428,7 +429,9 @@ export default function App() {
     <ToastProvider>
       <AuthProvider>
         <CompanyProvider>
-          <MainApp />
+          <LiveDataProvider>
+            <MainApp />
+          </LiveDataProvider>
         </CompanyProvider>
       </AuthProvider>
     </ToastProvider>

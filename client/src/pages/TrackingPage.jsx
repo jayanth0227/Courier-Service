@@ -97,7 +97,13 @@ export const TrackingPage = ({ initialOrderId = '', onNavigate, companySettings:
     if (!trackingData) return;
     const origin = window.location.origin;
     const trackingUrl = `${origin}/#track?id=${trackingData.orderId}`;
-    const text = `*Parcel Tracking - ${companyName}*\n\n*Order ID:* #${trackingData.orderId}\n*Route:* ${trackingData.destination || `${trackingData.fromCity} → ${trackingData.toCity}`}\n*Status:* ${trackingData.status.replace(/_/g, ' ')}\n${trackingData.busDetails?.busNumber ? `*Bus:* ${trackingData.busDetails.busNumber}\n` : ''}${trackingData.busDetails?.driverPhone ? `*Driver:* ${trackingData.busDetails.driverPhone}\n` : ''}\n*Track Online:* ${trackingUrl}`;
+    const cleanToCity = trackingData.toCity || (trackingData.destination?.includes('→') ? trackingData.destination.split('→').slice(1).join('→').trim() : '');
+    const stopAddr = trackingData.deliveryAddress || trackingData.busDetails?.destinationAddress || '';
+    const fullStop = stopAddr && cleanToCity && !stopAddr.toLowerCase().includes(cleanToCity.toLowerCase())
+      ? `${cleanToCity} - ${stopAddr}`
+      : (stopAddr || cleanToCity);
+
+    const text = `*Parcel Tracking - ${companyName}*\n\n*Order ID:* #${trackingData.orderId}\n*Route:* ${trackingData.destination || `${trackingData.fromCity} → ${trackingData.toCity}`}\n*Delivery Stop:* ${fullStop}\n*Status:* ${trackingData.status.replace(/_/g, ' ')}\n${trackingData.busDetails?.busNumber ? `*Bus:* ${trackingData.busDetails.busNumber}\n` : ''}${trackingData.busDetails?.driverPhone ? `*Driver:* ${trackingData.busDetails.driverPhone}\n` : ''}\n*Track Online:* ${trackingUrl}`;
     const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
     window.open(url, '_blank');
   };
@@ -749,16 +755,21 @@ export const TrackingPage = ({ initialOrderId = '', onNavigate, companySettings:
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span style={{ color: 'var(--text-muted)' }}>To Destination:</span>
                     <strong style={{ color: '#0f172a' }}>
-                      {trackingData.toCity || trackingData.destination}
+                      {trackingData.toCity || (trackingData.destination?.includes('→') ? trackingData.destination.split('→').slice(1).join('→').trim() : trackingData.destination)}
                     </strong>
                   </div>
 
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>Delivery Terminal / Stop:</span>
-                    <span style={{ color: '#0f172a', fontWeight: 600, textAlign: 'right', maxWidth: '60%' }}>
-                      {trackingData.deliveryAddress ||
-                        trackingData.busDetails?.destinationAddress ||
-                        'Main Terminal Counter'}
+                    <span style={{ color: 'var(--text-muted)' }}>Delivery Terminal / To Address:</span>
+                    <span style={{ color: '#2563eb', fontWeight: 700, textAlign: 'right', maxWidth: '65%' }}>
+                      {(() => {
+                        const city = trackingData.toCity || (trackingData.destination?.includes('→') ? trackingData.destination.split('→').slice(1).join('→').trim() : '');
+                        const addr = trackingData.deliveryAddress || trackingData.busDetails?.destinationAddress || '';
+                        if (addr && city && !addr.toLowerCase().includes(city.toLowerCase())) {
+                          return `${city} - ${addr}`;
+                        }
+                        return addr || city || 'Main Terminal Counter';
+                      })()}
                     </span>
                   </div>
 

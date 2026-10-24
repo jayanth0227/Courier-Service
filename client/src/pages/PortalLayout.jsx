@@ -16,6 +16,7 @@ import { StaffManagementModal } from '../components/StaffManagementModal';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useCompanySettings } from '../context/CompanyContext';
+import { useLiveData } from '../context/LiveDataContext';
 
 export const PortalLayout = ({
   activeModule: controlledModule,
@@ -39,7 +40,8 @@ export const PortalLayout = ({
     return saved || 'dashboard';
   });
 
-  const activeModule = controlledModule || internalModule;
+  const rawModule = controlledModule || internalModule;
+  const activeModule = isStaff && !STAFF_ALLOWED.includes(rawModule) ? 'create-booking' : rawModule;
 
   // Protect staff routes: staff should only have access to create booking, booking list, bus dispatch, parcel tracking
   useEffect(() => {
@@ -149,6 +151,26 @@ export const PortalLayout = ({
     const interval = setInterval(refreshPendingCount, 15000);
     return () => clearInterval(interval);
   }, []);
+
+  const { subscribeToEvent } = useLiveData();
+
+  // Instant real-time badge updates without waiting for interval
+  useEffect(() => {
+    const unsubCreated = subscribeToEvent('BOOKING_CREATED', () => {
+      refreshPendingCount();
+    });
+    const unsubDispatched = subscribeToEvent('DISPATCH_ASSIGNED', () => {
+      refreshPendingCount();
+    });
+    const unsubUpdated = subscribeToEvent('BOOKING_UPDATED', () => {
+      refreshPendingCount();
+    });
+    return () => {
+      unsubCreated();
+      unsubDispatched();
+      unsubUpdated();
+    };
+  }, [subscribeToEvent]);
 
   const handleOpenAssignBus = (bookings, callback) => {
     setAssignBusBookings(bookings);

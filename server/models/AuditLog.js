@@ -30,6 +30,7 @@ const auditLogSchema = new mongoose.Schema(
         'LOGIN_SUCCESS',
         'LOGIN_FAILED',
         'LOGOUT',
+        'LOGOUT_SUCCESS',
         'PASSWORD_CHANGE',
         'PASSWORD_CHANGE_SUCCESS',
         'PASSWORD_CHANGE_FAILED',

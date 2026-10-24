@@ -41,7 +41,9 @@ export const CustomerSearchInput = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Search API for matching customers
+  const searchCacheRef = useRef(new Map());
+
+  // Search API for matching customers with in-memory caching
   const searchCustomers = useCallback(async (searchTerm) => {
     const trimmed = (searchTerm || '').trim();
     if (!trimmed || trimmed.length < 1) {
@@ -50,11 +52,19 @@ export const CustomerSearchInput = ({
       return;
     }
 
+    const lower = trimmed.toLowerCase();
+    if (searchCacheRef.current.has(lower)) {
+      const cached = searchCacheRef.current.get(lower);
+      setSuggestions(cached);
+      setIsOpen(cached.length > 0);
+      setActiveIndex(0);
+      return;
+    }
+
     try {
       setLoading(true);
       const res = await api.customers.list({ search: trimmed, nameOnly: true, limit: 15 });
       if (res.success && Array.isArray(res.data)) {
-        const lower = trimmed.toLowerCase();
         const matching = res.data.filter((c) => {
           const nameMatch = c.name && c.name.toLowerCase().includes(lower);
           const phoneMatch = c.phone && c.phone.includes(trimmed);
@@ -72,6 +82,7 @@ export const CustomerSearchInput = ({
           return aName.localeCompare(bName);
         });
 
+        searchCacheRef.current.set(lower, matching);
         setSuggestions(matching);
         if (matching.length > 0) {
           setIsOpen(true);

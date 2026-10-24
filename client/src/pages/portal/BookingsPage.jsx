@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
+import { useLiveData } from '../../context/LiveDataContext';
 
 const getBookedByInfo = (booking) => {
   if (!booking) return { name: 'Admin', roleLabel: 'Admin', isAdmin: true, branch: '' };
@@ -65,6 +66,9 @@ export const BookingsPage = ({
 
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
+  const [liveHighlightIds, setLiveHighlightIds] = useState(new Set());
+  const { subscribeToEvent } = useLiveData();
   const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0, limit: 12 });
 
   // Filters & Search
@@ -130,9 +134,13 @@ export const BookingsPage = ({
     }
   };
 
-  const fetchBookings = async (page = 1, searchQuery = search) => {
+  const fetchBookings = async (page = 1, searchQuery = search, isInitial = false) => {
     try {
-      setLoading(true);
+      if (isInitial && bookings.length === 0) {
+        setLoading(true);
+      } else {
+        setIsFetching(true);
+      }
       const params = {
         page,
         limit: pagination.limit,
@@ -154,17 +162,84 @@ export const BookingsPage = ({
       showToast(error.message || 'Failed to fetch bookings', 'error');
     } finally {
       setLoading(false);
+      setIsFetching(false);
     }
   };
 
-  // Live search: automatically re-fetches as user types word by word / character by character
+  // Debounced search to ensure silky-smooth typing without blocking the UI
   useEffect(() => {
     const timer = setTimeout(() => {
-      fetchBookings(1, search);
-    }, 200);
+      fetchBookings(1, search, false);
+    }, 350);
 
     return () => clearTimeout(timer);
   }, [search, status, destination, parcelType, bookedByRole, startDate, endDate]);
+
+  // Real-time live synchronization: receives updates without manual refresh
+  useEffect(() => {
+    // 1. Newly created booking across any counter/device
+    const unsubCreated = subscribeToEvent('BOOKING_CREATED', (newBooking) => {
+      if (!newBooking || !newBooking._id) return;
+
+      const statusMatch = status === 'ALL' || status === newBooking.status;
+      const destMatch =
+        destination === 'ALL' ||
+        (newBooking.toCity && newBooking.toCity.toLowerCase().includes(destination.toLowerCase())) ||
+        (newBooking.destination && newBooking.destination.toLowerCase().includes(destination.toLowerCase()));
+
+      if (pagination.page === 1 && statusMatch && destMatch) {
+        setBookings((prev) => [newBooking, ...prev.filter((b) => b._id !== newBooking._id)]);
+        setPagination((prev) => ({ ...prev, total: prev.total + 1 }));
+
+        // Flash highlight badge for 4 seconds
+        setLiveHighlightIds((prev) => new Set([...prev, newBooking._id]));
+        setTimeout(() => {
+          setLiveHighlightIds((prev) => {
+            const next = new Set(prev);
+            next.delete(newBooking._id);
+            return next;
+          });
+        }, 4000);
+      } else {
+        setPagination((prev) => ({ ...prev, total: prev.total + 1 }));
+      }
+    });
+
+    // 2. Booking status or details updated in real time (e.g. dispatched, delivered, cancelled)
+    const unsubUpdated = subscribeToEvent('BOOKING_UPDATED', (updatedBooking) => {
+      if (!updatedBooking || !updatedBooking._id) return;
+
+      setBookings((prev) =>
+        prev.map((b) => (b._id === updatedBooking._id ? { ...b, ...updatedBooking } : b))
+      );
+
+      setSelectedBooking((prev) =>
+        prev && prev._id === updatedBooking._id ? { ...prev, ...updatedBooking } : prev
+      );
+
+      setLiveHighlightIds((prev) => new Set([...prev, updatedBooking._id]));
+      setTimeout(() => {
+        setLiveHighlightIds((prev) => {
+          const next = new Set(prev);
+          next.delete(updatedBooking._id);
+          return next;
+        });
+      }, 3000);
+    });
+
+    // 3. Booking deleted
+    const unsubDeleted = subscribeToEvent('BOOKING_DELETED', ({ _id }) => {
+      if (!_id) return;
+      setBookings((prev) => prev.filter((b) => b._id !== _id));
+      setPagination((prev) => ({ ...prev, total: Math.max(0, prev.total - 1) }));
+    });
+
+    return () => {
+      unsubCreated();
+      unsubUpdated();
+      unsubDeleted();
+    };
+  }, [subscribeToEvent, status, destination, pagination.page]);
 
   const handleSearchSubmit = (e) => {
     if (e) e.preventDefault();
@@ -189,15 +264,17 @@ export const BookingsPage = ({
         deliveryNotes: deliveryNotes.trim() || 'Parcel collected by customer / consignee at destination terminal.',
       });
       if (res.success) {
-        showToast(`Order #${deliveringBooking.orderId} marked as DELIVERED!`, 'success');
         const updatedId = deliveringBooking._id;
         setDeliveringBooking(null);
 
-        if (selectedBooking && selectedBooking._id === updatedId) {
-          setSelectedBooking((prev) => ({ ...prev, status: 'DELIVERED' }));
-        }
+        // Optimistic in-place update for instant UI feedback without waiting
+        setBookings((prev) =>
+          prev.map((b) => (b._id === updatedId ? { ...b, status: 'DELIVERED', deliveredAt: new Date() } : b))
+        );
 
-        fetchBookings(pagination.page);
+        if (selectedBooking && selectedBooking._id === updatedId) {
+          setSelectedBooking((prev) => ({ ...prev, status: 'DELIVERED', deliveredAt: new Date() }));
+        }
       }
     } catch (error) {
       showToast(error.message || 'Failed to update status', 'error');
@@ -231,9 +308,13 @@ export const BookingsPage = ({
       });
 
       if (res.success) {
-        showToast(`Consignment #${cancellingBooking.orderId} cancelled successfully`, 'success');
         const updatedId = cancellingBooking._id;
         setCancellingBooking(null);
+
+        // Optimistic in-place update for instant UI feedback without waiting
+        setBookings((prev) =>
+          prev.map((b) => (b._id === updatedId ? { ...b, status: 'CANCELLED', cancelledAt: new Date(), cancellationReason: finalReason } : b))
+        );
 
         // If the detail modal is currently showing this booking, update its status
         if (selectedBooking && selectedBooking._id === updatedId) {
@@ -244,8 +325,6 @@ export const BookingsPage = ({
             cancellationReason: finalReason,
           }));
         }
-
-        fetchBookings(pagination.page);
       }
     } catch (error) {
       showToast(error.message || 'Failed to cancel booking', 'error');
@@ -599,14 +678,26 @@ export const BookingsPage = ({
                     </a>
                   </div>
                 )}
-                <div style={{ fontSize: '0.75rem', color: '#475569', marginTop: '4px' }}>
-                  Destination Route: <strong>{selectedBooking.destination}</strong>
-                </div>
-                {selectedBooking.deliveryAddress && (
-                  <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '4px' }}>
-                    Delivery Stop / Counter: <strong>{selectedBooking.deliveryAddress}</strong>
-                  </div>
-                )}
+                {(() => {
+                  const cleanTo = (selectedBooking.toCity || (selectedBooking.destination?.includes('→') ? selectedBooking.destination.split('→').slice(1).join('→').trim() : (selectedBooking.destination?.includes('->') ? selectedBooking.destination.split('->').slice(1).join('->').trim() : selectedBooking.destination)) || '').trim();
+                  const cleanFrom = (selectedBooking.fromCity || (selectedBooking.destination?.includes('→') ? selectedBooking.destination.split('→')[0].trim() : (selectedBooking.destination?.includes('->') ? selectedBooking.destination.split('->')[0].trim() : '')) || 'Origin').trim();
+                  const cleanRoute = cleanTo && cleanFrom ? `${cleanFrom} → ${cleanTo}` : (selectedBooking.destination || cleanTo);
+                  const stop = (selectedBooking.deliveryAddress || '').trim();
+                  const fullTo = stop && cleanTo && !stop.toLowerCase().includes(cleanTo.toLowerCase())
+                    ? `${cleanTo} - ${stop}`
+                    : (stop || cleanTo);
+
+                  return (
+                    <>
+                      <div style={{ fontSize: '0.75rem', color: '#475569', marginTop: '4px' }}>
+                        Destination Route: <strong>{cleanRoute}</strong>
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: '#1e40af', marginTop: '4px', fontWeight: 600 }}>
+                        Delivery Stop / To Address: <strong>{fullTo}</strong>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             </div>
           </div>
@@ -885,7 +976,7 @@ export const BookingsPage = ({
             </tr>
           </thead>
           <tbody>
-            {loading ? (
+            {loading && bookings.length === 0 ? (
               <tr>
                 <td colSpan={8} style={{ textAlign: 'center', padding: '2.5rem', color: '#64748b' }}>
                   Loading bookings...
@@ -900,11 +991,17 @@ export const BookingsPage = ({
               </tr>
             ) : (
               bookings.map((booking) => {
+                const isLiveUpdated = liveHighlightIds.has(booking._id);
                 return (
                   <tr
                     key={booking._id}
                     onClick={() => setSelectedBooking(booking)}
-                    style={{ cursor: 'pointer', transition: 'background-color 0.15s ease' }}
+                    style={{
+                      cursor: 'pointer',
+                      transition: 'background-color 0.25s ease, opacity 0.2s ease',
+                      backgroundColor: isLiveUpdated ? '#ecfdf5' : undefined,
+                      opacity: isFetching ? 0.75 : 1,
+                    }}
                     title="Click to open full consignment details & operations in a fresh page"
                   >
                     <td>
@@ -1016,14 +1113,40 @@ export const BookingsPage = ({
                     </td>
 
                     <td>
-                      <span style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.8125rem' }}>
-                        {booking.destination}
-                      </span>
-                      {booking.deliveryAddress && (
-                        <div style={{ fontSize: '0.6875rem', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '180px' }}>
-                          {booking.deliveryAddress}
-                        </div>
-                      )}
+                      {(() => {
+                        const cleanTo = (booking.toCity || (booking.destination?.includes('→') ? booking.destination.split('→').slice(1).join('→').trim() : (booking.destination?.includes('->') ? booking.destination.split('->').slice(1).join('->').trim() : booking.destination)) || '').trim();
+                        const cleanFrom = (booking.fromCity || (booking.destination?.includes('→') ? booking.destination.split('→')[0].trim() : (booking.destination?.includes('->') ? booking.destination.split('->')[0].trim() : '')) || 'Origin').trim();
+                        const cleanRoute = cleanTo && cleanFrom ? `${cleanFrom} → ${cleanTo}` : (booking.destination || cleanTo);
+                        const stop = (booking.deliveryAddress || '').trim();
+                        const fullTo = stop && cleanTo && !stop.toLowerCase().includes(cleanTo.toLowerCase())
+                          ? `${cleanTo} - ${stop}`
+                          : (stop || cleanTo);
+
+                        return (
+                          <div>
+                            <span style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.8125rem' }}>
+                              {cleanRoute}
+                            </span>
+                            {fullTo && (
+                              <div
+                                style={{
+                                  fontSize: '0.6875rem',
+                                  color: '#2563eb',
+                                  whiteSpace: 'nowrap',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  maxWidth: '220px',
+                                  marginTop: '2px',
+                                  fontWeight: 500,
+                                }}
+                                title={fullTo}
+                              >
+                                📍 {fullTo}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </td>
 
                     <td>
@@ -1734,7 +1857,7 @@ export const BookingsPage = ({
                         className="form-control"
                         value={editBooking.destination || ''}
                         onChange={(e) => setEditBooking({ ...editBooking, destination: e.target.value })}
-                        placeholder="e.g. KPHB Metro -> Vijayawada"
+                        placeholder="e.g. Origin City -> Destination City"
                         required
                         disabled={savingEdit}
                       />

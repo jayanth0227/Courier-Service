@@ -14,9 +14,13 @@ export const WhatsAppModal = ({ booking, onClose, onSuccess }) => {
   const busNo = booking.busDetails?.busNumber || 'Assigned Bus';
   const route = booking.busDetails?.route || booking.destination;
   const departure = booking.busDetails?.departureTime || 'Evening Dispatch';
-  const operator = booking.busDetails?.operator ? `\nOperator: ${booking.busDetails.operator}` : '';
+  const cleanToCity = booking.toCity || (booking.destination?.includes('→') ? booking.destination.split('→').slice(1).join('→').trim() : '');
+  const stopAddr = booking.deliveryAddress || booking.busDetails?.destinationAddress || '';
+  const fullStop = stopAddr && cleanToCity && !stopAddr.toLowerCase().includes(cleanToCity.toLowerCase())
+    ? `${cleanToCity} - ${stopAddr}`
+    : (stopAddr || cleanToCity);
 
-  const messageText = `Hello ${booking.customerName || 'Customer'},\n\nYour parcel with Order ID ${booking.orderId} has been dispatched.\n\nBus Number: ${busNo}\nRoute: ${route}${operator}\nDeparture: ${departure}\n\nPlease use Order ID ${booking.orderId} for tracking.\n\nThank you for choosing our Courier & Bus Dispatch Service.`;
+  const messageText = `Hello ${booking.customerName || 'Customer'},\n\nYour parcel with Order ID #${booking.orderId} has been dispatched.\n\nBus Number: ${busNo}\nRoute: ${route}${operator}${fullStop ? `\nDelivery Stop / To Address: ${fullStop}` : ''}\nDeparture: ${departure}\n\nPlease present Order ID #${booking.orderId} at the delivery counter to receive your parcel.\n\nThank you for choosing our Courier & Bus Dispatch Service.`;
 
   const cleanPhone = (recipientPhone || '').replace(/\D/g, '');
   const formattedPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;

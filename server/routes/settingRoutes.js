@@ -70,6 +70,7 @@ router.get('/public', async (req, res, next) => {
         companyPhone: settings.companyPhone,
         companyEmail: settings.companyEmail,
         companyAddress: settings.companyAddress,
+        fromCity: settings.fromCity || '',
         gstin: settings.gstin || '',
         receiptFooterNote: settings.receiptFooterNote,
         standardRoutes: settings.standardRoutes || [],
@@ -126,6 +127,7 @@ router.put('/', protect, tenantScope, authorize('admin', 'superadmin'), async (r
       companyPhone,
       companyEmail,
       companyAddress,
+      fromCity,
       gstin,
       receiptFooterNote,
       whatsappProvider,
@@ -143,6 +145,7 @@ router.put('/', protect, tenantScope, authorize('admin', 'superadmin'), async (r
     if (companyPhone !== undefined) settings.companyPhone = companyPhone.trim();
     if (companyEmail !== undefined) settings.companyEmail = companyEmail.trim();
     if (companyAddress !== undefined) settings.companyAddress = companyAddress.trim();
+    if (fromCity !== undefined) settings.fromCity = fromCity.trim();
     if (gstin !== undefined) settings.gstin = gstin.trim();
     if (receiptFooterNote !== undefined) settings.receiptFooterNote = receiptFooterNote.trim();
 

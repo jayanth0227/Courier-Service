@@ -19,6 +19,8 @@ import {
 import { api } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../context/AuthContext';
+import { useCompanySettings } from '../../context/CompanyContext';
+import { useLiveData } from '../../context/LiveDataContext';
 import { CitySearchInput } from '../../components/CitySearchInput';
 
 export const CreateBookingPage = ({
@@ -32,6 +34,10 @@ export const CreateBookingPage = ({
 }) => {
   const { user } = useAuth();
   const { showToast } = useToast();
+  const { companySettings } = useCompanySettings();
+  const { notifyLocalChange } = useLiveData();
+
+  const defaultOrigin = companySettings?.fromCity || user?.branch || '';
 
   const canManageMasterData = user?.role === 'admin' || user?.role === 'superadmin';
 
@@ -96,6 +102,7 @@ export const CreateBookingPage = ({
 
   // Form Data (Destination first, Sender phone-first with auto-fetch name, Receiver phone-first)
   const [formData, setFormData] = useState({
+    fromCity: defaultOrigin || '',
     toCity: '',
     deliveryAddress: '',
     customerPhone: '',
@@ -104,6 +111,15 @@ export const CreateBookingPage = ({
     receiverName: '',
     paymentStatus: 'PAID',
   });
+
+  useEffect(() => {
+    if (defaultOrigin) {
+      setFormData((prev) => ({
+        ...prev,
+        fromCity: prev.fromCity || defaultOrigin,
+      }));
+    }
+  }, [defaultOrigin]);
 
   // Multi-Parcel Items State (under same LR ID)
   const [parcelItems, setParcelItems] = useState([
@@ -536,6 +552,7 @@ export const CreateBookingPage = ({
           : `${cleanedItems[0].parcelType} +${cleanedItems.length - 1} more items`;
 
       const payload = {
+        fromCity: (formData.fromCity || defaultOrigin || '').trim(),
         toCity: finalTo,
         deliveryAddress: formData.deliveryAddress.trim(),
         customerName: formData.customerName.trim(),
@@ -557,6 +574,7 @@ export const CreateBookingPage = ({
       if (res.success && res.data) {
         showToast(`Consignment Booked Successfully! LR ID: ${res.data.orderId}`, 'success');
         setCreatedBooking(res.data);
+        notifyLocalChange('BOOKING_CREATED', res.data);
         await fetchCities();
         if (onRefreshCities) onRefreshCities();
       }
@@ -570,6 +588,7 @@ export const CreateBookingPage = ({
   const handleReset = () => {
     const defaultPt = parcelTypesList.length > 0 ? parcelTypesList[0] : null;
     setFormData({
+      fromCity: defaultOrigin || '',
       toCity: '',
       deliveryAddress: '',
       customerPhone: '',
@@ -738,8 +757,12 @@ export const CreateBookingPage = ({
             >
               <div style={{ borderRight: '1px solid #e2e8f0', paddingRight: '0.5rem' }}>
                 <span style={{ color: '#64748b', fontSize: '0.75rem', display: 'block', fontWeight: 600 }}>Destination & Stop</span>
-                <strong style={{ color: '#0f172a', fontSize: '0.9375rem' }}>{createdBooking.toCity}</strong>
-                <div style={{ color: '#475569', fontSize: '0.8125rem', marginTop: '2px' }}>{createdBooking.deliveryAddress}</div>
+                <strong style={{ color: '#0f172a', fontSize: '0.9375rem' }}>
+                  {createdBooking.toCity ? `${createdBooking.toCity} - ${createdBooking.deliveryAddress}` : createdBooking.deliveryAddress}
+                </strong>
+                <div style={{ color: '#2563eb', fontSize: '0.75rem', marginTop: '3px', fontWeight: 600 }}>
+                  Route: {createdBooking.fromCity || 'Origin'} → {createdBooking.toCity || 'Destination'}
+                </div>
               </div>
               <div style={{ borderRight: '1px solid #e2e8f0', paddingRight: '0.5rem' }}>
                 <span style={{ color: '#64748b', fontSize: '0.75rem', display: 'block', fontWeight: 600 }}>Sender (Customer)</span>
@@ -839,14 +862,47 @@ export const CreateBookingPage = ({
             >
               <MapPin size={18} color="#2563eb" />
               <h3 style={{ fontSize: '0.9375rem', fontWeight: 700, margin: 0, color: '#0f172a', fontFamily: 'var(--font-family)' }}>
-                1. Destination & Delivery Stop
+                1. Route Origin & Destination Stop
               </h3>
               <span style={{ fontSize: '0.75rem', color: '#64748b', marginLeft: 'auto', fontWeight: 500 }}>
                 Terminal / Counter Selection
               </span>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '0.75rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '0.75rem' }}>
+              {/* Admin Fixed From Origin Station */}
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                  <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: 0 }}>
+                    From Origin Station <span className="required">*</span>
+                  </label>
+                  <span
+                    style={{
+                      fontSize: '0.65rem',
+                      color: '#1d4ed8',
+                      fontWeight: 700,
+                      backgroundColor: '#eff6ff',
+                      padding: '1px 6px',
+                      borderRadius: '4px',
+                      border: '1px solid #bfdbfe',
+                    }}
+                    title="Pre-filled from Admin Settings. You can adjust or fix this origin address."
+                  >
+                    Admin Fixed
+                  </span>
+                </div>
+                <input
+                  type="text"
+                  id="cb_from_city"
+                  name="cb_from_city"
+                  className="form-control"
+                  placeholder="Enter terminal origin from address..."
+                  value={formData.fromCity || ''}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, fromCity: e.target.value }))}
+                  required
+                />
+              </div>
+
               {/* Destination City Input */}
               <CitySearchInput
                 id="cb_to_city"

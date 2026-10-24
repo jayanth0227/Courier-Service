@@ -1167,87 +1167,89 @@ export const ReportsPage = ({
         </div>
       </div>
 
-      {/* 3. 5 EXECUTIVE KPI SCORECARD (USING STANDARD CORPORATE STYLES) */}
-      <div className="dashboard-stats-grid" style={{ marginBottom: '1.25rem' }}>
-        {/* Card 1: Freight Revenue */}
-        <div className="stat-card">
-          <div className="stat-card-header">
-            <span className="stat-card-label">Total Freight Revenue</span>
-            <div className="stat-card-icon" style={{ backgroundColor: '#f1f5f9', color: '#0f172a' }}>
-              <IndianRupee size={18} />
+      {/* 3. 5 EXECUTIVE KPI SCORECARD (HIDDEN ON COMMISSION TAB FOR CLEAN UI) */}
+      {activeTab !== 'commission' && (
+        <div className="dashboard-stats-grid" style={{ marginBottom: '1.25rem' }}>
+          {/* Card 1: Freight Revenue */}
+          <div className="stat-card">
+            <div className="stat-card-header">
+              <span className="stat-card-label">Total Freight Revenue</span>
+              <div className="stat-card-icon" style={{ backgroundColor: '#f1f5f9', color: '#0f172a' }}>
+                <IndianRupee size={18} />
+              </div>
+            </div>
+            <div className="stat-card-value">₹{(summaryMetrics.totalRevenue || 0).toLocaleString('en-IN')}</div>
+            <div className="stat-card-caption" style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span>Avg Yield: ₹{summaryMetrics.avgTicket} / order</span>
+              <span style={{ fontWeight: 600, color: '#0f172a' }}>₹{summaryMetrics.avgPerKg}/kg rate</span>
             </div>
           </div>
-          <div className="stat-card-value">₹{(summaryMetrics.totalRevenue || 0).toLocaleString('en-IN')}</div>
-          <div className="stat-card-caption" style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span>Avg Yield: ₹{summaryMetrics.avgTicket} / order</span>
-            <span style={{ fontWeight: 600, color: '#0f172a' }}>₹{summaryMetrics.avgPerKg}/kg rate</span>
-          </div>
-        </div>
 
-        {/* Card 2: Total Volume */}
-        <div className="stat-card">
-          <div className="stat-card-header">
-            <span className="stat-card-label">Total Consignments</span>
-            <div className="stat-card-icon" style={{ backgroundColor: '#f1f5f9', color: '#0f172a' }}>
-              <Package size={18} />
+          {/* Card 2: Total Volume */}
+          <div className="stat-card">
+            <div className="stat-card-header">
+              <span className="stat-card-label">Total Consignments</span>
+              <div className="stat-card-icon" style={{ backgroundColor: '#f1f5f9', color: '#0f172a' }}>
+                <Package size={18} />
+              </div>
+            </div>
+            <div className="stat-card-value">{summaryMetrics.totalBookings}</div>
+            <div className="stat-card-caption" style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span>{summaryMetrics.totalQty} items total</span>
+              <span style={{ fontWeight: 600, color: '#0f172a' }}>{summaryMetrics.totalWeight} kg gross</span>
             </div>
           </div>
-          <div className="stat-card-value">{summaryMetrics.totalBookings}</div>
-          <div className="stat-card-caption" style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span>{summaryMetrics.totalQty} items total</span>
-            <span style={{ fontWeight: 600, color: '#0f172a' }}>{summaryMetrics.totalWeight} kg gross</span>
-          </div>
-        </div>
 
-        {/* Card 3: Dispatched & In-Transit */}
-        <div className="stat-card">
-          <div className="stat-card-header">
-            <span className="stat-card-label">In-Transit on Fleet</span>
-            <div className="stat-card-icon" style={{ backgroundColor: '#eff6ff', color: '#2563eb' }}>
-              <Bus size={18} />
+          {/* Card 3: Dispatched & In-Transit */}
+          <div className="stat-card">
+            <div className="stat-card-header">
+              <span className="stat-card-label">In-Transit on Fleet</span>
+              <div className="stat-card-icon" style={{ backgroundColor: '#eff6ff', color: '#2563eb' }}>
+                <Bus size={18} />
+              </div>
+            </div>
+            <div className="stat-card-value" style={{ color: '#2563eb' }}>
+              {summaryMetrics.dispatched}
+            </div>
+            <div className="stat-card-caption">
+              Waiting in terminal bay: {summaryMetrics.pendingDispatch}
             </div>
           </div>
-          <div className="stat-card-value" style={{ color: '#2563eb' }}>
-            {summaryMetrics.dispatched}
-          </div>
-          <div className="stat-card-caption">
-            Waiting in terminal bay: {summaryMetrics.pendingDispatch}
-          </div>
-        </div>
 
-        {/* Card 4: Successfully Delivered */}
-        <div className="stat-card">
-          <div className="stat-card-header">
-            <span className="stat-card-label">Delivered & Handed Over</span>
-            <div className="stat-card-icon" style={{ backgroundColor: '#f1f5f9', color: '#0f172a' }}>
-              <CheckCircle2 size={18} />
+          {/* Card 4: Successfully Delivered */}
+          <div className="stat-card">
+            <div className="stat-card-header">
+              <span className="stat-card-label">Delivered & Handed Over</span>
+              <div className="stat-card-icon" style={{ backgroundColor: '#f1f5f9', color: '#0f172a' }}>
+                <CheckCircle2 size={18} />
+              </div>
+            </div>
+            <div className="stat-card-value" style={{ color: '#0f172a' }}>
+              {summaryMetrics.delivered}
+            </div>
+            <div className="stat-card-caption">
+              Fulfillment: {summaryMetrics.fulfillmentRate}% completed
             </div>
           </div>
-          <div className="stat-card-value" style={{ color: '#0f172a' }}>
-            {summaryMetrics.delivered}
-          </div>
-          <div className="stat-card-caption">
-            Fulfillment: {summaryMetrics.fulfillmentRate}% completed
-          </div>
-        </div>
 
-        {/* Card 5: Payment Settlement Ratio */}
-        <div className="stat-card">
-          <div className="stat-card-header">
-            <span className="stat-card-label">Settlement Collection</span>
-            <div className="stat-card-icon" style={{ backgroundColor: '#f1f5f9', color: '#0f172a' }}>
-              <CreditCard size={18} />
+          {/* Card 5: Payment Settlement Ratio */}
+          <div className="stat-card">
+            <div className="stat-card-header">
+              <span className="stat-card-label">Settlement Collection</span>
+              <div className="stat-card-icon" style={{ backgroundColor: '#f1f5f9', color: '#0f172a' }}>
+                <CreditCard size={18} />
+              </div>
+            </div>
+            <div className="stat-card-value" style={{ color: '#0f172a' }}>
+              ₹{(paymentSplit.PAID_AMOUNT || 0).toLocaleString('en-IN')}
+            </div>
+            <div className="stat-card-caption" style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span>Paid: {paymentSplit.PAID}</span>
+              <span style={{ fontWeight: 600, color: '#d97706' }}>To-Pay: ₹{(paymentSplit.TO_PAY_AMOUNT || 0).toLocaleString('en-IN')}</span>
             </div>
           </div>
-          <div className="stat-card-value" style={{ color: '#0f172a' }}>
-            ₹{(paymentSplit.PAID_AMOUNT || 0).toLocaleString('en-IN')}
-          </div>
-          <div className="stat-card-caption" style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span>Paid: {paymentSplit.PAID}</span>
-            <span style={{ fontWeight: 600, color: '#d97706' }}>To-Pay: ₹{(paymentSplit.TO_PAY_AMOUNT || 0).toLocaleString('en-IN')}</span>
-          </div>
         </div>
-      </div>
+      )}
 
       {/* 4. SUB-TAB 1: VISUAL ANALYTICS & DEEP OPERATIONAL INSIGHTS */}
       {activeTab === 'analytics' && (
@@ -1725,26 +1727,27 @@ export const ReportsPage = ({
       {/* 5. SUB-TAB 2: COMMISSION & TRAVELS SETTLEMENT */}
       {activeTab === 'commission' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          {/* A. Commission Configuration & Quick Controls Bar */}
+          {/* A. Sleek Commission Configurator & Inline Metric Strip */}
           <div
             style={{
               backgroundColor: '#ffffff',
               border: '1px solid #e2e8f0',
               borderRadius: '8px',
-              padding: '1.25rem',
+              padding: '1rem 1.25rem',
               boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
               display: 'flex',
               flexDirection: 'column',
-              gap: '1rem',
+              gap: '0.85rem',
             }}
           >
+            {/* Top Toolbar: Dynamic Percentage Field + Carrier Filter + Export */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                   <div
                     style={{
-                      width: '28px',
-                      height: '28px',
+                      width: '26px',
+                      height: '26px',
                       borderRadius: '6px',
                       backgroundColor: '#eff6ff',
                       color: '#2563eb',
@@ -1753,76 +1756,13 @@ export const ReportsPage = ({
                       justifyContent: 'center',
                     }}
                   >
-                    <Percent size={16} />
+                    <Percent size={15} />
                   </div>
-                  <div>
-                    <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>
-                      Commission & Travels Settlement Configurator
-                    </h3>
-                    <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748b' }}>
-                      Calculate revenue retention split between Jayanth Cargo (Our Commission) and bus travels operators
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-sm"
-                  onClick={handleExportCommissionCSV}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', padding: '5px 12px' }}
-                >
-                  <Download size={13} />
-                  <span>Export Commission CSV</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Configurator Controls: Percentage Selector + Operator Filter */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                backgroundColor: '#f8fafc',
-                padding: '0.75rem 1rem',
-                borderRadius: '6px',
-                border: '1px solid #e2e8f0',
-                flexWrap: 'wrap',
-                gap: '1rem',
-              }}
-            >
-              {/* Rate Presets and Direct Input */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#334155' }}>
-                  Our Commission Cut:
-                </span>
-                <div style={{ display: 'flex', gap: '4px', backgroundColor: '#e2e8f0', padding: '2px', borderRadius: '6px' }}>
-                  {[15, 20, 25, 30, 35, 40, 50].map((rate) => (
-                    <button
-                      key={rate}
-                      type="button"
-                      onClick={() => handleCommissionRateChange(rate)}
-                      style={{
-                        border: 'none',
-                        padding: '3px 9px',
-                        borderRadius: '4px',
-                        fontSize: '0.75rem',
-                        fontWeight: commissionRate === rate ? 700 : 500,
-                        backgroundColor: commissionRate === rate ? '#0f172a' : 'transparent',
-                        color: commissionRate === rate ? '#ffffff' : '#475569',
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease',
-                      }}
-                    >
-                      {rate}%
-                    </button>
-                  ))}
+                  <strong style={{ fontSize: '0.9375rem', color: '#0f172a' }}>Commission Rate:</strong>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Custom:</span>
+                {/* Dynamic Percentage Input */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                   <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
                     <input
                       type="number"
@@ -1832,32 +1772,55 @@ export const ReportsPage = ({
                       onChange={(e) => handleCommissionRateChange(e.target.value)}
                       className="form-control"
                       style={{
-                        width: '65px',
-                        padding: '3px 20px 3px 6px',
-                        fontSize: '0.75rem',
+                        width: '70px',
+                        padding: '4px 22px 4px 8px',
+                        fontSize: '0.875rem',
                         textAlign: 'right',
-                        fontWeight: 700,
+                        fontWeight: 800,
+                        color: '#0f172a',
+                        borderColor: '#2563eb',
                       }}
                     />
-                    <span style={{ position: 'absolute', right: '6px', fontSize: '0.75rem', color: '#64748b', pointerEvents: 'none' }}>
+                    <span style={{ position: 'absolute', right: '8px', fontSize: '0.8125rem', fontWeight: 700, color: '#64748b', pointerEvents: 'none' }}>
                       %
                     </span>
                   </div>
-                </div>
 
-                <span style={{ fontSize: '0.75rem', color: '#64748b', fontStyle: 'italic' }}>
-                  (Travels receives: <strong style={{ color: '#2563eb' }}>{100 - commissionRate}%</strong>)
-                </span>
+                  {/* Quick Preset Buttons */}
+                  <div style={{ display: 'flex', gap: '3px', backgroundColor: '#f1f5f9', padding: '2px', borderRadius: '5px' }}>
+                    {[15, 20, 25, 30, 40, 50].map((rate) => (
+                      <button
+                        key={rate}
+                        type="button"
+                        onClick={() => handleCommissionRateChange(rate)}
+                        style={{
+                          border: 'none',
+                          padding: '3px 8px',
+                          borderRadius: '4px',
+                          fontSize: '0.75rem',
+                          fontWeight: commissionRate === rate ? 700 : 500,
+                          backgroundColor: commissionRate === rate ? '#0f172a' : 'transparent',
+                          color: commissionRate === rate ? '#ffffff' : '#475569',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        {rate}%
+                      </button>
+                    ))}
+                  </div>
+
+                  <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                    (Travels receives: <strong style={{ color: '#2563eb' }}>{100 - commissionRate}%</strong>)
+                  </span>
+                </div>
               </div>
 
-              {/* Carrier Filter */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#334155' }}>
-                  Carrier / Travels:
-                </span>
+              {/* Right Side: Carrier Filter and Export */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                 <select
                   className="form-control"
-                  style={{ width: '200px', fontSize: '0.75rem', padding: '4px 8px' }}
+                  style={{ width: '190px', fontSize: '0.75rem', padding: '4px 8px' }}
                   value={commissionOperatorFilter}
                   onChange={(e) => {
                     setCommissionOperatorFilter(e.target.value);
@@ -1871,165 +1834,57 @@ export const ReportsPage = ({
                     </option>
                   ))}
                 </select>
-              </div>
-            </div>
-          </div>
 
-          {/* B. KPI Summary Cards Grid */}
-          <div className="stat-cards-grid">
-            {/* Card 1: Total Freight Revenue in Filtered Orders */}
-            <div className="stat-card">
-              <div className="stat-card-header">
-                <span className="stat-card-label">Total Freight Analyzed</span>
-                <div className="stat-card-icon" style={{ backgroundColor: '#f1f5f9', color: '#0f172a' }}>
-                  <Package size={18} />
-                </div>
-              </div>
-              <div className="stat-card-value">
-                ₹{commissionStats.totalFreight.toLocaleString('en-IN')}
-              </div>
-              <div className="stat-card-caption" style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span>{commissionStats.totalOrders} total consignments</span>
-                <span style={{ fontWeight: 600, color: '#0f172a' }}>100% Gross Billing</span>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={handleExportCommissionCSV}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '0.75rem', padding: '4px 10px' }}
+                >
+                  <Download size={13} />
+                  <span>Export CSV</span>
+                </button>
               </div>
             </div>
 
-            {/* Card 2: Our Commission (Agency Margin) */}
-            <div className="stat-card" style={{ borderLeft: '3px solid #059669' }}>
-              <div className="stat-card-header">
-                <span className="stat-card-label">Our Commission Cut ({commissionRate}%)</span>
-                <div className="stat-card-icon" style={{ backgroundColor: '#ecfdf5', color: '#059669' }}>
-                  <ShieldCheck size={18} />
-                </div>
-              </div>
-              <div className="stat-card-value" style={{ color: '#059669' }}>
-                ₹{commissionStats.totalOurCommission.toLocaleString('en-IN')}
-              </div>
-              <div className="stat-card-caption" style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span>Jayanth Cargo Net Retention</span>
-                <span style={{ fontWeight: 700, color: '#059669' }}>{commissionRate}% of Total</span>
-              </div>
-            </div>
-
-            {/* Card 3: Travels / Carrier Payout */}
-            <div className="stat-card" style={{ borderLeft: '3px solid #2563eb' }}>
-              <div className="stat-card-header">
-                <span className="stat-card-label">Travels / Carrier Share ({100 - commissionRate}%)</span>
-                <div className="stat-card-icon" style={{ backgroundColor: '#eff6ff', color: '#2563eb' }}>
-                  <Bus size={18} />
-                </div>
-              </div>
-              <div className="stat-card-value" style={{ color: '#2563eb' }}>
-                ₹{commissionStats.totalTravelsPayable.toLocaleString('en-IN')}
-              </div>
-              <div className="stat-card-caption" style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span>Payable to Bus Operators</span>
-                <span style={{ fontWeight: 700, color: '#2563eb' }}>{100 - commissionRate}% of Total</span>
-              </div>
-            </div>
-
-            {/* Card 4: Cash Flow & Counter vs Handover Split */}
-            <div className="stat-card">
-              <div className="stat-card-header">
-                <span className="stat-card-label">Cash Flow Settlement Mix</span>
-                <div className="stat-card-icon" style={{ backgroundColor: '#f1f5f9', color: '#0f172a' }}>
-                  <CreditCard size={18} />
-                </div>
-              </div>
-              <div className="stat-card-value" style={{ color: '#0f172a', fontSize: '1.25rem' }}>
-                ₹{commissionStats.paidCounterTotal.toLocaleString('en-IN')} Paid
-              </div>
-              <div className="stat-card-caption" style={{ display: 'flex', flexDirection: 'column', gap: '2px', fontSize: '0.6875rem' }}>
-                <span style={{ color: '#2563eb' }}>
-                  • Counter Cash: We remit <strong>₹{commissionStats.paidTravelsShare.toLocaleString('en-IN')}</strong> to Travels
-                </span>
-                <span style={{ color: '#d97706' }}>
-                  • Delivery To-Pay: Travels remits <strong>₹{commissionStats.toPayOurShare.toLocaleString('en-IN')}</strong> to Us
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* C. Travels Carrier Settlement Breakdown Cards */}
-          {commissionCalculations.operatorSummaries.length > 0 && (
+            {/* Inline Metric Summary Strip (Replaces Bulky KPI Cards) */}
             <div
               style={{
-                backgroundColor: '#ffffff',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: '0.6rem',
+                backgroundColor: '#f8fafc',
+                padding: '0.65rem 0.85rem',
+                borderRadius: '6px',
                 border: '1px solid #e2e8f0',
-                borderRadius: '8px',
-                padding: '1.25rem',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                fontSize: '0.8125rem',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <Bus size={16} color="#0f172a" />
-                  <h3 style={{ fontSize: '0.9375rem', color: '#0f172a', margin: 0, fontWeight: 700 }}>
-                    Carrier Fleet Settlement Breakdown
-                  </h3>
-                </div>
-                <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                  {commissionCalculations.operatorSummaries.length} active travels operators
-                </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ color: '#64748b' }}>Total Consignments:</span>
+                <strong style={{ color: '#0f172a' }}>{commissionStats.totalOrders} orders</strong>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '0.85rem' }}>
-                {commissionCalculations.operatorSummaries.map((op) => (
-                  <div
-                    key={op.name}
-                    style={{
-                      backgroundColor: '#f8fafc',
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '6px',
-                      padding: '0.85rem 1rem',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '0.5rem',
-                      cursor: 'pointer',
-                      transition: 'all 0.15s ease',
-                    }}
-                    onClick={() => {
-                      setCommissionOperatorFilter(commissionOperatorFilter === op.name ? 'ALL' : op.name);
-                      setCommissionCurrentPage(1);
-                    }}
-                    title="Click to filter ledger by this carrier"
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <div>
-                        <strong style={{ fontSize: '0.875rem', color: '#0f172a' }}>{op.name}</strong>
-                        <div style={{ fontSize: '0.6875rem', color: '#64748b', marginTop: '2px' }}>
-                          {op.orders} orders {op.busesCount > 0 ? `• ${op.busesCount} buses` : ''}
-                        </div>
-                      </div>
-                      <span
-                        style={{
-                          fontSize: '0.6875rem',
-                          fontWeight: 700,
-                          backgroundColor: '#0f172a',
-                          color: '#ffffff',
-                          padding: '2px 6px',
-                          borderRadius: '4px',
-                        }}
-                      >
-                        ₹{op.totalFreight.toLocaleString('en-IN')}
-                      </span>
-                    </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ color: '#64748b' }}>Total Freight Revenue:</span>
+                <strong style={{ color: '#0f172a' }}>₹{commissionStats.totalFreight.toLocaleString('en-IN')}</strong>
+              </div>
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '0.4rem', borderTop: '1px dashed #e2e8f0', fontSize: '0.75rem' }}>
-                      <div>
-                        <span style={{ color: '#64748b' }}>Our Cut ({commissionRate}%): </span>
-                        <strong style={{ color: '#059669' }}>+₹{op.ourCommission.toLocaleString('en-IN')}</strong>
-                      </div>
-                      <div>
-                        <span style={{ color: '#64748b' }}>Travels ({100 - commissionRate}%): </span>
-                        <strong style={{ color: '#2563eb' }}>₹{op.travelsPayable.toLocaleString('en-IN')}</strong>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ color: '#64748b' }}>Our Share ({commissionRate}%):</span>
+                <strong style={{ color: '#059669', backgroundColor: '#ecfdf5', padding: '1px 6px', borderRadius: '4px' }}>
+                  +₹{commissionStats.totalOurCommission.toLocaleString('en-IN')}
+                </strong>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ color: '#64748b' }}>Travels Share ({100 - commissionRate}%):</span>
+                <strong style={{ color: '#2563eb', backgroundColor: '#eff6ff', padding: '1px 6px', borderRadius: '4px' }}>
+                  ₹{commissionStats.totalTravelsPayable.toLocaleString('en-IN')}
+                </strong>
               </div>
             </div>
-          )}
+          </div>
 
           {/* D. Order-by-Order Commission Ledger Table */}
           <div
@@ -2071,7 +1926,7 @@ export const ReportsPage = ({
               </div>
             </div>
 
-            {/* Table Data */}
+            {/* Table Data - Streamlined Wanted Columns */}
             <div className="table-responsive">
               <table className="data-table" style={{ width: '100%', fontSize: '0.8125rem' }}>
                 <thead>
@@ -2081,7 +1936,7 @@ export const ReportsPage = ({
                         setCommissionSortBy('orderId');
                         setCommissionSortOrder(commissionSortOrder === 'asc' ? 'desc' : 'asc');
                       }}
-                      style={{ cursor: 'pointer' }}
+                      style={{ cursor: 'pointer', width: '110px' }}
                     >
                       Order ID <ArrowUpDown size={11} style={{ display: 'inline', verticalAlign: 'middle' }} />
                     </th>
@@ -2090,11 +1945,10 @@ export const ReportsPage = ({
                         setCommissionSortBy('createdAt');
                         setCommissionSortOrder(commissionSortOrder === 'asc' ? 'desc' : 'asc');
                       }}
-                      style={{ cursor: 'pointer' }}
+                      style={{ cursor: 'pointer', width: '110px' }}
                     >
                       Date <ArrowUpDown size={11} style={{ display: 'inline', verticalAlign: 'middle' }} />
                     </th>
-                    <th>Customer / Sender</th>
                     <th>Destination Route</th>
                     <th
                       onClick={() => {
@@ -2103,24 +1957,24 @@ export const ReportsPage = ({
                       }}
                       style={{ cursor: 'pointer' }}
                     >
-                      Travels / Carrier <ArrowUpDown size={11} style={{ display: 'inline', verticalAlign: 'middle' }} />
+                      Travels / Bus <ArrowUpDown size={11} style={{ display: 'inline', verticalAlign: 'middle' }} />
                     </th>
-                    <th>Payment Mode</th>
+                    <th style={{ width: '90px' }}>Payment</th>
                     <th
                       onClick={() => {
                         setCommissionSortBy('orderAmount');
                         setCommissionSortOrder(commissionSortOrder === 'asc' ? 'desc' : 'asc');
                       }}
-                      style={{ cursor: 'pointer', textAlign: 'right' }}
+                      style={{ cursor: 'pointer', textAlign: 'right', width: '120px' }}
                     >
-                      Total Freight (₹) <ArrowUpDown size={11} style={{ display: 'inline', verticalAlign: 'middle' }} />
+                      Order Total (₹) <ArrowUpDown size={11} style={{ display: 'inline', verticalAlign: 'middle' }} />
                     </th>
                     <th
                       onClick={() => {
                         setCommissionSortBy('ourCut');
                         setCommissionSortOrder(commissionSortOrder === 'asc' ? 'desc' : 'asc');
                       }}
-                      style={{ cursor: 'pointer', textAlign: 'right' }}
+                      style={{ cursor: 'pointer', textAlign: 'right', width: '135px' }}
                     >
                       Our Share ({commissionRate}%) <ArrowUpDown size={11} style={{ display: 'inline', verticalAlign: 'middle' }} />
                     </th>
@@ -2129,20 +1983,21 @@ export const ReportsPage = ({
                         setCommissionSortBy('travelsCut');
                         setCommissionSortOrder(commissionSortOrder === 'asc' ? 'desc' : 'asc');
                       }}
-                      style={{ cursor: 'pointer', textAlign: 'right' }}
+                      style={{ cursor: 'pointer', textAlign: 'right', width: '135px' }}
                     >
                       Travels Share ({100 - commissionRate}%) <ArrowUpDown size={11} style={{ display: 'inline', verticalAlign: 'middle' }} />
                     </th>
-                    <th>Settlement Directive</th>
-                    <th className="no-print">Receipt</th>
+                    <th className="no-print" style={{ width: '50px', textAlign: 'center' }}>
+                      Receipt
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {paginatedCommissionBookings.length === 0 ? (
                     <tr>
-                      <td colSpan={11} style={{ textAlign: 'center', padding: '2.5rem 1rem', color: '#94a3b8' }}>
+                      <td colSpan={9} style={{ textAlign: 'center', padding: '2.5rem 1rem', color: '#94a3b8' }}>
                         <Package size={24} style={{ margin: '0 auto 0.4rem auto', color: '#cbd5e1' }} />
-                        <div style={{ fontWeight: 600, color: '#0f172a' }}>No consignment records match your commission criteria</div>
+                        <div style={{ fontWeight: 600, color: '#0f172a' }}>No consignment records match your filters</div>
                       </td>
                     </tr>
                   ) : (
@@ -2162,63 +2017,47 @@ export const ReportsPage = ({
                           >
                             #{c.orderId}
                           </strong>
-                          <div style={{ marginTop: '2px' }}>
-                            <span
-                              style={{
-                                fontSize: '0.625rem',
-                                fontWeight: 700,
-                                color: (c.bookedByRole || c.createdBy?.role || '').toLowerCase() === 'staff' ? '#065f46' : '#1e40af',
-                                backgroundColor: (c.bookedByRole || c.createdBy?.role || '').toLowerCase() === 'staff' ? '#ecfdf5' : '#eff6ff',
-                                border: (c.bookedByRole || c.createdBy?.role || '').toLowerCase() === 'staff' ? '1px solid #a7f3d0' : '1px solid #bfdbfe',
-                                padding: '1px 5px',
-                                borderRadius: '3px',
-                                display: 'inline-block',
-                              }}
-                            >
-                              {(c.bookedByRole || c.createdBy?.role || '').toLowerCase() === 'staff' ? 'Staff' : 'Admin'}
-                            </span>
-                          </div>
+                        </td>
+
+                        <td style={{ color: '#475569' }}>
+                          {new Date(c.createdAt).toLocaleDateString('en-IN', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
                         </td>
 
                         <td>
-                          <div style={{ color: '#0f172a', fontWeight: 600 }}>
-                            {new Date(c.createdAt).toLocaleDateString('en-IN', {
-                              day: '2-digit',
-                              month: 'short',
-                              year: 'numeric',
-                            })}
-                          </div>
-                          <div style={{ fontSize: '0.6875rem', color: '#64748b' }}>
-                            {new Date(c.createdAt).toLocaleTimeString('en-IN', {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                              hour12: true,
-                            })}
-                          </div>
-                        </td>
+                          {(() => {
+                            const cleanTo = (c.toCity || (c.destination?.includes('→') ? c.destination.split('→').slice(1).join('→').trim() : (c.destination?.includes('->') ? c.destination.split('->').slice(1).join('->').trim() : c.destination)) || '').trim();
+                            const cleanFrom = (c.fromCity || (c.destination?.includes('→') ? c.destination.split('→')[0].trim() : (c.destination?.includes('->') ? c.destination.split('->')[0].trim() : '')) || 'Origin').trim();
+                            const cleanRoute = cleanTo && cleanFrom ? `${cleanFrom} → ${cleanTo}` : (c.destination || cleanTo || 'Standard Route');
+                            const stop = (c.deliveryAddress || '').trim();
+                            const fullTo = stop && cleanTo && !stop.toLowerCase().includes(cleanTo.toLowerCase())
+                              ? `${cleanTo} - ${stop}`
+                              : (stop || cleanTo);
 
-                        <td>
-                          <div style={{ fontWeight: 600, color: '#0f172a' }}>{c.customerName || 'Walk-in Customer'}</div>
-                          <div style={{ fontSize: '0.6875rem', color: '#64748b' }}>{c.customerPhone || '—'}</div>
-                        </td>
-
-                        <td>
-                          <span style={{ fontWeight: 600, color: '#0f172a' }}>{c.destination || 'Standard Route'}</span>
-                          {c.receiverName && (
-                            <div style={{ fontSize: '0.6875rem', color: '#64748b' }}>
-                              To: {c.receiverName}
-                            </div>
-                          )}
+                            return (
+                              <div>
+                                <span style={{ fontWeight: 600, color: '#0f172a' }}>{cleanRoute}</span>
+                                {fullTo && (
+                                  <div style={{ fontSize: '0.7rem', color: '#2563eb', marginTop: '2px', fontWeight: 500 }} title={fullTo}>
+                                    📍 {fullTo}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </td>
 
                         <td>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <Bus size={13} color="#2563eb" />
+                            <Bus size={12} color="#2563eb" />
                             <strong style={{ color: '#0f172a' }}>{c.operatorName}</strong>
                           </div>
                           {c.busDetails?.busNumber && (
-                            <div style={{ fontSize: '0.6875rem', color: '#64748b', marginTop: '2px' }}>
-                              Bus: <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>{c.busDetails.busNumber}</span>
+                            <div style={{ fontSize: '0.6875rem', color: '#64748b', fontFamily: 'monospace' }}>
+                              {c.busDetails.busNumber}
                             </div>
                           )}
                         </td>
@@ -2228,7 +2067,7 @@ export const ReportsPage = ({
                             style={{
                               fontSize: '0.6875rem',
                               fontWeight: 700,
-                              padding: '2px 7px',
+                              padding: '2px 6px',
                               borderRadius: '4px',
                               backgroundColor: c.isPaid ? '#ecfdf5' : '#fffbeb',
                               color: c.isPaid ? '#047857' : '#b45309',
@@ -2236,7 +2075,7 @@ export const ReportsPage = ({
                               display: 'inline-block',
                             }}
                           >
-                            {c.isPaid ? 'PAID at Counter' : 'TO-PAY on Delivery'}
+                            {c.isPaid ? 'PAID' : 'TO-PAY'}
                           </span>
                         </td>
 
@@ -2252,7 +2091,7 @@ export const ReportsPage = ({
                               fontWeight: 800,
                               color: '#059669',
                               backgroundColor: '#ecfdf5',
-                              padding: '3px 8px',
+                              padding: '2px 7px',
                               borderRadius: '4px',
                               fontSize: '0.8125rem',
                               display: 'inline-block',
@@ -2268,7 +2107,7 @@ export const ReportsPage = ({
                               fontWeight: 800,
                               color: '#2563eb',
                               backgroundColor: '#eff6ff',
-                              padding: '3px 8px',
+                              padding: '2px 7px',
                               borderRadius: '4px',
                               fontSize: '0.8125rem',
                               display: 'inline-block',
@@ -2278,47 +2117,11 @@ export const ReportsPage = ({
                           </span>
                         </td>
 
-                        <td>
-                          {c.isPaid ? (
-                            <span
-                              style={{
-                                fontSize: '0.6875rem',
-                                fontWeight: 600,
-                                color: '#1e40af',
-                                backgroundColor: '#eff6ff',
-                                padding: '3px 7px',
-                                borderRadius: '4px',
-                                border: '1px solid #bfdbfe',
-                                display: 'inline-block',
-                              }}
-                              title="Counter collected 100%. Jayanth Cargo remits travels share to operator."
-                            >
-                              We Pay Travels ₹{c.travelsCut.toLocaleString('en-IN')}
-                            </span>
-                          ) : (
-                            <span
-                              style={{
-                                fontSize: '0.6875rem',
-                                fontWeight: 600,
-                                color: '#065f46',
-                                backgroundColor: '#ecfdf5',
-                                padding: '3px 7px',
-                                borderRadius: '4px',
-                                border: '1px solid #a7f3d0',
-                                display: 'inline-block',
-                              }}
-                              title="Driver/Counter collects at delivery. Travels remits our commission."
-                            >
-                              Travels Pays Us ₹{c.ourCut.toLocaleString('en-IN')}
-                            </span>
-                          )}
-                        </td>
-
-                        <td className="no-print">
+                        <td className="no-print" style={{ textAlign: 'center' }}>
                           <button
                             type="button"
                             className="btn btn-secondary btn-sm"
-                            style={{ padding: '3px 7px', fontSize: '0.6875rem' }}
+                            style={{ padding: '2px 6px', fontSize: '0.6875rem' }}
                             onClick={() => onOpenReceipt && onOpenReceipt(c)}
                             title="Print / View Official LR Receipt"
                           >
@@ -2329,6 +2132,27 @@ export const ReportsPage = ({
                     ))
                   )}
                 </tbody>
+
+                {/* Clean Table Summary Footer */}
+                {paginatedCommissionBookings.length > 0 && (
+                  <tfoot style={{ backgroundColor: '#f8fafc', borderTop: '2px solid #e2e8f0', fontWeight: 700 }}>
+                    <tr>
+                      <td colSpan={5} style={{ padding: '8px 12px', color: '#0f172a' }}>
+                        Total for Filtered Orders ({commissionList.length} orders)
+                      </td>
+                      <td style={{ textAlign: 'right', padding: '8px 12px', color: '#0f172a', fontSize: '0.875rem' }}>
+                        ₹{commissionStats.totalFreight.toLocaleString('en-IN')}
+                      </td>
+                      <td style={{ textAlign: 'right', padding: '8px 12px', color: '#059669', fontSize: '0.875rem' }}>
+                        +₹{commissionStats.totalOurCommission.toLocaleString('en-IN')}
+                      </td>
+                      <td style={{ textAlign: 'right', padding: '8px 12px', color: '#2563eb', fontSize: '0.875rem' }}>
+                        ₹{commissionStats.totalTravelsPayable.toLocaleString('en-IN')}
+                      </td>
+                      <td className="no-print" />
+                    </tr>
+                  </tfoot>
+                )}
               </table>
             </div>
 

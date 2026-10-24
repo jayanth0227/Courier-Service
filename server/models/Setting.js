@@ -38,6 +38,10 @@ const settingSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    fromCity: {
+      type: String,
+      default: '',
+    },
     gstin: {
       type: String,
       default: '',

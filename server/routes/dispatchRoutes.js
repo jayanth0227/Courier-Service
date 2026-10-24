@@ -6,6 +6,7 @@ const whatsappService = require('../services/whatsappService');
 const { protect } = require('../middleware/auth');
 const tenantScope = require('../middleware/tenantScope');
 const { escapeRegex } = require('../middleware/security');
+const liveEmitter = require('../services/liveEmitter');
 
 // All dispatch routes require authentication & tenant scoping
 router.use(protect, tenantScope);
@@ -231,6 +232,12 @@ router.post('/assign', async (req, res, next) => {
       dispatchedBy: req.user._id,
       dispatchedAt: now,
       status: 'DISPATCHED',
+    });
+
+    // Real-time broadcast: dispatch list updated and bookings updated
+    liveEmitter.broadcast(req.tenantId, 'DISPATCH_ASSIGNED', { busDispatch });
+    bookings.forEach((b) => {
+      liveEmitter.broadcast(req.tenantId, 'BOOKING_UPDATED', b);
     });
 
     res.json({

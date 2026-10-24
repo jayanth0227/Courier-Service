@@ -9,6 +9,7 @@ const { generateUniqueOrderId } = require('../services/orderIdService');
 const { protect, authorize } = require('../middleware/auth');
 const tenantScope = require('../middleware/tenantScope');
 const { escapeRegex } = require('../middleware/security');
+const liveEmitter = require('../services/liveEmitter');
 
 // All booking routes require authentication & tenant scoping
 router.use(protect, tenantScope);
@@ -78,13 +79,20 @@ router.post('/', async (req, res, next) => {
       ];
     }
 
-    const finalFromCity = (fromCity || req.user?.branch || '').trim();
-    const finalToCity = (toCity ? toCity.trim() : (destination ? destination.replace(/.*→/, '').trim() : '')).trim();
-    const resolvedDestination = destination
-      ? destination.trim()
-      : finalFromCity && finalToCity
+    let finalFromCity = (fromCity || req.user?.branch || '').trim();
+    if (!finalFromCity && req.tenantId) {
+      const tenantSetting = await Setting.findOne({ tenantId: req.tenantId });
+      if (tenantSetting?.fromCity) {
+        finalFromCity = tenantSetting.fromCity.trim();
+      }
+    }
+    let finalToCity = (toCity ? toCity.trim() : (destination ? destination.replace(/.*→/, '').replace(/.*->/, '').trim() : '')).trim();
+    if (!finalToCity && destination) {
+      finalToCity = destination.trim();
+    }
+    const resolvedDestination = finalFromCity && finalToCity
       ? `${finalFromCity} → ${finalToCity}`
-      : finalToCity || finalFromCity || '';
+      : destination?.trim() || finalToCity || finalFromCity || '';
 
     if (!customerName || !customerPhone || !deliveryAddress || (!resolvedDestination && !finalToCity) || computedAmount === undefined) {
       return res.status(400).json({
@@ -173,6 +181,7 @@ router.post('/', async (req, res, next) => {
       receiverName: receiverName ? receiverName.trim() : '',
       receiverPhone: receiverPhone ? receiverPhone.trim() : '',
       fromCity: finalFromCity,
+      fromAddress: (req.body.fromAddress ? req.body.fromAddress.trim() : finalFromCity),
       toCity: finalToCity,
       deliveryAddress: deliveryAddress.trim(),
       destination: resolvedDestination,
@@ -203,6 +212,9 @@ router.post('/', async (req, res, next) => {
       bookedByRole: req.user.role || 'staff',
       branch: req.user.branch || 'Main Office',
     });
+
+    // Real-time broadcast to all connected portal windows for this tenant
+    liveEmitter.broadcast(req.tenantId, 'BOOKING_CREATED', booking);
 
     res.status(201).json({
       success: true,
@@ -271,22 +283,33 @@ router.get('/', async (req, res, next) => {
       }
     }
 
-    // Search query (Order ID, Customer name, Phone, Bus number, Booked By staff/admin, Branch)
-    if (search) {
-      const searchRegex = new RegExp(escapeRegex(search.trim()), 'i');
-      query.$and = query.$and || [];
-      query.$and.push({
-        $or: [
-          { orderId: searchRegex },
-          { customerName: searchRegex },
-          { customerPhone: searchRegex },
-          { 'busDetails.busNumber': searchRegex },
-          { receiverName: searchRegex },
-          { bookedByName: searchRegex },
-          { bookedByRole: searchRegex },
-          { branch: searchRegex },
-        ],
-      });
+    // Optimized search query: direct index path for Order IDs & phone numbers, general text for names
+    if (search && search.trim()) {
+      const cleanSearch = search.trim();
+      const upper = cleanSearch.toUpperCase();
+      if (/^(LR)?\d{4,6}$/i.test(cleanSearch)) {
+        query.orderId = new RegExp(`^${escapeRegex(upper)}`);
+      } else if (/^\d{8,12}$/.test(cleanSearch)) {
+        query.$or = [
+          { customerPhone: cleanSearch },
+          { receiverPhone: cleanSearch },
+        ];
+      } else {
+        const searchRegex = new RegExp(escapeRegex(cleanSearch), 'i');
+        query.$and = query.$and || [];
+        query.$and.push({
+          $or: [
+            { orderId: searchRegex },
+            { customerName: searchRegex },
+            { customerPhone: searchRegex },
+            { 'busDetails.busNumber': searchRegex },
+            { receiverName: searchRegex },
+            { bookedByName: searchRegex },
+            { bookedByRole: searchRegex },
+            { branch: searchRegex },
+          ],
+        });
+      }
     }
 
     const pageNum = parseInt(page, 10) || 1;
@@ -341,6 +364,18 @@ router.get('/:id', async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Booking not found in your organization' });
     }
 
+    // Role-based authorization & BOLA/IDOR check: Staff can only view their own bookings
+    if (req.user && req.user.role === 'staff' && booking.createdBy) {
+      const creatorId = booking.createdBy._id ? booking.createdBy._id.toString() : booking.createdBy.toString();
+      if (creatorId !== req.user._id.toString()) {
+        return res.status(403).json({
+          success: false,
+          code: 'FORBIDDEN_RECORD',
+          message: 'Access denied: Staff are only authorized to access bookings created by their own account.',
+        });
+      }
+    }
+
     res.json({ success: true, data: booking });
   } catch (error) {
     next(error);
@@ -356,6 +391,18 @@ router.put('/:id', async (req, res, next) => {
 
     if (!booking) {
       return res.status(404).json({ success: false, message: 'Booking not found in your organization' });
+    }
+
+    // Role-based authorization & BOLA/IDOR check: Staff can only modify their own bookings
+    if (req.user && req.user.role === 'staff' && booking.createdBy) {
+      const creatorId = booking.createdBy._id ? booking.createdBy._id.toString() : booking.createdBy.toString();
+      if (creatorId !== req.user._id.toString()) {
+        return res.status(403).json({
+          success: false,
+          code: 'FORBIDDEN_RECORD',
+          message: 'Access denied: Staff are only authorized to modify bookings created by their own account.',
+        });
+      }
     }
 
     const {
@@ -418,6 +465,9 @@ router.put('/:id', async (req, res, next) => {
 
     await booking.save();
 
+    // Broadcast live update
+    liveEmitter.broadcast(req.tenantId, 'BOOKING_UPDATED', booking);
+
     res.json({
       success: true,
       message: 'Booking details updated successfully',
@@ -445,6 +495,18 @@ router.patch('/:id/status', async (req, res, next) => {
     }
 
     if (status === 'CANCELLED') {
+      // Role-based authorization & BOLA check: Staff can only cancel their own bookings
+      if (req.user && req.user.role === 'staff' && booking.createdBy) {
+        const creatorId = booking.createdBy._id ? booking.createdBy._id.toString() : booking.createdBy.toString();
+        if (creatorId !== req.user._id.toString()) {
+          return res.status(403).json({
+            success: false,
+            code: 'FORBIDDEN_RECORD',
+            message: 'Access denied: Staff can only cancel bookings created by their own account.',
+          });
+        }
+      }
+
       if (booking.status === 'DISPATCHED') {
         return res.status(400).json({
           success: false,
@@ -489,6 +551,9 @@ router.patch('/:id/status', async (req, res, next) => {
 
     await booking.save();
 
+    // Broadcast live status update (waiting -> dispatched -> delivered -> cancelled)
+    liveEmitter.broadcast(req.tenantId, 'BOOKING_UPDATED', booking);
+
     res.json({
       success: true,
       message: `Booking status updated to ${status}`,
@@ -510,6 +575,9 @@ router.delete('/:id', authorize('admin', 'superadmin'), async (req, res, next) =
     }
 
     await Booking.deleteOne({ _id: req.params.id, ...req.tenantFilter });
+
+    // Broadcast live deletion
+    liveEmitter.broadcast(req.tenantId, 'BOOKING_DELETED', { _id: req.params.id, orderId: booking.orderId });
 
     res.json({
       success: true,

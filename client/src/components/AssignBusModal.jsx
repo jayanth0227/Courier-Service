@@ -19,16 +19,6 @@ import { api } from '../services/api';
 import { useToast } from '../context/ToastContext';
 import { useCompanySettings } from '../context/CompanyContext';
 
-const POPULAR_TRAVELS = [
-  'APSRTC Express',
-  'TSRTC Super Luxury',
-  'Kaveri Travels',
-  'Orange Travels',
-  'Morning Star Travels',
-  'Garuda Plus',
-  'SRS Travels',
-  'VRL Logistics Bus',
-];
 
 const DEPARTURE_TIME_PRESETS = [
   '06:00 PM',
@@ -110,6 +100,15 @@ export const AssignBusModal = ({
     };
     fetchFleetAndDrivers();
   }, []);
+
+  // Unique travels dynamically extracted from existing registered buses (Zero hardcoding)
+  const dynamicTravels = Array.from(
+    new Set(
+      registeredBuses
+        .map((b) => (b.busName || b.operator || '').trim())
+        .filter(Boolean)
+    )
+  );
 
   // Sync destination address if toCity matches a city in database with stops
   const selectedCityObj = cities.find(
@@ -682,29 +681,31 @@ export const AssignBusModal = ({
                   </div>
                 </div>
 
-                {/* Quick travels selection chips */}
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', alignItems: 'center' }}>
-                  <span style={{ fontSize: '0.6875rem', color: '#64748b' }}>Quick Travels:</span>
-                  {POPULAR_TRAVELS.map((t) => (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() => handleSelectTravels(t)}
-                      style={{
-                        fontSize: '0.6875rem',
-                        padding: '2px 7px',
-                        borderRadius: '4px',
-                        border: busName === t ? '1px solid #0f172a' : '1px solid #e2e8f0',
-                        backgroundColor: busName === t ? '#0f172a' : '#f8fafc',
-                        color: busName === t ? '#ffffff' : '#475569',
-                        cursor: 'pointer',
-                        fontWeight: busName === t ? 600 : 400,
-                      }}
-                    >
-                      {t}
-                    </button>
-                  ))}
-                </div>
+                {/* Quick travels selection chips from existing database fleet (Zero hardcoding) */}
+                {dynamicTravels.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.6875rem', color: '#64748b' }}>Registered Travels:</span>
+                    {dynamicTravels.map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => handleSelectTravels(t)}
+                        style={{
+                          fontSize: '0.6875rem',
+                          padding: '2px 7px',
+                          borderRadius: '4px',
+                          border: busName === t ? '1px solid #0f172a' : '1px solid #e2e8f0',
+                          backgroundColor: busName === t ? '#0f172a' : '#f8fafc',
+                          color: busName === t ? '#ffffff' : '#475569',
+                          cursor: 'pointer',
+                          fontWeight: busName === t ? 600 : 400,
+                        }}
+                      >
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* 3. Driver & Crew Mobile Contacts (Independent Personnel Selection) */}

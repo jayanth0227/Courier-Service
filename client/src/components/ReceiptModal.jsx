@@ -43,13 +43,27 @@ const numberToWordsIndian = (num) => {
   return `Rupees ${words.trim()} Only`;
 };
 
-// Single Boxed Consignment Bill Layout (Reference: image copy 4.png)
 const ConsignmentBill = ({ booking, company, copyTitle, formattedDate, copyCount }) => {
   const isToPay = booking.paymentStatus === 'TO_PAY';
-  const fromStation = booking.fromCity || 'KPHB Metro';
-  const toDestination = booking.destination || booking.toCity || 'Destination';
-  const stopAddress = booking.deliveryAddress || '';
-  const fullRoute = `${fromStation} → ${toDestination}`;
+  // Parse origin station cleanly
+  const rawFrom = booking.fromCity || booking.fromAddress || company.fromCity || '';
+  const fromStation = (rawFrom || (booking.destination?.includes('→') ? booking.destination.split('→')[0].trim() : (booking.destination?.includes('->') ? booking.destination.split('->')[0].trim() : '')) || company.companyAddress || 'Origin Counter').trim();
+
+  // Parse destination city cleanly (stripping any origin prefix)
+  const rawDest = booking.destination || '';
+  let cleanTo = booking.toCity || '';
+  if (!cleanTo) {
+    if (rawDest.includes('→')) cleanTo = rawDest.split('→').slice(1).join('→').trim();
+    else if (rawDest.includes('->')) cleanTo = rawDest.split('->').slice(1).join('->').trim();
+    else cleanTo = rawDest || 'Destination';
+  }
+  cleanTo = cleanTo.trim();
+
+  const stopAddress = (booking.deliveryAddress || '').trim();
+  const fullRoute = `${fromStation} → ${cleanTo}`;
+  const fullToAddress = stopAddress && !stopAddress.toLowerCase().includes(cleanTo.toLowerCase())
+    ? `${cleanTo} - ${stopAddress}`
+    : (stopAddress || cleanTo);
 
   const items = Array.isArray(booking.items) && booking.items.length > 0
     ? booking.items
@@ -155,8 +169,7 @@ const ConsignmentBill = ({ booking, company, copyTitle, formattedDate, copyCount
               <span style={{ fontWeight: 600 }}>[Ph: {booking.receiverPhone || 'N/A'}]</span>
             </div>
             <div style={{ fontSize: '0.85em' }}>
-              Delivery Stop: <strong>{toDestination}</strong>
-              {stopAddress && <span> ({stopAddress})</span>}
+              Delivery Stop / To Address: <strong>{fullToAddress}</strong>
             </div>
           </div>
         </div>
@@ -317,7 +330,7 @@ export const ReceiptModal = ({ booking, onClose, companySettings: propCompanySet
   const company = propCompanySettings || contextCompanySettings || {
     companyName: 'JAYANTH CARGO',
     companyPhone: '+91 9010253076',
-    companyAddress: 'Central Bus Terminal Office, KPHB Metro, Hyderabad',
+    companyAddress: 'Central Bus Terminal Office',
     companyEmail: 'jayanthyeswanth9@gmail.com',
     gstin: '',
   };
@@ -387,10 +400,10 @@ export const ReceiptModal = ({ booking, onClose, companySettings: propCompanySet
           <span>Back</span>
         </button>
 
-        {/* Interactive Copies Selector (1, 2, 3 Copies per A4 Page) */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+        {/* Interactive Copies Selector (Small Columns 1, 2, 3) */}
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#334155' }}>
-            Copies per A4 Page:
+            Copies per A4:
           </span>
 
           <div
@@ -400,65 +413,39 @@ export const ReceiptModal = ({ booking, onClose, companySettings: propCompanySet
               padding: '3px',
               borderRadius: '6px',
               border: '1px solid #cbd5e1',
-              gap: '3px',
+              gap: '4px',
             }}
           >
-            <button
-              type="button"
-              onClick={() => setCopyCount(1)}
-              style={{
-                border: 'none',
-                background: copyCount === 1 ? '#ffffff' : 'transparent',
-                color: copyCount === 1 ? '#0f172a' : '#64748b',
-                fontWeight: copyCount === 1 ? 700 : 500,
-                boxShadow: copyCount === 1 ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                padding: '4px 10px',
-                borderRadius: '4px',
-                fontSize: '0.75rem',
-                cursor: 'pointer',
-                transition: 'all 0.15s ease',
-              }}
-            >
-              1 Copy (Full Page)
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setCopyCount(2)}
-              style={{
-                border: 'none',
-                background: copyCount === 2 ? '#ffffff' : 'transparent',
-                color: copyCount === 2 ? '#0f172a' : '#64748b',
-                fontWeight: copyCount === 2 ? 700 : 500,
-                boxShadow: copyCount === 2 ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                padding: '4px 10px',
-                borderRadius: '4px',
-                fontSize: '0.75rem',
-                cursor: 'pointer',
-                transition: 'all 0.15s ease',
-              }}
-            >
-              2 Copies (Consignor & Consignee)
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setCopyCount(3)}
-              style={{
-                border: 'none',
-                background: copyCount === 3 ? '#ffffff' : 'transparent',
-                color: copyCount === 3 ? '#0f172a' : '#64748b',
-                fontWeight: copyCount === 3 ? 700 : 500,
-                boxShadow: copyCount === 3 ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                padding: '4px 10px',
-                borderRadius: '4px',
-                fontSize: '0.75rem',
-                cursor: 'pointer',
-                transition: 'all 0.15s ease',
-              }}
-            >
-              3 Copies (Consignor, Consignee & Admin)
-            </button>
+            {[
+              { count: 1, label: '1', title: '1 Copy (Full Page Original Consignment Note)' },
+              { count: 2, label: '2', title: '2 Copies (Consignor & Consignee Halves)' },
+              { count: 3, label: '3', title: '3 Copies (Consignor, Consignee & Admin Copy)' },
+            ].map((opt) => (
+              <button
+                key={opt.count}
+                type="button"
+                onClick={() => setCopyCount(opt.count)}
+                title={opt.title}
+                style={{
+                  border: 'none',
+                  background: copyCount === opt.count ? '#0f172a' : 'transparent',
+                  color: copyCount === opt.count ? '#ffffff' : '#475569',
+                  fontWeight: copyCount === opt.count ? 800 : 600,
+                  boxShadow: copyCount === opt.count ? '0 1px 3px rgba(15,23,42,0.2)' : 'none',
+                  width: '32px',
+                  height: '28px',
+                  borderRadius: '4px',
+                  fontSize: '0.8125rem',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                {opt.label}
+              </button>
+            ))}
           </div>
         </div>
 

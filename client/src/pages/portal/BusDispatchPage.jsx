@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
+import { useLiveData } from '../../context/LiveDataContext';
 
 const QUICK_TIMES = ['07:00 PM', '07:30 PM', '08:00 PM', '08:30 PM', '09:00 PM', '09:30 PM', '10:00 PM', '10:30 PM'];
 
@@ -126,6 +127,8 @@ export const BusDispatchPage = ({
     fetchDriversList();
   }, []);
 
+  const { subscribeToEvent } = useLiveData();
+
   useEffect(() => {
     if (activeTab === 'pending') {
       fetchPending();
@@ -133,6 +136,27 @@ export const BusDispatchPage = ({
       fetchHistory();
     }
   }, [activeTab, destinationFilter]);
+
+  // Live real-time sync without page refresh
+  useEffect(() => {
+    const unsubCreated = subscribeToEvent('BOOKING_CREATED', () => {
+      if (activeTab === 'pending') fetchPending();
+    });
+    const unsubUpdated = subscribeToEvent('BOOKING_UPDATED', () => {
+      if (activeTab === 'pending') fetchPending();
+      else fetchHistory();
+    });
+    const unsubDispatched = subscribeToEvent('DISPATCH_ASSIGNED', () => {
+      fetchPending();
+      fetchHistory();
+    });
+
+    return () => {
+      unsubCreated();
+      unsubUpdated();
+      unsubDispatched();
+    };
+  }, [subscribeToEvent, activeTab]);
 
   const handleToggleSelect = (id) => {
     setSelectedIds((prev) =>
@@ -635,6 +659,12 @@ export const BusDispatchPage = ({
                         To: {b.receiverName} ({b.receiverPhone || '—'})
                       </div>
                     )}
+
+                    <div style={{ color: '#2563eb', fontSize: '0.7rem', marginTop: '2px', fontWeight: 500 }}>
+                      📍 {b.toCity && b.deliveryAddress && !b.deliveryAddress.toLowerCase().includes(b.toCity.toLowerCase())
+                        ? `${b.toCity} - ${b.deliveryAddress}`
+                        : (b.deliveryAddress || b.destination || 'Destination')}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -789,7 +819,30 @@ export const BusDispatchPage = ({
                           <div style={{ fontWeight: 600 }}>{booking.customerName}</div>
                           <div style={{ fontSize: '0.6875rem', color: '#64748b' }}>{booking.customerPhone}</div>
                         </td>
-                        <td style={{ fontWeight: 500 }}>{booking.destination}</td>
+                        <td>
+                          {(() => {
+                            const cleanTo = (booking.toCity || (booking.destination?.includes('→') ? booking.destination.split('→').slice(1).join('→').trim() : (booking.destination?.includes('->') ? booking.destination.split('->').slice(1).join('->').trim() : booking.destination)) || '').trim();
+                            const cleanFrom = (booking.fromCity || (booking.destination?.includes('→') ? booking.destination.split('→')[0].trim() : (booking.destination?.includes('->') ? booking.destination.split('->')[0].trim() : '')) || 'Origin').trim();
+                            const cleanRoute = cleanTo && cleanFrom ? `${cleanFrom} → ${cleanTo}` : (booking.destination || cleanTo);
+                            const stop = (booking.deliveryAddress || '').trim();
+                            const fullTo = stop && cleanTo && !stop.toLowerCase().includes(cleanTo.toLowerCase())
+                              ? `${cleanTo} - ${stop}`
+                              : (stop || cleanTo);
+
+                            return (
+                              <div>
+                                <span style={{ fontWeight: 600, color: '#0f172a', fontSize: '0.8125rem' }}>
+                                  {cleanRoute}
+                                </span>
+                                {fullTo && (
+                                  <div style={{ fontSize: '0.7rem', color: '#2563eb', marginTop: '2px', fontWeight: 500 }}>
+                                    📍 {fullTo}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
+                        </td>
                         <td>
                           <span style={{ fontSize: '0.75rem', backgroundColor: '#f1f5f9', padding: '0.15rem 0.35rem', borderRadius: '3px', border: '1px solid #e2e8f0' }}>
                             {booking.parcelType}

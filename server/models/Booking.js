@@ -51,6 +51,11 @@ const bookingSchema = new mongoose.Schema(
       trim: true,
       default: '',
     },
+    fromAddress: {
+      type: String,
+      trim: true,
+      default: '',
+    },
     toCity: {
       type: String,
       trim: true,
@@ -186,10 +191,12 @@ const bookingSchema = new mongoose.Schema(
   }
 );
 
-// Indexes for fast lookup and search
+// Indexes for fast lookup, live sync, and instant search
+bookingSchema.index({ tenantId: 1, orderId: 1 });
 bookingSchema.index({ tenantId: 1, createdAt: -1 });
 bookingSchema.index({ tenantId: 1, status: 1, createdAt: -1 });
-bookingSchema.index({ tenantId: 1, customerPhone: 1 });
+bookingSchema.index({ tenantId: 1, customerPhone: 1, createdAt: -1 });
+bookingSchema.index({ tenantId: 1, receiverPhone: 1 });
 bookingSchema.index({ tenantId: 1, 'busDetails.busNumber': 1 });
 
 module.exports = mongoose.model('Booking', bookingSchema);

@@ -32,6 +32,7 @@ const busRoutes = require('./routes/busRoutes');
 const driverRoutes = require('./routes/driverRoutes');
 const superadminRoutes = require('./routes/superadminRoutes');
 const auditLogRoutes = require('./routes/auditLogRoutes');
+const liveRoutes = require('./routes/liveRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -55,12 +56,25 @@ app.use(
   })
 );
 
-// 2. CORS configuration
+// 2. CORS configuration with environment-aware origin validation
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim())
+  : ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:5000', 'http://127.0.0.1:5000'];
+
 app.use(
   cors({
-    origin: '*',
+    origin: (origin, callback) => {
+      // Allow server-to-server, curl, and no-origin requests
+      if (!origin) return callback(null, true);
+      // In non-production, permit all origins for local dev convenience
+      if (process.env.NODE_ENV !== 'production') return callback(null, true);
+      // In production, validate against allowed whitelist
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      return callback(new Error('Blocked by CORS policy'));
+    },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
   })
 );
 
@@ -106,6 +120,7 @@ app.use('/api/drivers', driverRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/superadmin', superadminRoutes);
 app.use('/api/audit-logs', adminActionLimiter, auditLogRoutes);
+app.use('/api/live', liveRoutes);
 
 // Serve static assets if in production
 if (process.env.NODE_ENV === 'production') {

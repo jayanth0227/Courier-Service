@@ -38,6 +38,7 @@ import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useCompanySettings } from '../context/CompanyContext';
+import { OrganizationDetailView } from '../components/superadmin/OrganizationDetailView';
 
 export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigatePublic }) => {
   const { user, logout, impersonateTenant } = useAuth();
@@ -51,6 +52,11 @@ export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigat
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [planFilter, setPlanFilter] = useState('ALL');
+
+  // Organization Detailed Drilldown State
+  const [selectedTenantId, setSelectedTenantId] = useState(null);
+  const [tenantOverview, setTenantOverview] = useState(null);
+  const [tenantOverviewLoading, setTenantOverviewLoading] = useState(false);
 
   // Website CMS & Company Profile State (Super Admin Only)
   const [cmsSettings, setCmsSettings] = useState({
@@ -184,6 +190,35 @@ export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigat
     } finally {
       setLoading(false);
     }
+  };
+
+  // Fetch full details and analytics for an individual organization
+  const fetchTenantOverview = async (tenantId) => {
+    if (!tenantId) return;
+    try {
+      setTenantOverviewLoading(true);
+      const res = await api.superadmin.getTenantById(tenantId);
+      if (res && res.success && res.data) {
+        setTenantOverview(res.data);
+      } else {
+        showToast(res?.message || 'Failed to fetch organization overview', 'error');
+      }
+    } catch (err) {
+      showToast(err.message || 'Failed to fetch organization overview', 'error');
+    } finally {
+      setTenantOverviewLoading(false);
+    }
+  };
+
+  const handleOpenTenantDetail = (tenantId) => {
+    setSelectedTenantId(tenantId);
+    fetchTenantOverview(tenantId);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleBackToList = () => {
+    setSelectedTenantId(null);
+    setTenantOverview(null);
   };
 
   useEffect(() => {
@@ -325,6 +360,9 @@ export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigat
       const res = await api.superadmin.deleteTenant(deleteConfirmTenant._id);
       if (res.success) {
         showToast(res.message || `Organization '${deleteConfirmTenant.companyName}' permanently deleted`, 'success');
+        if (selectedTenantId && (selectedTenantId === deleteConfirmTenant._id || selectedTenantId === deleteConfirmTenant.id)) {
+          handleBackToList();
+        }
         setDeleteConfirmTenant(null);
         fetchDashboardData();
       }
@@ -347,6 +385,9 @@ export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigat
         showToast('Tenant updated successfully', 'success');
         setEditingTenant(null);
         fetchDashboardData();
+        if (selectedTenantId && (selectedTenantId === editingTenant._id || selectedTenantId === editingTenant.id)) {
+          fetchTenantOverview(selectedTenantId);
+        }
       }
     } catch (err) {
       showToast(err.message || 'Failed to update tenant', 'error');
@@ -403,6 +444,9 @@ export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigat
       if (res.success) {
         showToast(`Tenant status changed to ${nextStatus}`, 'success');
         fetchDashboardData();
+        if (selectedTenantId && (selectedTenantId === tenant._id || selectedTenantId === tenant.id)) {
+          fetchTenantOverview(selectedTenantId);
+        }
       }
     } catch (err) {
       showToast(err.message || 'Failed to update status', 'error');
@@ -511,8 +555,11 @@ export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigat
         {/* Tier 2: Module Navigation Tabs Bar */}
         <nav className="portal-nav-bar">
           <div
-            className={`portal-nav-item ${activeTab === 'tenants' ? 'active' : ''}`}
-            onClick={() => setActiveTab('tenants')}
+            className={`portal-nav-item ${activeTab === 'tenants' && !selectedTenantId ? 'active' : ''}`}
+            onClick={() => {
+              setActiveTab('tenants');
+              setSelectedTenantId(null);
+            }}
           >
             <Building2 size={16} />
             <span>Courier Organizations</span>
@@ -521,7 +568,10 @@ export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigat
 
           <div
             className={`portal-nav-item ${activeTab === 'analytics' ? 'active' : ''}`}
-            onClick={() => setActiveTab('analytics')}
+            onClick={() => {
+              setActiveTab('analytics');
+              setSelectedTenantId(null);
+            }}
           >
             <BarChart3 size={16} />
             <span>Platform Analytics</span>
@@ -529,7 +579,10 @@ export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigat
 
           <div
             className={`portal-nav-item ${activeTab === 'cms' ? 'active' : ''}`}
-            onClick={() => setActiveTab('cms')}
+            onClick={() => {
+              setActiveTab('cms');
+              setSelectedTenantId(null);
+            }}
           >
             <Globe size={16} />
             <span>Company Profile & Website CMS</span>
@@ -539,63 +592,65 @@ export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigat
 
       {/* 2. Main Workspace (Standard Light Background) */}
       <main className="portal-content" style={{ padding: '1.5rem 1.75rem', maxWidth: '1440px', margin: '0 auto', width: '100%' }}>
-        {/* Page Header */}
-        <div className="page-header" style={{ marginBottom: '1.25rem' }}>
-          <div>
-            <h1 className="page-title" style={{ fontSize: '1.35rem', fontWeight: 700, color: '#0f172a' }}>
-              {activeTab === 'tenants'
-                ? 'Registered Courier Organizations'
-                : activeTab === 'analytics'
-                ? 'Platform Operations & Revenue Analytics'
-                : 'Company Profile & Website CMS Management'}
-            </h1>
-            <p className="page-subtitle" style={{ color: '#475569', fontSize: '0.8125rem', marginTop: '3px' }}>
-              {activeTab === 'tenants'
-                ? 'Manage independent courier businesses, configure service limits, access branch portals, and onboard new organizations.'
-                : activeTab === 'analytics'
-                ? 'Platform-wide consignment totals, gross logistics freight revenue, and fleet utilization across all tenants.'
-                : 'Super Admin exclusive control: customize platform logo, company sub-tagline, contact helpline, branch address, and receipt terms.'}
-            </p>
-          </div>
+        {/* Page Header (Hidden when viewing dedicated organization details) */}
+        {!selectedTenantId && (
+          <div className="page-header" style={{ marginBottom: '1.25rem' }}>
+            <div>
+              <h1 className="page-title" style={{ fontSize: '1.35rem', fontWeight: 700, color: '#0f172a' }}>
+                {activeTab === 'tenants'
+                  ? 'Registered Courier Organizations'
+                  : activeTab === 'analytics'
+                  ? 'Platform Operations & Revenue Analytics'
+                  : 'Company Profile & Website CMS Management'}
+              </h1>
+              <p className="page-subtitle" style={{ color: '#475569', fontSize: '0.8125rem', marginTop: '3px' }}>
+                {activeTab === 'tenants'
+                  ? 'Manage independent courier businesses, configure service limits, access branch portals, and onboard new organizations.'
+                  : activeTab === 'analytics'
+                  ? 'Platform-wide consignment totals, gross logistics freight revenue, and fleet utilization across all tenants.'
+                  : 'Super Admin exclusive control: customize platform logo, company sub-tagline, contact helpline, branch address, and receipt terms.'}
+              </p>
+            </div>
 
-          <div style={{ display: 'flex', gap: '0.625rem', alignItems: 'center' }}>
-            {activeTab === 'cms' ? (
-              <button
-                type="button"
-                className="btn btn-secondary btn-sm"
-                onClick={fetchCmsSettings}
-                disabled={cmsLoading}
-              >
-                <RefreshCw size={14} className={cmsLoading ? 'spin' : ''} />
-                <span>Reload Profile</span>
-              </button>
-            ) : (
-              <>
+            <div style={{ display: 'flex', gap: '0.625rem', alignItems: 'center' }}>
+              {activeTab === 'cms' ? (
                 <button
                   type="button"
                   className="btn btn-secondary btn-sm"
-                  onClick={fetchDashboardData}
-                  disabled={loading}
+                  onClick={fetchCmsSettings}
+                  disabled={cmsLoading}
                 >
-                  <RefreshCw size={14} className={loading ? 'spin' : ''} />
-                  <span>Refresh Data</span>
+                  <RefreshCw size={14} className={cmsLoading ? 'spin' : ''} />
+                  <span>Reload Profile</span>
                 </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    onClick={fetchDashboardData}
+                    disabled={loading}
+                  >
+                    <RefreshCw size={14} className={loading ? 'spin' : ''} />
+                    <span>Refresh Data</span>
+                  </button>
 
-                <button
-                  type="button"
-                  className="btn btn-primary btn-sm"
-                  onClick={handleOpenAddModal}
-                >
-                  <Plus size={15} />
-                  <span>Onboard New Tenant</span>
-                </button>
-              </>
-            )}
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-sm"
+                    onClick={handleOpenAddModal}
+                  >
+                    <Plus size={15} />
+                    <span>Onboard New Tenant</span>
+                  </button>
+                </>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* 4 Executive KPI Metric Cards (Only shown on Tenants & Analytics tabs) */}
-        {activeTab !== 'cms' && (
+        {/* 4 Executive KPI Metric Cards (Only shown when not drilling into tenant detail view) */}
+        {activeTab !== 'cms' && !selectedTenantId && (
           <div className="dashboard-stats-grid" style={{ marginBottom: '1.25rem' }}>
           {/* Card 1: Total Tenants */}
           <div className="stat-card">
@@ -660,7 +715,26 @@ export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigat
         )}
 
         {activeTab === 'tenants' ? (
-          <>
+          selectedTenantId ? (
+            <OrganizationDetailView
+              tenantId={selectedTenantId}
+              data={tenantOverview}
+              loading={tenantOverviewLoading}
+              onBack={handleBackToList}
+              onRefresh={() => fetchTenantOverview(selectedTenantId)}
+              onImpersonate={handleImpersonate}
+              onEditTenant={(t) => setEditingTenant(t)}
+              onResetPassword={(t) => {
+                setResetPasswordTenant(t);
+                setNewPassword('');
+              }}
+              onToggleStatus={(t) => handleToggleStatus(t)}
+              onDeleteTenant={(t) => setDeleteConfirmTenant(t)}
+              onCopyText={handleCopyText}
+              copiedKey={copiedKey}
+            />
+          ) : (
+            <>
             {/* Search and Filters Bar */}
             <div
               style={{
@@ -767,7 +841,7 @@ export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigat
                       <th>Admin Account</th>
                       <th>Usage Metrics</th>
                       <th>Status</th>
-                      <th style={{ textAlign: 'right' }}>Actions</th>
+                      <th style={{ textAlign: 'right' }}>Overview</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -795,11 +869,28 @@ export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigat
                         const isActive = t.status === 'ACTIVE';
 
                         return (
-                          <tr key={t._id}>
-                            {/* Company Name, Unique ID & Contact */}
+                          <tr
+                            key={t._id}
+                            onClick={() => handleOpenTenantDetail(t._id)}
+                            style={{ cursor: 'pointer' }}
+                            title="Click to view organization details, analytics & staff"
+                          >
+                            {/* Company Name, Unique ID & Contact - Clickable to open details page */}
                             <td>
-                              <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.875rem' }}>
-                                {t.companyName}
+                              <div
+                                style={{
+                                  fontWeight: 700,
+                                  color: '#1d4ed8',
+                                  fontSize: '0.875rem',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '0.35rem',
+                                }}
+                              >
+                                <span style={{ textDecoration: 'underline', textUnderlineOffset: '2px' }}>
+                                  {t.companyName}
+                                </span>
+                                <ArrowRight size={13} color="#2563eb" />
                               </div>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '3px', flexWrap: 'wrap' }}>
                                 <span
@@ -899,72 +990,32 @@ export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigat
                               </span>
                             </td>
 
-                            {/* Actions */}
+                            {/* Action - Clean single trigger to open detailed page */}
                             <td style={{ textAlign: 'right' }}>
-                              <div style={{ display: 'inline-flex', gap: '0.35rem', alignItems: 'center' }}>
-                                <button
-                                  type="button"
-                                  className="btn btn-primary btn-sm"
-                                  onClick={() => handleImpersonate(t._id)}
-                                  title="1-Click Impersonate & Enter Tenant Portal"
-                                  style={{ padding: '0.3rem 0.65rem', fontSize: '0.75rem' }}
-                                >
-                                  <LogIn size={13} />
-                                  <span>Portal</span>
-                                </button>
-
-                                <button
-                                  type="button"
-                                  className="btn btn-secondary btn-sm"
-                                  onClick={() => setEditingTenant(t)}
-                                  title="Edit Organization Details"
-                                  style={{ padding: '0.3rem 0.5rem' }}
-                                >
-                                  <Edit size={13} />
-                                </button>
-
-                                <button
-                                  type="button"
-                                  className="btn btn-secondary btn-sm"
-                                  onClick={() => {
-                                    setResetPasswordTenant(t);
-                                    setNewPassword('');
-                                  }}
-                                  title="Reset Admin Password"
-                                  style={{ padding: '0.3rem 0.5rem' }}
-                                >
-                                  <Key size={13} />
-                                </button>
-
-                                <button
-                                  type="button"
-                                  className="btn btn-secondary btn-sm"
-                                  onClick={() => handleToggleStatus(t)}
-                                  title={isActive ? 'Suspend Access' : 'Activate Access'}
-                                  style={{
-                                    padding: '0.3rem 0.5rem',
-                                    color: isActive ? '#991b1b' : '#065f46',
-                                    borderColor: isActive ? '#fecaca' : '#a7f3d0',
-                                  }}
-                                >
-                                  <Power size={13} />
-                                </button>
-
-                                <button
-                                  type="button"
-                                  className="btn btn-secondary btn-sm"
-                                  onClick={() => setDeleteConfirmTenant(t)}
-                                  title="Permanently Delete Organization"
-                                  style={{
-                                    padding: '0.3rem 0.5rem',
-                                    color: '#dc2626',
-                                    borderColor: '#fecaca',
-                                    backgroundColor: '#fff5f5',
-                                  }}
-                                >
-                                  <Trash2 size={13} />
-                                </button>
-                              </div>
+                              <button
+                                type="button"
+                                className="btn btn-secondary btn-sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOpenTenantDetail(t._id);
+                                }}
+                                title="Open Organization Overview & Analytics"
+                                style={{
+                                  padding: '0.35rem 0.75rem',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 600,
+                                  color: '#1d4ed8',
+                                  backgroundColor: '#eff6ff',
+                                  borderColor: '#bfdbfe',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.35rem',
+                                }}
+                              >
+                                <Eye size={13} />
+                                <span>View Details</span>
+                                <ArrowRight size={12} />
+                              </button>
                             </td>
                           </tr>
                         );
@@ -975,6 +1026,7 @@ export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigat
               </div>
             </div>
           </>
+          )
         ) : (
           /* Platform Analytics View (Matches style of Reports & Dashboard) */
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1.25rem' }}>

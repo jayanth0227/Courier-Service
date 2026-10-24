@@ -13,9 +13,13 @@ const protect = async (req, res, next) => {
     req.headers.authorization &&
     req.headers.authorization.startsWith('Bearer')
   ) {
-    try {
-      token = req.headers.authorization.split(' ')[1];
+    token = req.headers.authorization.split(' ')[1];
+  } else if (req.query && req.query.token) {
+    token = req.query.token;
+  }
 
+  if (token) {
+    try {
       if (!token || token === 'null' || token === 'undefined') {
         return res.status(401).json({
           success: false,
@@ -49,6 +53,17 @@ const protect = async (req, res, next) => {
           code: 'TENANT_SUSPENDED',
           message: 'Your organization account is currently suspended. Please contact platform support.',
         });
+      }
+
+      // Session revocation / version validation
+      if (decoded.tokenVersion !== undefined && user.tokenVersion !== undefined) {
+        if (decoded.tokenVersion !== user.tokenVersion) {
+          return res.status(401).json({
+            success: false,
+            code: 'TOKEN_REVOKED',
+            message: 'Session has been invalidated due to logout or credential change. Please log in again.',
+          });
+        }
       }
 
       req.user = user;

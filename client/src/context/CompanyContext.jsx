@@ -9,6 +9,7 @@ const DEFAULT_COMPANY_SETTINGS = {
   companyPhone: '',
   companyEmail: '',
   companyAddress: '',
+  fromCity: '',
   gstin: '',
   receiptFooterNote: 'Thank you for choosing our bus parcel service. Present this receipt or 6-digit Order ID at destination counter.',
   standardRoutes: [],

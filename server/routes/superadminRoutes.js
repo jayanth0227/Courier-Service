@@ -28,6 +28,7 @@ const generateToken = (user) => {
       role: user.role,
       username: user.username,
       tenantId: user.tenantId,
+      tokenVersion: typeof user.tokenVersion === 'number' ? user.tokenVersion : 0,
     },
     process.env.JWT_SECRET || 'courier_dispatch_secret_jwt_key_2025_secure',
     { expiresIn: '7d' }
@@ -263,7 +264,7 @@ router.post('/tenants', async (req, res, next) => {
 });
 
 // @route   GET /api/superadmin/tenants/:id
-// @desc    Get tenant details
+// @desc    Get comprehensive tenant details, analytics, staff, and recent consignments
 router.get('/tenants/:id', async (req, res, next) => {
   try {
     const tenant = await Tenant.findById(req.params.id).populate('adminUser', '-password');
@@ -271,22 +272,54 @@ router.get('/tenants/:id', async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Tenant not found' });
     }
 
-    const settings = await Setting.findOne({ tenantId: tenant._id });
-    const [bookingsCount, staffCount, busesCount] = await Promise.all([
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const [
+      settings,
+      staffList,
+      recentBookings,
+      bookingsCount,
+      busesCount,
+      driversCount,
+      pendingCount,
+      deliveredCount,
+      todayBookingsCount,
+      revenueAgg,
+    ] = await Promise.all([
+      Setting.findOne({ tenantId: tenant._id }),
+      User.find({ tenantId: tenant._id }).select('-password').sort({ role: 1, createdAt: -1 }),
+      Booking.find({ tenantId: tenant._id }).sort({ createdAt: -1 }).limit(10).lean(),
       Booking.countDocuments({ tenantId: tenant._id }),
-      User.countDocuments({ tenantId: tenant._id }),
       Bus.countDocuments({ tenantId: tenant._id }),
+      Driver.countDocuments({ tenantId: tenant._id }),
+      Booking.countDocuments({ tenantId: tenant._id, status: { $in: ['BOOKED', 'WAITING_FOR_BUS'] } }),
+      Booking.countDocuments({ tenantId: tenant._id, status: 'DELIVERED' }),
+      Booking.countDocuments({ tenantId: tenant._id, createdAt: { $gte: todayStart } }),
+      Booking.aggregate([
+        { $match: { tenantId: tenant._id, status: { $ne: 'CANCELLED' } } },
+        { $group: { _id: null, total: { $sum: '$amount' } } },
+      ]),
     ]);
+
+    const totalRevenue = revenueAgg.length > 0 ? revenueAgg[0].total : 0;
 
     res.json({
       success: true,
       data: {
         tenant,
         settings,
+        staff: staffList,
+        recentBookings,
         metrics: {
           bookingsCount,
-          staffCount,
+          staffCount: staffList.length,
           busesCount,
+          driversCount,
+          pendingCount,
+          deliveredCount,
+          todayBookingsCount,
+          totalRevenue,
         },
       },
     });

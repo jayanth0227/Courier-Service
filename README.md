@@ -16,27 +16,22 @@ A complete, lightweight, professional operational management system designed spe
 
 ---
 
-## 🔐 Default Access Credentials
+## 🔐 Access Control
 
-The database automatically seeds with default staff accounts upon first run:
+The platform provides multi-tier role-based access control (Platform Super Admin, Branch Manager / Admin, Counter Staff, and Drivers).
 
-| Role | Username | Password | Access Scope |
-| :--- | :--- | :--- | :--- |
-| **Branch Manager (Admin)** | `admin` | `admin123` | Full Access + Settings, Staff Management & Financials |
-| **Counter Staff** | `staff` | `staff123` | Counter Booking, Bus Dispatch, Receipts & Tracking |
-
-*Quick-login buttons are also provided on the login page for instantaneous 1-click testing.*
+For initial setup, configure administrative credentials in your local `.env` file or onboard organizations via the Super Admin portal.
 
 ---
 
 ## 🚀 Getting Started
 
 ### 1. Environment Configuration (`.env`)
-The database is already configured to your MongoDB Atlas cluster in `.env`:
+Create a `.env` file in the root directory (refer to `.env.example`):
 ```env
 PORT=5000
-MONGODB_URI=mongodb+srv://jayanthyeswanth9_db_user:jayanth2003@courierservice.txvxl1f.mongodb.net/courier_db?retryWrites=true&w=majority&appName=CourierService
-JWT_SECRET=courier_dispatch_secret_jwt_key_2025_secure
+MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/<database>?retryWrites=true&w=majority
+JWT_SECRET=your_jwt_secret_key_here
 NODE_ENV=development
 WHATSAPP_PROVIDER=MOCK
 ```

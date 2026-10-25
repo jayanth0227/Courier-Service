@@ -28,15 +28,32 @@ router.get('/stream', protect, (req, res) => {
 
   const channel = tenantId ? `tenant:${String(tenantId)}` : 'platform:superadmin';
 
+  // Handle socket error gracefully without throwing
+  req.socket.on('error', () => {
+    // Client disconnect or socket reset handled silently
+  });
+
+  res.on('error', () => {
+    // Socket write error handled silently
+  });
+
   // Send initial connection handshake
-  res.write(`data: ${JSON.stringify({ type: 'CONNECTED', timestamp: Date.now(), tenantId: tenantId ? String(tenantId) : 'platform' })}\n\n`);
+  try {
+    if (!res.writableEnded && req.socket && !req.socket.destroyed) {
+      res.write(`data: ${JSON.stringify({ type: 'CONNECTED', timestamp: Date.now(), tenantId: tenantId ? String(tenantId) : 'platform' })}\n\n`);
+    }
+  } catch {
+    // Handshake failed if client already disconnected
+  }
 
   // Event handler for live broadcasts
   const handleLiveEvent = (event) => {
     try {
-      res.write(`data: ${JSON.stringify(event)}\n\n`);
-    } catch (err) {
-      console.error('Error writing SSE event:', err);
+      if (!res.writableEnded && req.socket && !req.socket.destroyed) {
+        res.write(`data: ${JSON.stringify(event)}\n\n`);
+      }
+    } catch {
+      // Ignored if socket was reset
     }
   };
 
@@ -45,9 +62,15 @@ router.get('/stream', protect, (req, res) => {
   // Periodic heartbeat to keep HTTP connection alive and prevent proxy timeouts
   const heartbeatTimer = setInterval(() => {
     try {
-      res.write(':keep-alive\n\n');
-    } catch (err) {
+      if (!res.writableEnded && req.socket && !req.socket.destroyed) {
+        res.write(':keep-alive\n\n');
+      } else {
+        clearInterval(heartbeatTimer);
+        liveEmitter.off(channel, handleLiveEvent);
+      }
+    } catch {
       clearInterval(heartbeatTimer);
+      liveEmitter.off(channel, handleLiveEvent);
     }
   }, 20000);
 

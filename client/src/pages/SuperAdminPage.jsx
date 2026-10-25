@@ -33,12 +33,14 @@ import {
   Eye,
   EyeOff,
   Shuffle,
+  MessageSquare,
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useCompanySettings } from '../context/CompanyContext';
 import { OrganizationDetailView } from '../components/superadmin/OrganizationDetailView';
+import { WhatsAppConfigModal } from '../components/superadmin/WhatsAppConfigModal';
 
 export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigatePublic }) => {
   const { user, logout, impersonateTenant } = useAuth();
@@ -57,6 +59,8 @@ export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigat
   const [selectedTenantId, setSelectedTenantId] = useState(null);
   const [tenantOverview, setTenantOverview] = useState(null);
   const [tenantOverviewLoading, setTenantOverviewLoading] = useState(false);
+  const [whatsappConfigTenant, setWhatsappConfigTenant] = useState(null);
+  const [emailSending, setEmailSending] = useState(false);
 
   // Website CMS & Company Profile State (Super Admin Only)
   const [cmsSettings, setCmsSettings] = useState({
@@ -328,29 +332,57 @@ export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigat
         adminBranch: (formData.adminBranch || '').trim() || 'Central Hub',
       };
 
-      const res = await api.superadmin.createTenant(payload);
-      if (res.success) {
-        showToast(res.message || 'Tenant onboarded successfully!', 'success');
-        setIsAddModalOpen(false);
-        setCreatedCredentials({
-          companyName: payload.companyName,
-          uniqueId: payload.uniqueId,
-          username: payload.adminUsername,
-          password: payload.adminPassword,
-          email: payload.contactEmail,
-          phone: payload.contactPhone,
-          plan: payload.plan,
-          address: payload.address,
-          branch: payload.adminBranch,
-        });
-        fetchDashboardData();
+        const res = await api.superadmin.createTenant(payload);
+        if (res.success) {
+          showToast(res.message || 'Tenant onboarded successfully!', 'success');
+          setIsAddModalOpen(false);
+          setCreatedCredentials({
+            id: res.data?.tenant?._id,
+            tenantId: res.data?.tenant?._id,
+            companyName: payload.companyName,
+            uniqueId: res.data?.tenant?.uniqueId || payload.uniqueId,
+            username: payload.adminUsername,
+            password: payload.adminPassword,
+            email: payload.contactEmail,
+            phone: payload.contactPhone,
+            plan: payload.plan,
+            address: payload.address,
+            branch: payload.adminBranch,
+            emailSent: res.emailDispatch?.success,
+          });
+          fetchDashboardData();
+        }
+      } catch (err) {
+        showToast(err.message || 'Failed to onboard tenant', 'error');
+      } finally {
+        setIsSubmitting(false);
       }
-    } catch (err) {
-      showToast(err.message || 'Failed to onboard tenant', 'error');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+    };
+
+    // Resend or dispatch credentials welcome email
+    const handleSendCredentialsEmail = async (tenantOrCreds) => {
+      const tenantId = tenantOrCreds?._id || tenantOrCreds?.tenantId || tenantOrCreds?.id;
+      if (!tenantId) {
+        showToast('Unable to identify organization ID for email dispatch', 'error');
+        return;
+      }
+      try {
+        setEmailSending(true);
+        const res = await api.superadmin.sendTenantCredentials(tenantId, {
+          customPassword: tenantOrCreds.password || tenantOrCreds.temporaryPassword,
+          recipientEmail: tenantOrCreds.email || tenantOrCreds.contactEmail,
+        });
+        if (res.success) {
+          showToast(res.message || 'Credentials & company banner email dispatched successfully!', 'success');
+        } else {
+          showToast(res.message || 'Failed to dispatch email', 'error');
+        }
+      } catch (err) {
+        showToast(err.message || 'Failed to dispatch credentials email', 'error');
+      } finally {
+        setEmailSending(false);
+      }
+    };
 
   // Handle Permanent Delete Tenant
   const handleDeleteTenant = async () => {
@@ -730,6 +762,8 @@ export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigat
               }}
               onToggleStatus={(t) => handleToggleStatus(t)}
               onDeleteTenant={(t) => setDeleteConfirmTenant(t)}
+              onConfigureWhatsApp={(t) => setWhatsappConfigTenant(t)}
+              onSendCredentialsMail={handleSendCredentialsEmail}
               onCopyText={handleCopyText}
               copiedKey={copiedKey}
             />
@@ -990,32 +1024,58 @@ export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigat
                               </span>
                             </td>
 
-                            {/* Action - Clean single trigger to open detailed page */}
+                            {/* Action - WhatsApp config + View details */}
                             <td style={{ textAlign: 'right' }}>
-                              <button
-                                type="button"
-                                className="btn btn-secondary btn-sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleOpenTenantDetail(t._id);
-                                }}
-                                title="Open Organization Overview & Analytics"
-                                style={{
-                                  padding: '0.35rem 0.75rem',
-                                  fontSize: '0.75rem',
-                                  fontWeight: 600,
-                                  color: '#1d4ed8',
-                                  backgroundColor: '#eff6ff',
-                                  borderColor: '#bfdbfe',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '0.35rem',
-                                }}
-                              >
-                                <Eye size={13} />
-                                <span>View Details</span>
-                                <ArrowRight size={12} />
-                              </button>
+                              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', justifyContent: 'flex-end' }}>
+                                <button
+                                  type="button"
+                                  className="btn btn-secondary btn-sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setWhatsappConfigTenant(t);
+                                  }}
+                                  title="Configure WhatsApp & OpenWA Gateway for this Organization"
+                                  style={{
+                                    padding: '0.35rem 0.65rem',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 600,
+                                    color: '#059669',
+                                    backgroundColor: '#ecfdf5',
+                                    borderColor: '#a7f3d0',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                  }}
+                                >
+                                  <MessageSquare size={13} />
+                                  <span>WhatsApp</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  className="btn btn-secondary btn-sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleOpenTenantDetail(t._id);
+                                  }}
+                                  title="Open Organization Overview & Analytics"
+                                  style={{
+                                    padding: '0.35rem 0.75rem',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 600,
+                                    color: '#1d4ed8',
+                                    backgroundColor: '#eff6ff',
+                                    borderColor: '#bfdbfe',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '0.35rem',
+                                  }}
+                                >
+                                  <Eye size={13} />
+                                  <span>View Details</span>
+                                  <ArrowRight size={12} />
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         );
@@ -1669,9 +1729,33 @@ export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigat
             </div>
 
             <div className="modal-body">
-              <p style={{ fontSize: '0.8125rem', color: '#475569', marginBottom: '1rem' }}>
-                The courier business has been registered and isolated in the platform. Please copy the temporary login credentials below and share them with the business admin.
+              <p style={{ fontSize: '0.8125rem', color: '#475569', marginBottom: '0.75rem' }}>
+                The courier business has been registered and isolated in the platform. An official welcome email with branded company banner and login credentials has been queued for dispatch.
               </p>
+
+              {/* Email dispatch notice card */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.6rem',
+                  backgroundColor: '#ecfdf5',
+                  border: '1px solid #a7f3d0',
+                  borderRadius: '6px',
+                  padding: '0.75rem 1rem',
+                  marginBottom: '1rem',
+                  color: '#065f46',
+                  fontSize: '0.8125rem',
+                }}
+              >
+                <Mail size={18} color="#059669" style={{ flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontWeight: 700 }}>Credentials Email Dispatched</div>
+                  <div style={{ fontSize: '0.75rem', marginTop: '2px', color: '#047857' }}>
+                    Branded company banner and client credentials sent to <strong>{createdCredentials.email}</strong>
+                  </div>
+                </div>
+              </div>
 
               <div style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8125rem' }}>
@@ -1727,18 +1811,32 @@ export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigat
               </div>
             </div>
 
-            <div className="modal-footer" style={{ justifyContent: 'space-between' }}>
-              <button
-                type="button"
-                className="btn btn-secondary btn-sm"
-                onClick={() => {
-                  const summary = `=== Courier Service Organization Credentials ===\nOrganization: ${createdCredentials.companyName}\nUnique ID: ${createdCredentials.uniqueId}\nAdmin Username: ${createdCredentials.username}\nTemporary Password: ${createdCredentials.password}\nOfficial Email: ${createdCredentials.email}\nPhone: ${createdCredentials.phone}\nSubscription Tier: ${createdCredentials.plan}\nPortal Login: ${window.location.origin}/#portal`;
-                  handleCopyText(summary, 'allCreds');
-                }}
-              >
-                {copiedKey === 'allCreds' ? <Check size={14} /> : <Copy size={14} />}
-                <span>{copiedKey === 'allCreds' ? 'Credentials Copied!' : 'Copy All Credentials'}</span>
-              </button>
+            <div className="modal-footer" style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => {
+                    const summary = `=== Courier Service Organization Credentials ===\nOrganization: ${createdCredentials.companyName}\nUnique ID: ${createdCredentials.uniqueId}\nAdmin Username: ${createdCredentials.username}\nTemporary Password: ${createdCredentials.password}\nOfficial Email: ${createdCredentials.email}\nPhone: ${createdCredentials.phone}\nSubscription Tier: ${createdCredentials.plan}\nPortal Login: ${window.location.origin}/#login`;
+                    handleCopyText(summary, 'allCreds');
+                  }}
+                >
+                  {copiedKey === 'allCreds' ? <Check size={14} /> : <Copy size={14} />}
+                  <span>{copiedKey === 'allCreds' ? 'Credentials Copied!' : 'Copy All'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => handleSendCredentialsEmail(createdCredentials)}
+                  disabled={emailSending}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', color: '#1e40af', backgroundColor: '#eff6ff', borderColor: '#bfdbfe' }}
+                  title="Resend welcome email with branded banner and credentials to client"
+                >
+                  <Mail size={14} />
+                  <span>{emailSending ? 'Dispatching...' : 'Resend Email'}</span>
+                </button>
+              </div>
 
               <button
                 type="button"
@@ -1970,6 +2068,21 @@ export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigat
             </form>
           </div>
         </div>
+      )}
+
+      {/* WhatsApp Configuration Modal (Super Admin Exclusive) */}
+      {whatsappConfigTenant && (
+        <WhatsAppConfigModal
+          tenant={whatsappConfigTenant}
+          isOpen={!!whatsappConfigTenant}
+          onClose={() => setWhatsappConfigTenant(null)}
+          onSaved={() => {
+            fetchDashboardData();
+            if (selectedTenantId) {
+              fetchTenantOverview(selectedTenantId);
+            }
+          }}
+        />
       )}
     </div>
   );

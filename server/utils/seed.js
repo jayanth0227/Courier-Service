@@ -23,7 +23,7 @@ const seedData = async (clearAllData = false) => {
     const superEmail = (process.env.SUPERADMIN_EMAIL || 'superadmin@couriersaas.com').trim().toLowerCase();
     const superName = (process.env.SUPERADMIN_NAME || 'Platform Super Admin').trim();
 
-    let superAdmin = await User.findOne({ username: superUsername });
+    let superAdmin = (await User.findOne({ role: 'superadmin' })) || (await User.findOne({ username: superUsername }));
     if (!superAdmin) {
       superAdmin = await User.create({
         name: superName,
@@ -39,6 +39,7 @@ const seedData = async (clearAllData = false) => {
       console.log(`[Seed] 👑 Platform Super Admin created in database: ${superUsername}`);
     } else {
       superAdmin.name = superName;
+      superAdmin.username = superUsername;
       superAdmin.email = superEmail;
       superAdmin.role = 'superadmin';
       superAdmin.active = true;

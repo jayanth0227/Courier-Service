@@ -42,7 +42,7 @@ export const SettingsPage = ({ onRefreshGlobalDestinations }) => {
   const { showToast } = useToast();
   const { setCompanySettings: setGlobalCompanySettings } = useCompanySettings();
 
-  const [activeTab, setActiveTab] = useState('cities'); // 'cities' | 'parcelTypes' | 'buses' | 'drivers' | 'company' | 'whatsapp' | 'users'
+  const [activeTab, setActiveTab] = useState('cities'); // 'cities' | 'parcelTypes' | 'buses' | 'drivers' | 'company' | 'users'
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -59,10 +59,12 @@ export const SettingsPage = ({ onRefreshGlobalDestinations }) => {
     fromCity: '',
     gstin: '',
     receiptFooterNote: '',
+    termsAndConditions: '',
     whatsappProvider: 'MOCK',
     whatsappSenderNumber: '',
     whatsappApiKey: '',
     whatsappApiUrl: '',
+    openwaSessionId: '',
     standardRoutes: [],
   });
 
@@ -120,8 +122,7 @@ export const SettingsPage = ({ onRefreshGlobalDestinations }) => {
   // Users State (for Admin)
   const [users, setUsers] = useState([]);
 
-  // Test WhatsApp message state
-  const [testPhone, setTestPhone] = useState('9876543210');
+
 
   // Admin Change Password Form State
   const [adminCurrentPassword, setAdminCurrentPassword] = useState('');
@@ -681,15 +682,7 @@ export const SettingsPage = ({ onRefreshGlobalDestinations }) => {
     }
   };
 
-  const handleTestWhatsApp = () => {
-    const brand = settings.companyName || 'our Courier & Bus Dispatch Service';
-    const message = `Hello Customer,\n\nYour parcel with Order ID 583214 has been dispatched via Bus TS09AB1234.\n\nTrack anytime using your 6-digit Order ID.\n\nThank you for choosing ${brand}.`;
-    const clean = testPhone.replace(/\D/g, '');
-    const full = clean.length === 10 ? `91${clean}` : clean;
-    const url = `https://wa.me/${full}?text=${encodeURIComponent(message)}`;
-    window.open(url, '_blank');
-    showToast(`Opened WhatsApp Test preview for +${full}`, 'success');
-  };
+
 
   // Filtered cities list
   const filteredCities = cities.filter((c) => {
@@ -2202,14 +2195,51 @@ export const SettingsPage = ({ onRefreshGlobalDestinations }) => {
               </div>
             </div>
 
-            <div className="form-group" style={{ marginBottom: 0 }}>
-              <label className="form-label">Receipt Footer Note / Terms of Carriage</label>
+            <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+              <label className="form-label">Receipt Footer Note (Single line greeting or destination counter notice)</label>
               <textarea
                 className="form-control"
                 rows={2}
                 value={settings.receiptFooterNote || ''}
                 onChange={(e) => setSettings({ ...settings, receiptFooterNote: e.target.value })}
               />
+            </div>
+
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', flexWrap: 'wrap', gap: '8px' }}>
+                <label className="form-label" style={{ margin: 0, fontWeight: 700 }}>
+                  Terms, Conditions & Privacy Policies (Appears dynamically on Consignment Bill bottom)
+                </label>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => {
+                    const defaultTerms = `1. Goods carried strictly at owner's risk; company is not liable for leakage, breakage, or natural damages.
+2. Value of goods must be declared at booking; company liability for undeclared items is strictly limited to ₹500.
+3. Hazardous, contraband, inflammable, or prohibited goods are strictly not accepted.
+4. Demurrage will be levied if cargo is not claimed within 24 hours of bus arrival at destination.
+5. Consignee must verify package condition before counter delivery acknowledgment.
+6. Original LR copy or SMS verification must be produced at destination counter to claim consignment.
+7. All disputes are subject to local jurisdiction only.`;
+                    setSettings((prev) => ({ ...prev, termsAndConditions: defaultTerms }));
+                    showToast('Loaded standard bus cargo terms template! Click "Save Company Details" to apply.', 'success');
+                  }}
+                  style={{ fontSize: '0.75rem', padding: '3px 8px' }}
+                >
+                  Load Standard Bus Cargo Terms
+                </button>
+              </div>
+              <textarea
+                className="form-control"
+                rows={6}
+                placeholder="Enter numbered clauses for Terms & Conditions and Privacy Policies..."
+                value={settings.termsAndConditions || ''}
+                onChange={(e) => setSettings({ ...settings, termsAndConditions: e.target.value })}
+                style={{ fontFamily: 'monospace', fontSize: '0.8125rem', lineHeight: '1.4' }}
+              />
+              <div className="form-hint" style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '4px' }}>
+                Admin can edit terms, conditions, and privacy policies dynamically. Each line will be displayed on printed A4 bills and driver waybills.
+              </div>
             </div>
           </div>
 
@@ -2221,6 +2251,8 @@ export const SettingsPage = ({ onRefreshGlobalDestinations }) => {
           </div>
         </form>
       )}
+
+
 
 
 

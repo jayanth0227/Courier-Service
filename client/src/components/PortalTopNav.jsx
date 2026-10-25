@@ -59,12 +59,6 @@ export const PortalTopNav = ({
     ? [
         { id: 'create-booking', label: 'Create Booking', icon: PackagePlus },
         { id: 'bookings', label: 'Bookings List', icon: Package },
-        {
-          id: 'dispatch',
-          label: 'Bus Dispatch',
-          icon: Bus,
-          badge: pendingDispatchCount > 0 ? pendingDispatchCount : null,
-        },
         { id: 'tracking', label: 'Parcel Tracking', icon: Search },
       ]
     : [

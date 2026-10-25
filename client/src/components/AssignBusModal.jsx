@@ -332,49 +332,86 @@ export const AssignBusModal = ({
                 )}
               </div>
 
-              {/* WhatsApp Notification Links */}
+              {/* WhatsApp Notification Links for BOTH Sender and Receiver */}
               {dispatchSuccessData.notifications && dispatchSuccessData.notifications.length > 0 && (
                 <div style={{ textAlign: 'left', maxWidth: '650px', margin: '0 auto 1.5rem auto' }}>
-                  <div style={{ fontWeight: 600, fontSize: '0.875rem', color: '#1e293b', marginBottom: '0.75rem' }}>
-                    Customer WhatsApp Alerts Triggered ({dispatchSuccessData.notifications.length}):
+                  <div style={{ fontWeight: 700, fontSize: '0.9375rem', color: '#0f172a', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span>WhatsApp Dispatch Alerts Triggered ({dispatchSuccessData.notifications.length}):</span>
+                    <span style={{ fontSize: '0.75rem', color: '#16a34a', fontWeight: 600 }}>Sent to Sender & Receiver</span>
                   </div>
-                  {dispatchSuccessData.notifications.map((n, i) => (
-                    <div
-                      key={i}
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        padding: '0.75rem 1rem',
-                        backgroundColor: '#f8fafc',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: '6px',
-                        marginBottom: '0.5rem',
-                        fontSize: '0.8125rem',
-                      }}
-                    >
-                      <div>
-                        <div style={{ fontWeight: 700, color: '#0f172a' }}>
-                          Order #{n.orderId} • {n.customerName}
+                  {dispatchSuccessData.notifications.map((n, i) => {
+                    const isSender = n.recipientRole === 'SENDER';
+                    const directLink = n.notification?.directLink;
+                    const status = n.notification?.status || 'SENT';
+                    const isSuccess = n.notification?.success !== false;
+
+                    return (
+                      <div
+                        key={i}
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          padding: '0.75rem 1rem',
+                          backgroundColor: isSender ? '#f8fafc' : '#f0fdf4',
+                          border: isSender ? '1px solid #e2e8f0' : '1px solid #bbf7d0',
+                          borderRadius: '8px',
+                          marginBottom: '0.6rem',
+                          fontSize: '0.8125rem',
+                        }}
+                      >
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+                            <span
+                              style={{
+                                fontSize: '0.6875rem',
+                                fontWeight: 800,
+                                textTransform: 'uppercase',
+                                padding: '2px 6px',
+                                borderRadius: '4px',
+                                backgroundColor: isSender ? '#0f172a' : '#15803d',
+                                color: '#ffffff',
+                                letterSpacing: '0.02em',
+                              }}
+                            >
+                              {n.recipientLabel || (isSender ? 'Sender (Consignor)' : 'Receiver (Consignee)')}
+                            </span>
+                            <span style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.875rem' }}>
+                              #{n.orderId} • {n.customerName}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '0.75rem', color: '#475569', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <span>📱 {n.phone}</span>
+                            <span>•</span>
+                            <span style={{ color: isSuccess ? '#16a34a' : '#dc2626', fontWeight: 600 }}>
+                              Status: {status}
+                            </span>
+                          </div>
                         </div>
-                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                          Phone: {n.phone} • Status: {n.notification?.status || 'SENT'}
-                        </div>
+                        {directLink && (
+                          <a
+                            href={directLink}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="btn btn-secondary btn-sm"
+                            style={{
+                              textDecoration: 'none',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              backgroundColor: '#ffffff',
+                              borderColor: isSender ? '#cbd5e1' : '#86efac',
+                              color: isSender ? '#0f172a' : '#15803d',
+                              fontWeight: 600,
+                            }}
+                          >
+                            <Send size={13} />
+                            WhatsApp {isSender ? 'Sender' : 'Receiver'}
+                          </a>
+                        )}
                       </div>
-                      {n.notification?.directLink && (
-                        <a
-                          href={n.notification.directLink}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="btn btn-secondary btn-sm"
-                          style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px', borderColor: '#cbd5e1' }}
-                        >
-                          <Send size={13} />
-                          Open WhatsApp Web
-                        </a>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

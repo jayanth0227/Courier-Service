@@ -679,17 +679,20 @@ p {
   border-left: 4px solid #2563eb;
 }
 
-/* Print Styling - Strict A4 Black & White */
+/* Print Styling - Strict A4 Black & White (No Gaps, Full A4 Sheet Distribution) */
 @media print {
   @page {
     size: A4 portrait;
-    margin: 6mm 8mm;
+    margin: 4mm 6mm;
   }
   html, body {
+    width: 100% !important;
+    height: 100% !important;
     background: #ffffff !important;
     color: #000000 !important;
     margin: 0 !important;
     padding: 0 !important;
+    overflow: hidden !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
@@ -704,12 +707,69 @@ p {
     left: 0;
     top: 0;
     width: 100% !important;
+    height: 289mm !important;
+    max-height: 289mm !important;
     margin: 0 !important;
     padding: 0 !important;
     background: #ffffff !important;
+    box-sizing: border-box !important;
   }
   .no-print {
     display: none !important;
+  }
+
+  /* 1 Copy in Print: Exactly half of A4 page (~140mm) */
+  .bw-copies-1 {
+    height: 100% !important;
+  }
+  .bw-copies-1 .bw-bill-box {
+    height: 140mm !important;
+    max-height: 140mm !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+  }
+
+  /* 2 Copies in Print: Fills the entire 289mm page (2 x 139mm + 8mm cut line) */
+  .bw-copies-2 {
+    height: 289mm !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+  }
+  .bw-copies-2 .bw-bill-box {
+    height: 139mm !important;
+    max-height: 139mm !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+  }
+  .bw-copies-2 .bw-cut-line {
+    height: 8mm !important;
+    margin: 0 !important;
+  }
+
+  /* 3 Copies in Print: Fills the entire 289mm page (3 x 92mm + 2 x 5mm cut lines) */
+  .bw-copies-3 {
+    height: 289mm !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+  }
+  .bw-copies-3 .bw-bill-box {
+    height: 92mm !important;
+    max-height: 92mm !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+  }
+  .bw-copies-3 .bw-cut-line {
+    height: 5mm !important;
+    margin: 0 !important;
+  }
+
+  .bw-table {
+    flex: 1 !important;
   }
 }
 

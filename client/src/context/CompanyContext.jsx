@@ -12,6 +12,13 @@ const DEFAULT_COMPANY_SETTINGS = {
   fromCity: '',
   gstin: '',
   receiptFooterNote: 'Thank you for choosing our bus parcel service. Present this receipt or 6-digit Order ID at destination counter.',
+  termsAndConditions: `1. Goods carried strictly at owner's risk; company is not liable for leakage, breakage, or natural damages.
+2. Value of goods must be declared at booking; company liability for undeclared items is strictly limited to ₹500.
+3. Hazardous, contraband, inflammable, or prohibited goods are strictly not accepted.
+4. Demurrage will be levied if cargo is not claimed within 24 hours of bus arrival at destination.
+5. Consignee must verify package condition before counter delivery acknowledgment.
+6. Original LR copy or SMS verification must be produced at destination counter to claim consignment.
+7. All disputes are subject to local jurisdiction only.`,
   standardRoutes: [],
 };
 

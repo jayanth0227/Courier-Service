@@ -23,6 +23,7 @@ import {
   Calendar,
   AlertTriangle,
   Trash2,
+  MessageSquare,
 } from 'lucide-react';
 
 export const OrganizationDetailView = ({
@@ -34,6 +35,8 @@ export const OrganizationDetailView = ({
   onImpersonate,
   onEditTenant,
   onResetPassword,
+  onConfigureWhatsApp,
+  onSendCredentialsMail,
   onToggleStatus,
   onDeleteTenant,
   onCopyText,
@@ -278,6 +281,44 @@ export const OrganizationDetailView = ({
             >
               <Key size={14} />
               <span>Reset Password</span>
+            </button>
+
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={() => onConfigureWhatsApp && onConfigureWhatsApp(tenant)}
+              title="Configure WhatsApp & OpenWA Gateway for this Organization"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                color: '#059669',
+                backgroundColor: '#ecfdf5',
+                borderColor: '#a7f3d0',
+                fontWeight: 600,
+              }}
+            >
+              <MessageSquare size={14} />
+              <span>WhatsApp Config</span>
+            </button>
+
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={() => onSendCredentialsMail && onSendCredentialsMail(tenant)}
+              title="Dispatch Official Welcome Email with Banner and Client Credentials"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                color: '#1e40af',
+                backgroundColor: '#eff6ff',
+                borderColor: '#bfdbfe',
+                fontWeight: 600,
+              }}
+            >
+              <Mail size={14} />
+              <span>Send Credentials Mail</span>
             </button>
 
             <button
@@ -621,6 +662,98 @@ export const OrganizationDetailView = ({
                 )}
               </tbody>
             </table>
+          </div>
+        </div>
+      </div>
+
+      {/* 3.5. WhatsApp & Notification Gateway Configuration Card */}
+      <div
+        style={{
+          backgroundColor: '#ffffff',
+          borderRadius: '8px',
+          border: '1px solid #e2e8f0',
+          boxShadow: 'var(--shadow-sm)',
+          overflow: 'hidden',
+          marginBottom: '1.25rem',
+        }}
+      >
+        <div
+          style={{
+            padding: '0.85rem 1.15rem',
+            borderBottom: '1px solid #e2e8f0',
+            backgroundColor: '#f8fafc',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '0.5rem',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700, fontSize: '0.9rem', color: '#0f172a' }}>
+            <MessageSquare size={16} color="#059669" />
+            <span>WhatsApp Notification Gateway & OpenWA Configuration</span>
+          </div>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={() => onConfigureWhatsApp && onConfigureWhatsApp(tenant)}
+            style={{
+              color: '#059669',
+              backgroundColor: '#ecfdf5',
+              borderColor: '#a7f3d0',
+              fontWeight: 600,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+            }}
+          >
+            <MessageSquare size={13} />
+            <span>Configure Gateway</span>
+          </button>
+        </div>
+
+        <div style={{ padding: '1rem 1.15rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+          <div>
+            <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 500 }}>Active Provider</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '4px' }}>
+              <span
+                style={{
+                  padding: '2px 8px',
+                  borderRadius: '999px',
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  backgroundColor: settings?.whatsappProvider === 'OPENWA' ? '#ecfdf5' : '#f1f5f9',
+                  color: settings?.whatsappProvider === 'OPENWA' ? '#047857' : '#334155',
+                  border: `1px solid ${settings?.whatsappProvider === 'OPENWA' ? '#a7f3d0' : '#cbd5e1'}`,
+                }}
+              >
+                {settings?.whatsappProvider || 'MOCK'}
+              </span>
+              <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                {settings?.whatsappProvider === 'OPENWA' ? 'Local Gateway' : 'Simulated'}
+              </span>
+            </div>
+          </div>
+
+          <div>
+            <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 500 }}>Gateway / API Endpoint</div>
+            <div style={{ fontSize: '0.8125rem', color: '#0f172a', fontWeight: 600, marginTop: '4px', fontFamily: 'monospace' }}>
+              {settings?.whatsappApiUrl || 'http://localhost:2785'}
+            </div>
+          </div>
+
+          <div>
+            <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 500 }}>Session Identifier</div>
+            <div style={{ fontSize: '0.8125rem', color: '#0f172a', fontWeight: 600, marginTop: '4px', fontFamily: 'monospace' }}>
+              {settings?.openwaSessionId || 'default'}
+            </div>
+          </div>
+
+          <div>
+            <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 500 }}>Sender Mobile Number</div>
+            <div style={{ fontSize: '0.8125rem', color: '#0f172a', fontWeight: 600, marginTop: '4px' }}>
+              {settings?.whatsappSenderNumber || 'Not configured'}
+            </div>
           </div>
         </div>
       </div>

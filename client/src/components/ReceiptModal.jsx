@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Printer, ArrowLeft, Check, Scissors } from 'lucide-react';
+import { Printer, ArrowLeft, Scissors, ShieldCheck } from 'lucide-react';
 import { useCompanySettings } from '../context/CompanyContext';
 
 // Indian Number System Converter to Words (e.g., 450 -> "Rupees Four Hundred Fifty Only")
@@ -43,11 +43,41 @@ const numberToWordsIndian = (num) => {
   return `Rupees ${words.trim()} Only`;
 };
 
-const ConsignmentBill = ({ booking, company, copyTitle, formattedDate, copyCount }) => {
+// Default Bus Cargo Terms Fallback if admin hasn't configured custom terms yet
+const DEFAULT_BUS_TERMS = [
+  "1. Goods carried strictly at owner's risk; company is not liable for leakage, breakage, or natural damages.",
+  "2. Value of goods must be declared at booking; company liability for undeclared items is strictly limited to ₹500.",
+  "3. Hazardous, contraband, inflammable, or prohibited goods are strictly not accepted.",
+  "4. Demurrage will be levied if cargo is not claimed within 24 hours of bus arrival at destination.",
+  "5. Consignee must verify package condition before counter delivery acknowledgment.",
+  "6. Original LR copy or SMS verification must be produced at destination counter to claim consignment.",
+  "7. All disputes are subject to local jurisdiction only."
+];
+
+const ConsignmentBill = ({
+  booking,
+  company,
+  copyTitle,
+  copyBadge,
+  showAmount,
+  isDriverCopy,
+  formattedDate,
+  copyCount,
+}) => {
   const isToPay = booking.paymentStatus === 'TO_PAY';
+
   // Parse origin station cleanly
   const rawFrom = booking.fromCity || booking.fromAddress || company.fromCity || '';
-  const fromStation = (rawFrom || (booking.destination?.includes('→') ? booking.destination.split('→')[0].trim() : (booking.destination?.includes('->') ? booking.destination.split('->')[0].trim() : '')) || company.companyAddress || 'Origin Counter').trim();
+  const fromStation = (
+    rawFrom ||
+    (booking.destination?.includes('→')
+      ? booking.destination.split('→')[0].trim()
+      : booking.destination?.includes('->')
+      ? booking.destination.split('->')[0].trim()
+      : '') ||
+    company.companyAddress ||
+    'Origin Counter'
+  ).trim();
 
   // Parse destination city cleanly (stripping any origin prefix)
   const rawDest = booking.destination || '';
@@ -61,261 +91,556 @@ const ConsignmentBill = ({ booking, company, copyTitle, formattedDate, copyCount
 
   const stopAddress = (booking.deliveryAddress || '').trim();
   const fullRoute = `${fromStation} → ${cleanTo}`;
-  const fullToAddress = stopAddress && !stopAddress.toLowerCase().includes(cleanTo.toLowerCase())
-    ? `${cleanTo} - ${stopAddress}`
-    : (stopAddress || cleanTo);
+  const fullToAddress =
+    stopAddress && !stopAddress.toLowerCase().includes(cleanTo.toLowerCase())
+      ? `${cleanTo} - ${stopAddress}`
+      : stopAddress || cleanTo;
 
-  const items = Array.isArray(booking.items) && booking.items.length > 0
-    ? booking.items
-    : [
-        {
-          parcelType: booking.parcelType || 'Standard Package',
-          quantity: booking.quantity || 1,
-          weight: booking.weight || 0,
-          charge: booking.amount,
-          notes: booking.notes || '-',
-        },
-      ];
+  const items =
+    Array.isArray(booking.items) && booking.items.length > 0
+      ? booking.items
+      : [
+          {
+            parcelType: booking.parcelType || 'Standard Package',
+            quantity: booking.quantity || 1,
+            weight: booking.weight || 0,
+            charge: booking.amount,
+            notes: booking.notes || '-',
+          },
+        ];
 
   const totalQuantity = items.reduce((acc, it) => acc + (Number(it.quantity) || 1), 0);
   const totalWeight = items.reduce((acc, it) => acc + (Number(it.weight) || 0), 0);
 
+  // Dynamic Terms & Conditions from Admin Settings
+  const dynamicTerms = company.termsAndConditions
+    ? company.termsAndConditions
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0)
+    : DEFAULT_BUS_TERMS;
+
+  const travelsOperator =
+    booking.busDetails?.operator ||
+    booking.busDetails?.busName ||
+    'BUS LOGISTICS DISPATCH';
+
+  const busNumber = booking.busDetails?.busNumber || 'Scheduled Bus';
+
   return (
-    <div className="bw-bill-box">
-      {/* 1. Header Bar: Document Title & Copy Designation */}
+    <div className={`bw-bill-box ${isDriverCopy ? 'bw-driver-copy' : ''}`}>
+      {/* 1. Header Bar: Authenticated Bus Cargo Header (Clean Centered Layout) */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '70px 1fr 70px',
+          alignItems: 'center',
+          borderBottom: '1.5px solid #000000',
+          padding: copyCount === 3 ? '2px 6px' : '4px 8px',
+          gap: '8px',
+        }}
+      >
+        {/* Left: Organization / Deity Logo */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {company.logoUrl && company.logoUrl !== '/logo.png' ? (
+            <img
+              src={company.logoUrl}
+              alt="Logo"
+              style={{
+                maxHeight: copyCount === 3 ? '30px' : '42px',
+                maxWidth: '65px',
+                objectFit: 'contain',
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                width: copyCount === 3 ? '34px' : '42px',
+                height: copyCount === 3 ? '34px' : '42px',
+                border: '1.5px solid #000000',
+                borderRadius: '4px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 900,
+                fontSize: copyCount === 3 ? '10px' : '13px',
+                lineHeight: 1.1,
+                textAlign: 'center',
+                backgroundColor: '#f8fafc',
+              }}
+            >
+              <span>SV</span>
+              <span style={{ fontSize: '7px', fontWeight: 700 }}>CARGO</span>
+            </div>
+          )}
+        </div>
+
+        {/* Center: Company Name & Fetched Origin Address Directly Below */}
+        <div style={{ textAlign: 'center', padding: '0 4px' }}>
+          <div
+            className="bw-company-title"
+            style={{
+              fontWeight: 900,
+              textTransform: 'uppercase',
+              letterSpacing: '0.04em',
+              lineHeight: 1.15,
+            }}
+          >
+            {company.companyName || 'JAYANTH CARGO'}
+          </div>
+          {/* Fetched Origin Address directly below Company Title */}
+          <div
+            style={{
+              fontSize: copyCount === 3 ? '10.5px' : (copyCount === 2 ? '12px' : '13px'),
+              fontWeight: 800,
+              marginTop: '1px',
+              textTransform: 'uppercase',
+              letterSpacing: '0.02em',
+              color: '#000000',
+            }}
+          >
+            {booking.fromAddress
+              ? (booking.fromCity && !booking.fromAddress.toLowerCase().includes(booking.fromCity.toLowerCase())
+                  ? `${booking.fromAddress}, ${booking.fromCity}`
+                  : booking.fromAddress)
+              : fromStation}
+          </div>
+          <div
+            style={{
+              fontSize: copyCount === 3 ? '9.5px' : (copyCount === 2 ? '10.5px' : '11.5px'),
+              color: '#000000',
+              fontWeight: 600,
+              marginTop: '1px',
+              lineHeight: 1.25,
+            }}
+          >
+            <span>Ph: {company.companyPhone || '+91 9010253076'}</span>
+            {company.gstin && <span> • GSTIN: {company.gstin}</span>}
+            {company.companyEmail && <span> • {company.companyEmail}</span>}
+          </div>
+        </div>
+
+        {/* Right: Symmetrical Empty Spacer (Travels badge removed) */}
+        <div style={{ width: '70px' }} />
+      </div>
+
+      {/* 2. Banner: ....... Consignment Details ....... & Copy Badge */}
       <div
         style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          borderBottom: '1.5px solid #000000',
-          backgroundColor: '#f8f8f8',
-          padding: copyCount === 3 ? '2px 6px' : '4px 8px',
+          backgroundColor: '#f1f5f9',
+          borderBottom: '1px solid #000000',
+          padding: copyCount === 3 ? '2px 6px' : '3px 8px',
         }}
-        className="bw-title-header"
       >
-        <div style={{ fontWeight: 800, letterSpacing: '0.04em' }}>
-          TAX INVOICE / CARGO CONSIGNMENT NOTE
+        <div
+          style={{
+            fontWeight: 900,
+            fontSize: copyCount === 3 ? '10px' : (copyCount === 2 ? '11px' : '12px'),
+            letterSpacing: '0.04em',
+            textTransform: 'uppercase',
+            color: '#000000',
+          }}
+        >
+          ....... Consignment Details .......
         </div>
         <div
           style={{
-            fontWeight: 800,
+            fontWeight: 900,
             textTransform: 'uppercase',
+            fontSize: copyCount === 3 ? '9.5px' : (copyCount === 2 ? '10.5px' : '11.5px'),
             border: '1px solid #000000',
             padding: '1px 6px',
-            backgroundColor: '#ffffff',
+            backgroundColor: isDriverCopy ? '#000000' : '#ffffff',
+            color: isDriverCopy ? '#ffffff' : '#000000',
+            borderRadius: '2px',
           }}
         >
           {copyTitle}
         </div>
       </div>
 
-      {/* 2. Company Details Header */}
-      <div
-        style={{
-          textAlign: 'center',
-          borderBottom: '1px solid #000000',
-          padding: copyCount === 3 ? '3px 6px' : '6px 8px',
-        }}
-      >
-        <div className="bw-company-title" style={{ fontWeight: 900, textTransform: 'uppercase' }}>
-          {company.companyName || 'JAYANTH CARGO'}
-        </div>
-        <div style={{ fontSize: '0.9em', marginTop: '1px' }}>
-          {company.tagline || 'Parcel & Bus Dispatch Services • Central Cargo Terminal'}
-        </div>
-        <div style={{ fontSize: '0.82em', color: '#111111' }}>
-          {company.companyAddress && <span>{company.companyAddress} • </span>}
-          <span>Phone: {company.companyPhone || '+91 9010253076'}</span>
-          {company.companyEmail && <span> • Email: {company.companyEmail}</span>}
-          {company.gstin && <span> • GSTIN: {company.gstin}</span>}
-        </div>
-      </div>
-
-      {/* 3. Two-Column Metadata Box: Sender/Receiver & LR Details */}
+      {/* 3. Authentic 3-Column Metadata Box */}
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: '1.2fr 1fr',
-          borderBottom: '1px solid #000000',
+          gridTemplateColumns: '1.15fr 1.25fr 1fr',
+          borderBottom: '1.5px solid #000000',
+          fontSize: copyCount === 3 ? '9.5px' : (copyCount === 2 ? '10.5px' : '11.5px'),
+          lineHeight: copyCount === 3 ? 1.22 : 1.32,
+          color: '#000000',
         }}
       >
-        {/* Left: Sender & Receiver Details */}
+        {/* Col 1: Date, From Hub & Consignor (Sender) */}
         <div
           style={{
-            padding: copyCount === 3 ? '3px 6px' : '5px 8px',
+            padding: copyCount === 3 ? '2px 5px' : '4px 7px',
             borderRight: '1px solid #000000',
           }}
         >
-          {/* Sender / Consignor */}
-          <div style={{ marginBottom: copyCount === 3 ? '2px' : '4px' }}>
-            <span style={{ fontWeight: 800, textTransform: 'uppercase', fontSize: '0.85em' }}>
-              Consignor (Sender):
-            </span>
-            <div style={{ fontWeight: 700 }}>
-              {booking.customerName}{' '}
-              <span style={{ fontWeight: 600 }}>[Ph: {booking.customerPhone}]</span>
-            </div>
-            <div style={{ fontSize: '0.85em' }}>Origin Hub: {fromStation}</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+            <span style={{ color: '#000000', fontWeight: 600 }}>Date:</span>
+            <strong style={{ fontWeight: 800 }}>{formattedDate}</strong>
           </div>
 
-          {/* Receiver / Consignee */}
-          <div style={{ borderTop: '1px dashed #666666', paddingTop: copyCount === 3 ? '2px' : '4px' }}>
-            <span style={{ fontWeight: 800, textTransform: 'uppercase', fontSize: '0.85em' }}>
-              Consignee (Receiver):
-            </span>
-            <div style={{ fontWeight: 700 }}>
-              {booking.receiverName || 'Counter Consignee'}{' '}
-              <span style={{ fontWeight: 600 }}>[Ph: {booking.receiverPhone || 'N/A'}]</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+            <span style={{ color: '#000000', fontWeight: 600 }}>From Hub:</span>
+            <strong style={{ textTransform: 'uppercase', fontWeight: 900, fontSize: copyCount === 3 ? '10.5px' : '11.5px' }}>{fromStation}</strong>
+          </div>
+
+          <div style={{ borderTop: '1px dashed #666666', paddingTop: '2px', marginTop: '2px' }}>
+            <div style={{ fontWeight: 900, textTransform: 'uppercase', fontSize: copyCount === 3 ? '9.5px' : '10.5px' }}>
+              Consignor (Sender):
             </div>
-            <div style={{ fontSize: '0.85em' }}>
-              Delivery Stop / To Address: <strong>{fullToAddress}</strong>
+            <div style={{ fontWeight: 800, fontSize: copyCount === 3 ? '10.5px' : '12px' }}>{booking.customerName}</div>
+            <div>
+              <span style={{ color: '#000000', fontWeight: 600 }}>Ph:</span>{' '}
+              <strong style={{ fontWeight: 800 }}>{booking.customerPhone}</strong>
             </div>
+            {company.gstin && (
+              <div style={{ fontSize: copyCount === 3 ? '9px' : '10px', color: '#000000' }}>
+                GST: {booking.senderGst || company.gstin || '-'}
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Right: LR & Dispatch Details */}
-        <div style={{ padding: copyCount === 3 ? '3px 6px' : '5px 8px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
-            <span>LR / Docket No:</span>
-            <strong style={{ fontSize: '1.2em', fontFamily: 'monospace', letterSpacing: '0.04em' }}>
+        {/* Col 2: LR Docket No, To Hub & Consignee (Receiver) */}
+        <div
+          style={{
+            padding: copyCount === 3 ? '2px 5px' : '4px 7px',
+            borderRight: '1px solid #000000',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+            <span style={{ color: '#000000', fontWeight: 700 }}>LR Docket No:</span>
+            <strong
+              style={{
+                fontFamily: 'monospace',
+                fontSize: copyCount === 3 ? '13.5px' : (copyCount === 2 ? '15px' : '16.5px'),
+                letterSpacing: '0.04em',
+                fontWeight: 900,
+                color: '#000000',
+              }}
+            >
               #{booking.orderId}
             </strong>
           </div>
+
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
-            <span>Booking Date:</span>
-            <span>{formattedDate}</span>
+            <span style={{ color: '#000000', fontWeight: 600 }}>To Hub:</span>
+            <strong style={{ textTransform: 'uppercase', fontWeight: 900, fontSize: copyCount === 3 ? '10.5px' : '11.5px' }}>{cleanTo}</strong>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
-            <span>Payment Mode:</span>
-            <strong
-              style={{
-                textTransform: 'uppercase',
-                border: '1px solid #000000',
-                padding: '0 4px',
-              }}
-            >
-              {isToPay ? 'TO PAY (ON DELIVERY)' : 'PAID (COUNTER CASH)'}
-            </strong>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
-            <span>Vehicle / Bus:</span>
-            <span>{booking.busDetails?.busNumber || 'Scheduled Bus'}</span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span>Booked By:</span>
-            <span style={{ fontWeight: 600 }}>
-              {booking.bookedByName || booking.createdBy?.name || 'Admin'}
-              {' '}({(booking.bookedByRole || booking.createdBy?.role || 'admin').toLowerCase() === 'admin' ? 'Admin' : 'Staff'})
-            </span>
+
+          <div style={{ borderTop: '1px dashed #666666', paddingTop: '2px', marginTop: '2px' }}>
+            <div style={{ fontWeight: 900, textTransform: 'uppercase', fontSize: copyCount === 3 ? '9.5px' : '10.5px' }}>
+              Consignee (Receiver):
+            </div>
+            <div style={{ fontWeight: 800, fontSize: copyCount === 3 ? '10.5px' : '12px' }}>
+              {booking.receiverName || 'Counter Consignee'}
+            </div>
+            <div>
+              <span style={{ color: '#000000', fontWeight: 600 }}>Ph:</span>{' '}
+              <strong style={{ fontWeight: 800 }}>{booking.receiverPhone || 'N/A'}</strong>
+            </div>
+            <div style={{ fontSize: copyCount === 3 ? '9px' : '10px', marginTop: '1px' }}>
+              <span style={{ color: '#000000', fontWeight: 600 }}>Stop:</span> <strong>{fullToAddress}</strong>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* 4. Itemized Goods Table */}
-      <table className="bw-table">
-        <thead>
-          <tr>
-            <th style={{ width: '30px', textAlign: 'center' }}>#</th>
-            <th>Description / Goods Type</th>
-            <th style={{ width: '130px' }}>Route (From → To)</th>
-            <th style={{ width: '70px', textAlign: 'center' }}>Weight</th>
-            <th style={{ width: '50px', textAlign: 'center' }}>Qty</th>
-            <th>Handling Remarks</th>
-            <th style={{ width: '90px', textAlign: 'right' }}>Freight (₹)</th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((it, idx) => (
-            <tr key={idx}>
-              <td style={{ textAlign: 'center' }}>{idx + 1}</td>
-              <td style={{ fontWeight: 700 }}>{it.parcelType || 'General Parcel'}</td>
-              <td>{fullRoute}</td>
-              <td style={{ textAlign: 'center' }}>{it.weight ? `${it.weight} kg` : '-'}</td>
-              <td style={{ textAlign: 'center' }}>{it.quantity || 1}</td>
-              <td>{it.notes || '-'}</td>
-              <td style={{ textAlign: 'right', fontWeight: 700 }}>
-                ₹{Number(it.charge || 0).toFixed(2)}
-              </td>
-            </tr>
-          ))}
-          {/* Total Row */}
-          <tr style={{ backgroundColor: '#f9f9f9', fontWeight: 800 }}>
-            <td colSpan={3} style={{ textAlign: 'right', paddingRight: '8px' }}>
-              TOTAL SUMMARY:
-            </td>
-            <td style={{ textAlign: 'center' }}>{totalWeight > 0 ? `${totalWeight} kg` : '-'}</td>
-            <td style={{ textAlign: 'center' }}>{totalQuantity} pcs</td>
-            <td style={{ textAlign: 'right', paddingRight: '8px' }}>GRAND TOTAL:</td>
-            <td style={{ textAlign: 'right', fontSize: '1.05em' }}>
-              ₹{Number(booking.amount || 0).toFixed(2)}
-            </td>
-          </tr>
-        </tbody>
-      </table>
-
-      {/* 5. Amount in Words & Payment Note Bar */}
-      <div
-        style={{
-          padding: copyCount === 3 ? '2px 6px' : '4px 8px',
-          borderBottom: '1px solid #000000',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          backgroundColor: '#fafafa',
-          fontSize: '0.85em',
-        }}
-      >
-        <div>
-          <strong>Amount in Words: </strong>
-          <em>{numberToWordsIndian(booking.amount)}</em>
-        </div>
-        <div>
-          <strong>Payment: </strong>
-          <span>{isToPay ? 'COLLECT CASH FROM CONSIGNEE' : 'PAID AT BOOKING COUNTER'}</span>
-        </div>
-      </div>
-
-      {/* 6. Terms and Conditions & Signature Box */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '1.4fr 1fr',
-        }}
-      >
-        {/* Terms */}
+        {/* Col 3: Freight Type, Amount & Transit Dispatch */}
         <div
           style={{
-            padding: copyCount === 3 ? '2px 6px' : '4px 8px',
-            borderRight: '1px solid #000000',
-            fontSize: copyCount === 3 ? '7.5px' : '8.5px',
-            lineHeight: 1.25,
-          }}
-        >
-          <div style={{ fontWeight: 800, textTransform: 'uppercase', marginBottom: '1px' }}>
-            Terms & Conditions:
-          </div>
-          <div>1. Goods carried strictly at owner's risk; company is not liable for leakage or breakage.</div>
-          <div>2. Consignee must verify parcel condition at counter before delivery acknowledgment.</div>
-          <div>3. Demurrage charged if parcel is uncollected within 24 hours of bus arrival.</div>
-        </div>
-
-        {/* Signature */}
-        <div
-          style={{
-            padding: copyCount === 3 ? '2px 6px' : '4px 8px',
-            textAlign: 'right',
+            padding: copyCount === 3 ? '2px 5px' : '4px 7px',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
           }}
         >
-          <div style={{ fontWeight: 700, fontSize: '0.85em' }}>
-            For {company.companyName || 'JAYANTH CARGO'}
+          <div>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '3px',
+              }}
+            >
+              <span style={{ color: '#000000', fontWeight: 700 }}>Freight Type:</span>
+              <strong
+                style={{
+                  textTransform: 'uppercase',
+                  border: '1.5px solid #000000',
+                  padding: '1px 6px',
+                  backgroundColor: isToPay ? '#ffffff' : '#000000',
+                  color: isToPay ? '#000000' : '#ffffff',
+                  fontSize: copyCount === 3 ? '9.5px' : '10.5px',
+                  fontWeight: 900,
+                  letterSpacing: '0.03em',
+                }}
+              >
+                {isToPay ? 'TO PAY' : 'PAID'}
+              </strong>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+              <span style={{ color: '#000000', fontWeight: 600 }}>Freight:</span>
+              <strong style={{ fontWeight: 800 }}>
+                {showAmount ? `₹ ${Number(booking.amount || 0).toFixed(2)}` : '***'}
+              </strong>
+            </div>
+
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                marginBottom: '3px',
+                borderTop: '1px dotted #666666',
+                paddingTop: '2px',
+              }}
+            >
+              <span style={{ fontWeight: 800, color: '#000000' }}>Total:</span>
+              <strong
+                style={{
+                  fontSize: copyCount === 3 ? '12px' : (copyCount === 2 ? '13px' : '14px'),
+                  fontFamily: 'monospace',
+                  fontWeight: 900,
+                  color: '#000000',
+                }}
+              >
+                {showAmount ? `₹ ${Number(booking.amount || 0).toFixed(2)}` : '*** (Transit)'}
+              </strong>
+            </div>
           </div>
-          <div className="bw-signature-area" />
-          <div style={{ fontSize: '0.8em', borderTop: '1px dotted #666666', paddingTop: '2px' }}>
-            Authorized Signatory / Booking Counter
+
+          <div
+            style={{
+              borderTop: '1px dashed #666666',
+              paddingTop: '2px',
+              fontSize: copyCount === 3 ? '9px' : '10px',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ color: '#000000', fontWeight: 600 }}>Booked By:</span>
+              <span style={{ fontWeight: 700, color: '#000000' }}>
+                {booking.bookedByName || booking.createdBy?.name || 'Admin'}
+              </span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '1px' }}>
+              <span style={{ color: '#000000', fontWeight: 600 }}>Bus / Vehicle:</span>
+              <span style={{ fontWeight: 800, color: '#000000' }}>{busNumber}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 4. Goods Description Table */}
+      <table className="bw-table">
+        <thead>
+          <tr>
+            <th style={{ width: '30px', textAlign: 'center', color: '#000000' }}>Art</th>
+            <th style={{ color: '#000000' }}>Description / Goods Type</th>
+            <th style={{ width: '150px', color: '#000000' }}>Route (From → To)</th>
+            <th style={{ width: '75px', textAlign: 'center', color: '#000000' }}>Actual Wt</th>
+            <th style={{ width: '55px', textAlign: 'center', color: '#000000' }}>Qty</th>
+            <th style={{ color: '#000000' }}>Handling Remarks</th>
+            <th style={{ width: '100px', textAlign: 'right', color: '#000000' }}>Freight (₹)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((it, idx) => (
+            <tr key={idx}>
+              <td style={{ textAlign: 'center', fontWeight: 800, color: '#000000' }}>{it.quantity || 1}</td>
+              <td style={{ fontWeight: 800, color: '#000000' }}>{it.parcelType || 'General Parcel'}</td>
+              <td style={{ fontWeight: 700, color: '#000000' }}>{fullRoute}</td>
+              <td style={{ textAlign: 'center', fontWeight: 700, color: '#000000' }}>{it.weight ? `${it.weight} kg` : '-'}</td>
+              <td style={{ textAlign: 'center', fontWeight: 700, color: '#000000' }}>{it.quantity || 1}</td>
+              <td style={{ color: '#000000' }}>{it.notes || '-'}</td>
+              <td style={{ textAlign: 'right', fontWeight: 800, color: '#000000' }}>
+                {showAmount ? `₹ ${Number(it.charge || 0).toFixed(2)}` : '***'}
+              </td>
+            </tr>
+          ))}
+          {/* Total Row */}
+          <tr style={{ backgroundColor: '#f8fafc', fontWeight: 800, color: '#000000' }}>
+            <td style={{ textAlign: 'center' }}>{totalQuantity}</td>
+            <td colSpan={2} style={{ textAlign: 'left', paddingLeft: '8px' }}>
+              TOTAL SUMMARY ({totalQuantity} {totalQuantity === 1 ? 'Piece' : 'Pieces'})
+            </td>
+            <td style={{ textAlign: 'center' }}>{totalWeight > 0 ? `${totalWeight} kg` : '-'}</td>
+            <td style={{ textAlign: 'center' }}>{totalQuantity} pcs</td>
+            <td style={{ textAlign: 'right', paddingRight: '8px' }}>GRAND TOTAL:</td>
+            <td style={{ textAlign: 'right', fontSize: copyCount === 3 ? '12px' : '13.5px', fontFamily: 'monospace', fontWeight: 900 }}>
+              {showAmount ? `₹ ${Number(booking.amount || 0).toFixed(2)}` : '*** (Transit)'}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      {/* 5. Amount in Words & Payment Instructions Bar */}
+      <div
+        style={{
+          padding: copyCount === 3 ? '2px 6px' : '3px 8px',
+          borderBottom: '1px solid #000000',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          backgroundColor: '#fafafa',
+          fontSize: copyCount === 3 ? '9px' : (copyCount === 2 ? '10px' : '11px'),
+          lineHeight: 1.25,
+          color: '#000000',
+        }}
+      >
+        <div style={{ flex: 1, paddingRight: '8px' }}>
+          <strong style={{ fontWeight: 800 }}>Amount in Words: </strong>
+          <span style={{ fontWeight: 700 }}>
+            {showAmount
+              ? numberToWordsIndian(booking.amount)
+              : '*** DRIVER TRANSIT COPY (COMMERCIAL VALUATION MASKED - DETAILS & LR ONLY) ***'}
+          </span>
+        </div>
+        <div style={{ whiteSpace: 'nowrap' }}>
+          <strong style={{ fontWeight: 800 }}>Payment Mode: </strong>
+          <span style={{ fontWeight: 800 }}>
+            {isToPay
+              ? 'TO PAY (COLLECT CASH AT DESTINATION)'
+              : 'PAID (BOOKING COUNTER CASH)'}
+          </span>
+        </div>
+      </div>
+
+      {/* 6. Dynamic Terms & Conditions (Editable by Admin) & Dual Signatures */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '1.75fr 1fr',
+          borderTop: 'none',
+        }}
+      >
+        {/* Left: Dynamic Terms & Conditions / Privacy Policies from Database */}
+        <div
+          style={{
+            padding: copyCount === 3 ? '2px 5px' : '4px 7px',
+            borderRight: '1px solid #000000',
+            fontSize: copyCount === 3 ? '8px' : (copyCount === 2 ? '9px' : '10px'),
+            lineHeight: copyCount === 3 ? 1.2 : 1.25,
+            color: '#000000',
+          }}
+        >
+          <div
+            style={{
+              fontWeight: 900,
+              textTransform: 'uppercase',
+              marginBottom: '2px',
+              color: '#000000',
+              letterSpacing: '0.02em',
+              display: 'flex',
+              justifyContent: 'space-between',
+              fontSize: copyCount === 3 ? '8.5px' : (copyCount === 2 ? '9.5px' : '10.5px'),
+            }}
+          >
+            <span>Terms, Conditions & Carriage Policies:</span>
+            <span style={{ fontWeight: 700, color: '#000000' }}>
+              Subject to Local Jurisdiction
+            </span>
+          </div>
+
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1px',
+            }}
+          >
+            {dynamicTerms.map((term, i) => (
+              <div key={i} style={{ marginBottom: '1px', fontWeight: 600 }}>
+                {term}
+              </div>
+            ))}
+          </div>
+
+          {company.receiptFooterNote && (
+            <div
+              style={{
+                marginTop: '2px',
+                paddingTop: '2px',
+                borderTop: '1px dotted #000000',
+                fontWeight: 700,
+                color: '#000000',
+                fontSize: copyCount === 3 ? '8px' : '9px',
+              }}
+            >
+              Notice: {company.receiptFooterNote}
+            </div>
+          )}
+        </div>
+
+        {/* Right: Dual Signatures (Consignor & Authorized Signatory) */}
+        <div
+          style={{
+            padding: copyCount === 3 ? '2px 5px' : '4px 7px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            textAlign: 'center',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start',
+              fontSize: copyCount === 3 ? '9px' : (copyCount === 2 ? '10px' : '11px'),
+              fontWeight: 800,
+              color: '#000000',
+            }}
+          >
+            <div style={{ textAlign: 'left' }}>Consignor Signature</div>
+            <div style={{ textAlign: 'right' }}>
+              For {company.companyName || 'SRI VINAYAKA LOGISTICS'}
+            </div>
+          </div>
+
+          <div
+            className="bw-signature-area"
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-end',
+              paddingBottom: '2px',
+            }}
+          >
+            <div
+              style={{
+                width: '45%',
+                borderBottom: '1px dotted #000000',
+                height: copyCount === 3 ? '18px' : '28px',
+              }}
+            />
+            <div
+              style={{
+                width: '45%',
+                borderBottom: '1px dotted #000000',
+                height: copyCount === 3 ? '18px' : '28px',
+              }}
+            />
+          </div>
+
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              fontSize: copyCount === 3 ? '8.5px' : (copyCount === 2 ? '9.5px' : '10.5px'),
+              fontWeight: 700,
+              color: '#000000',
+            }}
+          >
+            <span>Customer / Sender</span>
+            <span>Authorized Booking Clerk</span>
           </div>
         </div>
       </div>
@@ -328,14 +653,14 @@ export const ReceiptModal = ({ booking, onClose, companySettings: propCompanySet
 
   const { companySettings: contextCompanySettings } = useCompanySettings();
   const company = propCompanySettings || contextCompanySettings || {
-    companyName: 'JAYANTH CARGO',
+    companyName: 'SRI VINAYAKA LOGISTICS',
     companyPhone: '+91 9010253076',
     companyAddress: 'Central Bus Terminal Office',
     companyEmail: 'jayanthyeswanth9@gmail.com',
     gstin: '',
   };
 
-  // User selectable copies per A4 page: 1, 2, or 3 (Defaults to 2: Consignor & Consignee)
+  // User selectable copies per A4 page: 1, 2, or 3 (Defaults to 2: Consignor & Driver)
   const [copyCount, setCopyCount] = useState(2);
 
   const handlePrint = () => {
@@ -351,28 +676,75 @@ export const ReceiptModal = ({ booking, onClose, companySettings: propCompanySet
     hour12: true,
   });
 
-  // Assign designations based on chosen copy count
+  // Assign copy list and amount visibility according to user specifications:
+  // - 1 copy: Amount compulsory printed.
+  // - 2 copies: 1st copy (Consignor) has amount, 2nd copy (Bus Driver) has NO amount.
+  // - 3 copies: 1st & 2nd copies have amount, 3rd copy (Bus Driver) has NO amount.
   const getCopyList = () => {
     if (copyCount === 1) {
-      return [{ title: 'Original Copy', id: 'original' }];
+      return [
+        {
+          title: 'Original Consignment Note (With Amount)',
+          copyBadge: 'Original Copy',
+          showAmount: true,
+          isDriverCopy: false,
+          id: 'original',
+          desc: 'Full Page Consignment Note with commercial amount printed.',
+        },
+      ];
     }
     if (copyCount === 2) {
       return [
-        { title: 'Consignor Copy (Sender)', id: 'consignor' },
-        { title: 'Consignee Copy (Receiver)', id: 'consignee' },
+        {
+          title: '1 of 2 : Consignor Copy (With Amount)',
+          copyBadge: 'Consignor Copy',
+          showAmount: true,
+          isDriverCopy: false,
+          id: 'consignor',
+          desc: 'Sender Copy with commercial rupee valuation and freight charges.',
+        },
+        {
+          title: '2 of 2 : Bus Driver / Transit Waybill (No Amount)',
+          copyBadge: 'Driver Transit Copy',
+          showAmount: false,
+          isDriverCopy: true,
+          id: 'driver',
+          desc: 'Bus Driver copy with details & LR only (Rupee amounts masked).',
+        },
       ];
     }
     return [
-      { title: 'Consignor Copy (Sender)', id: 'consignor' },
-      { title: 'Consignee Copy (Receiver)', id: 'consignee' },
-      { title: 'Office / Admin Copy', id: 'admin' },
+      {
+        title: '1 of 3 : Consignor Copy (With Amount)',
+        copyBadge: 'Consignor Copy',
+        showAmount: true,
+        isDriverCopy: false,
+        id: 'consignor',
+        desc: 'Sender Copy with commercial rupee valuation.',
+      },
+      {
+        title: '2 of 3 : Consignee / Counter Copy (With Amount)',
+        copyBadge: 'Consignee Copy',
+        showAmount: true,
+        isDriverCopy: false,
+        id: 'consignee',
+        desc: 'Destination counter copy for delivery acknowledgment.',
+      },
+      {
+        title: '3 of 3 : Bus Driver / Transit Waybill (No Amount)',
+        copyBadge: 'Driver Transit Copy',
+        showAmount: false,
+        isDriverCopy: true,
+        id: 'driver',
+        desc: 'Bus Driver copy with details & LR only (Rupee amounts masked).',
+      },
     ];
   };
 
   const copies = getCopyList();
 
   return (
-    <div style={{ maxWidth: '920px', margin: '0 auto', paddingBottom: '3rem' }}>
+    <div style={{ maxWidth: '940px', margin: '0 auto', paddingBottom: '3rem' }}>
       {/* Page Top Action Bar (Hidden in Print) */}
       <div
         className="no-print"
@@ -380,7 +752,7 @@ export const ReceiptModal = ({ booking, onClose, companySettings: propCompanySet
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          marginBottom: '1.25rem',
+          marginBottom: '1rem',
           flexWrap: 'wrap',
           gap: '0.75rem',
           backgroundColor: '#ffffff',
@@ -400,10 +772,10 @@ export const ReceiptModal = ({ booking, onClose, companySettings: propCompanySet
           <span>Back</span>
         </button>
 
-        {/* Interactive Copies Selector (Small Columns 1, 2, 3) */}
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+        {/* Interactive Copies Selector (1, 2, or 3) */}
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}>
           <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#334155' }}>
-            Copies per A4:
+            A4 Print Copies:
           </span>
 
           <div
@@ -417,9 +789,21 @@ export const ReceiptModal = ({ booking, onClose, companySettings: propCompanySet
             }}
           >
             {[
-              { count: 1, label: '1', title: '1 Copy (Full Page Original Consignment Note)' },
-              { count: 2, label: '2', title: '2 Copies (Consignor & Consignee Halves)' },
-              { count: 3, label: '3', title: '3 Copies (Consignor, Consignee & Admin Copy)' },
+              {
+                count: 1,
+                label: '1 Copy',
+                title: '1 Copy (Full Page Original Consignment Note with Amount)',
+              },
+              {
+                count: 2,
+                label: '2 Copies (Consignor + Driver)',
+                title: '2 Copies (Copy 1: with Amount | Copy 2: Driver Copy without Amount)',
+              },
+              {
+                count: 3,
+                label: '3 Copies (Consignor + Counter + Driver)',
+                title: '3 Copies (Copies 1 & 2: with Amount | Copy 3: Driver Copy without Amount)',
+              },
             ].map((opt) => (
               <button
                 key={opt.count}
@@ -432,14 +816,13 @@ export const ReceiptModal = ({ booking, onClose, companySettings: propCompanySet
                   color: copyCount === opt.count ? '#ffffff' : '#475569',
                   fontWeight: copyCount === opt.count ? 800 : 600,
                   boxShadow: copyCount === opt.count ? '0 1px 3px rgba(15,23,42,0.2)' : 'none',
-                  width: '32px',
-                  height: '28px',
+                  padding: '4px 10px',
                   borderRadius: '4px',
-                  fontSize: '0.8125rem',
+                  fontSize: '0.78rem',
                   cursor: 'pointer',
                   display: 'inline-flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
+                  gap: '4px',
                   transition: 'all 0.15s ease',
                 }}
               >
@@ -460,12 +843,52 @@ export const ReceiptModal = ({ booking, onClose, companySettings: propCompanySet
         </button>
       </div>
 
+      {/* Copy Rule Notification Banner (Hidden in Print) */}
+      <div
+        className="no-print"
+        style={{
+          backgroundColor: '#f0fdf4',
+          border: '1px solid #bbf7d0',
+          borderRadius: '6px',
+          padding: '8px 12px',
+          marginBottom: '1rem',
+          fontSize: '0.80rem',
+          color: '#166534',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '8px',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <ShieldCheck size={16} color="#16a34a" />
+          <span>
+            {copyCount === 1 && (
+              <strong>Single Copy: Amount is printed compulsory on original consignment note.</strong>
+            )}
+            {copyCount === 2 && (
+              <span>
+                <strong>Multi-Copy Rule Active:</strong> Copy 1 (Consignor) contains amount. Copy 2 (Bus Driver) has <strong>amounts masked</strong> (only cargo details and LR number are shown for transit).
+              </span>
+            )}
+            {copyCount === 3 && (
+              <span>
+                <strong>Multi-Copy Rule Active:</strong> Copies 1 & 2 contain amount. Copy 3 (Bus Driver) has <strong>amounts masked</strong> for privacy.
+              </span>
+            )}
+          </span>
+        </div>
+        <span style={{ fontSize: '0.72rem', color: '#15803d', fontWeight: 600 }}>
+          {copyCount === 1 ? '1 Half/Full A4' : `${copyCount} Slips on 1 A4 Sheet`}
+        </span>
+      </div>
+
       {/* Printable Area - Formatted on A4 Sheet */}
       <div
         className="printable-area"
         style={{
           backgroundColor: '#ffffff',
-          padding: '1rem',
+          padding: '0.75rem',
           borderRadius: '8px',
           boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
         }}
@@ -477,13 +900,16 @@ export const ReceiptModal = ({ booking, onClose, companySettings: propCompanySet
                 booking={booking}
                 company={company}
                 copyTitle={copyItem.title}
+                copyBadge={copyItem.copyBadge}
+                showAmount={copyItem.showAmount}
+                isDriverCopy={copyItem.isDriverCopy}
                 formattedDate={formattedDate}
                 copyCount={copyCount}
               />
               {index < copies.length - 1 && (
                 <div className="bw-cut-line">
                   <Scissors size={12} style={{ marginRight: '4px' }} />
-                  <span>Cut Here</span>
+                  <span>Cut Here • Hand copy below to Bus Driver</span>
                 </div>
               )}
             </React.Fragment>

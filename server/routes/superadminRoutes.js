@@ -14,6 +14,8 @@ const Driver = require('../models/Driver');
 const Customer = require('../models/Customer');
 const Notification = require('../models/Notification');
 const AuditLog = require('../models/AuditLog');
+const whatsappService = require('../services/whatsappService');
+const emailService = require('../services/emailService');
 const { protect, authorize } = require('../middleware/auth');
 const { logSecurityEvent } = require('../services/auditService');
 
@@ -236,9 +238,37 @@ router.post('/tenants', async (req, res, next) => {
       standardRoutes: [],
     });
 
+    // 6. Send Onboarding Welcome Email with Banner & Client Credentials
+    let emailDispatch = { success: false };
+    try {
+      emailDispatch = await emailService.sendOnboardingWelcomeEmail({
+        to: finalEmail,
+        companyName: tenant.companyName,
+        uniqueId: tenant.uniqueId || finalUniqueId,
+        slug: tenant.slug,
+        plan: tenant.plan,
+        adminName: adminUser.name,
+        username: adminUser.username,
+        password: finalPassword,
+        contactPhone: finalPhone,
+        contactEmail: finalEmail,
+        address: tenant.address,
+        adminBranch: adminUser.branch,
+        loginUrl: process.env.CLIENT_PORTAL_URL || 'http://localhost:5173/#login',
+      });
+    } catch (emailErr) {
+      console.error('[superadminRoutes] Onboarding email dispatch failed:', emailErr.message);
+      emailDispatch = { success: false, error: emailErr.message };
+    }
+
+    const emailNotice = emailDispatch.success
+      ? (emailDispatch.simulated ? ' (Credentials logged to console; configure SMTP in .env to deliver real emails)' : ` and credentials email dispatched to ${finalEmail}`)
+      : '';
+
     res.status(201).json({
       success: true,
-      message: `Tenant '${tenant.companyName}' and Admin account created successfully`,
+      message: `Tenant '${tenant.companyName}' and Admin account created successfully${emailNotice}`,
+      emailDispatch,
       data: {
         tenant,
         credentials: {
@@ -248,6 +278,7 @@ router.post('/tenants', async (req, res, next) => {
           email: adminUser.email,
           temporaryPassword: finalPassword,
           plan: tenant.plan,
+          emailSent: emailDispatch.success,
         },
         adminUser: {
           id: adminUser._id,
@@ -502,6 +533,138 @@ router.post(['/tenants/:id/impersonate', '/impersonate/:id'], async (req, res, n
   }
 });
 
+// @route   GET /api/superadmin/tenants/:id/whatsapp
+// @desc    Get WhatsApp configuration for a specific tenant organization
+router.get('/tenants/:id/whatsapp', async (req, res, next) => {
+  try {
+    const tenant = await Tenant.findById(req.params.id);
+    if (!tenant) {
+      return res.status(404).json({ success: false, message: 'Tenant not found' });
+    }
+
+    let settings = await Setting.findOne({ tenantId: tenant._id });
+    if (!settings) {
+      settings = await Setting.create({
+        tenantId: tenant._id,
+        companyName: tenant.companyName,
+        whatsappProvider: 'MOCK',
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        tenantId: tenant._id,
+        companyName: tenant.companyName,
+        whatsappProvider: settings.whatsappProvider || 'MOCK',
+        whatsappApiUrl: settings.whatsappApiUrl || '',
+        whatsappApiKey: settings.whatsappApiKey || '',
+        openwaSessionId: settings.openwaSessionId || '',
+        whatsappSenderNumber: settings.whatsappSenderNumber || '',
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// @route   PUT /api/superadmin/tenants/:id/whatsapp
+// @desc    Update WhatsApp configuration for a specific tenant organization
+router.put('/tenants/:id/whatsapp', async (req, res, next) => {
+  try {
+    const tenant = await Tenant.findById(req.params.id);
+    if (!tenant) {
+      return res.status(404).json({ success: false, message: 'Tenant not found' });
+    }
+
+    const {
+      whatsappProvider,
+      whatsappApiUrl,
+      whatsappApiKey,
+      openwaSessionId,
+      whatsappSenderNumber,
+    } = req.body;
+
+    let settings = await Setting.findOne({ tenantId: tenant._id });
+    if (!settings) {
+      settings = new Setting({ tenantId: tenant._id, companyName: tenant.companyName });
+    }
+
+    if (whatsappProvider !== undefined) settings.whatsappProvider = whatsappProvider;
+    if (whatsappApiUrl !== undefined) settings.whatsappApiUrl = (whatsappApiUrl || '').trim();
+    if (whatsappApiKey !== undefined) settings.whatsappApiKey = (whatsappApiKey || '').trim();
+    if (openwaSessionId !== undefined) settings.openwaSessionId = (openwaSessionId || '').trim();
+    if (whatsappSenderNumber !== undefined) settings.whatsappSenderNumber = (whatsappSenderNumber || '').trim();
+
+    await settings.save();
+
+    await logSecurityEvent({
+      req,
+      action: 'TENANT_WHATSAPP_CONFIG_UPDATED',
+      severity: 'INFO',
+      details: {
+        tenantId: tenant._id,
+        companyName: tenant.companyName,
+        whatsappProvider: settings.whatsappProvider,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: `WhatsApp configuration updated for ${tenant.companyName}`,
+      data: {
+        tenantId: tenant._id,
+        companyName: tenant.companyName,
+        whatsappProvider: settings.whatsappProvider,
+        whatsappApiUrl: settings.whatsappApiUrl,
+        whatsappApiKey: settings.whatsappApiKey,
+        openwaSessionId: settings.openwaSessionId,
+        whatsappSenderNumber: settings.whatsappSenderNumber,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// @route   POST /api/superadmin/tenants/:id/test-whatsapp
+// @desc    Send live test message via tenant's configured WhatsApp gateway
+router.post('/tenants/:id/test-whatsapp', async (req, res, next) => {
+  try {
+    const tenant = await Tenant.findById(req.params.id);
+    if (!tenant) {
+      return res.status(404).json({ success: false, message: 'Tenant not found' });
+    }
+
+    const { phone, message } = req.body;
+    if (!phone || !phone.trim()) {
+      return res.status(400).json({ success: false, message: 'Recipient phone number is required for test' });
+    }
+
+    const settings = (await Setting.findOne({ tenantId: tenant._id })) || {};
+    const brand = tenant.companyName || settings.companyName || 'Courier & Logistics';
+    const testMsg =
+      message && message.trim()
+        ? message.trim()
+        : `*${brand}* - Test notification from Super Admin.\nWhatsApp gateway connection verified successfully!`;
+
+    const result = await whatsappService.sendTextMessage(phone.trim(), testMsg, settings);
+    const directLink = whatsappService.generateWhatsAppLink(phone.trim(), testMsg);
+
+    res.json({
+      success: result.success,
+      provider: result.provider || settings.whatsappProvider || 'MOCK',
+      message: result.success
+        ? `Test message sent successfully via ${result.provider || 'gateway'}!`
+        : `Gateway test error: ${result.error || 'Failed to send'}`,
+      directLink,
+      details: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // @route   GET /api/superadmin/settings
 // @desc    Get system settings & company profile for CMS management (Superadmin only)
 router.get('/settings', async (req, res, next) => {
@@ -571,6 +734,7 @@ router.put('/settings', async (req, res, next) => {
       whatsappSenderNumber,
       whatsappApiKey,
       whatsappApiUrl,
+      openwaSessionId,
     } = req.body;
 
     let settings = null;
@@ -612,6 +776,7 @@ router.put('/settings', async (req, res, next) => {
     if (whatsappSenderNumber !== undefined) settings.whatsappSenderNumber = whatsappSenderNumber.trim();
     if (whatsappApiKey !== undefined) settings.whatsappApiKey = whatsappApiKey.trim();
     if (whatsappApiUrl !== undefined) settings.whatsappApiUrl = whatsappApiUrl.trim();
+    if (openwaSessionId !== undefined) settings.openwaSessionId = openwaSessionId.trim();
 
     await settings.save();
 
@@ -637,7 +802,58 @@ router.put('/settings', async (req, res, next) => {
   }
 });
 
+// @route   POST /api/superadmin/tenants/:id/send-credentials
+// @desc    Resend onboarding email with credentials and branded banner to the client organization
+router.post('/tenants/:id/send-credentials', async (req, res, next) => {
+  try {
+    const tenant = await Tenant.findById(req.params.id).populate('adminUser');
+    if (!tenant) {
+      return res.status(404).json({ success: false, message: 'Tenant not found' });
+    }
+    const adminUser = tenant.adminUser;
+    if (!adminUser) {
+      return res.status(404).json({ success: false, message: 'Tenant admin user not found' });
+    }
+    const { customPassword, recipientEmail } = req.body || {};
+    const targetEmail = (recipientEmail || adminUser.email || tenant.contactEmail || '').trim();
+    const tempPassword = customPassword || 'Check with Platform Super Admin';
 
+    const result = await emailService.sendOnboardingWelcomeEmail({
+      to: targetEmail,
+      companyName: tenant.companyName,
+      uniqueId: tenant.uniqueId,
+      slug: tenant.slug,
+      plan: tenant.plan,
+      adminName: adminUser.name,
+      username: adminUser.username,
+      password: tempPassword,
+      contactPhone: tenant.contactPhone,
+      contactEmail: targetEmail,
+      address: tenant.address,
+      adminBranch: adminUser.branch,
+      loginUrl: process.env.CLIENT_PORTAL_URL || 'http://localhost:5173/#login',
+    });
+
+    res.json({
+      success: result.success,
+      message: result.message || (result.success ? `Credentials email dispatched to ${targetEmail}` : 'Failed to send credentials email'),
+      data: result,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// @route   POST /api/superadmin/test-smtp
+// @desc    Test SMTP email transporter configuration
+router.post('/test-smtp', async (req, res, next) => {
+  try {
+    const result = await emailService.verifyConnection();
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
 
 module.exports = router;
 

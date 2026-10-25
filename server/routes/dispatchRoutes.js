@@ -3,13 +3,13 @@ const router = express.Router();
 const Booking = require('../models/Booking');
 const BusDispatch = require('../models/BusDispatch');
 const whatsappService = require('../services/whatsappService');
-const { protect } = require('../middleware/auth');
+const { protect, authorize } = require('../middleware/auth');
 const tenantScope = require('../middleware/tenantScope');
 const { escapeRegex } = require('../middleware/security');
 const liveEmitter = require('../services/liveEmitter');
 
-// All dispatch routes require authentication & tenant scoping
-router.use(protect, tenantScope);
+// All dispatch routes require authentication, tenant scoping, and admin role (staff restricted)
+router.use(protect, tenantScope, authorize('admin', 'superadmin'));
 
 // @route   GET /api/dispatch/pending
 // @desc    Get all parcels waiting for bus dispatch (Tenant Scoped)
@@ -171,39 +171,69 @@ router.post('/assign', async (req, res, next) => {
       totalParcels += booking.quantity || 1;
       totalWeight += booking.weight || 0;
 
-      // Trigger WhatsApp Notification
-      const notifyRes = await whatsappService.sendDispatchNotification({
-        booking,
-        busNumber: finalBusNumber,
-        busName: finalBusName,
-        route: finalRoute,
-        fromCity: finalFromCity,
-        toCity: finalToCity,
-        destinationAddress: finalDestinationAddress || booking.deliveryAddress,
-        departureTime: finalDepartureTime,
-        arrivalTime: finalArrivalTime,
-        operator: finalOperator,
-        driverName: finalDriverName,
-        driverPhone: finalDriverPhone,
-        alternatePhone: finalAlternatePhone,
-        platformNumber: finalPlatformNumber,
-      });
-
-      if (notifyRes.success) {
-        booking.notificationStatus = 'SENT';
-        booking.notificationSentAt = now;
-        booking.lastNotificationMessage = notifyRes.message;
-      } else {
-        booking.notificationStatus = 'FAILED';
+      // Trigger WhatsApp Notification for BOTH Sender & Receiver (non-blocking)
+      let notifyResults = [];
+      try {
+        notifyResults = await whatsappService.sendDispatchNotification({
+          booking,
+          tenantId: req.tenantId || booking.tenantId,
+          busNumber: finalBusNumber,
+          busName: finalBusName,
+          route: finalRoute,
+          fromCity: finalFromCity,
+          toCity: finalToCity,
+          originAddress: finalOriginAddress,
+          destinationAddress: finalDestinationAddress || booking.deliveryAddress,
+          departureTime: finalDepartureTime,
+          arrivalTime: finalArrivalTime,
+          operator: finalOperator,
+          driverName: finalDriverName,
+          driverPhone: finalDriverPhone,
+          alternatePhone: finalAlternatePhone,
+          platformNumber: finalPlatformNumber,
+          dispatchNotes: finalDispatchNotes,
+        });
+      } catch (notifyErr) {
+        console.warn(`[Dispatch] WhatsApp notification warning for ${booking.orderId}:`, notifyErr.message);
       }
 
-      await booking.save();
-      notificationResults.push({
-        orderId: booking.orderId,
-        customerName: booking.customerName,
-        phone: booking.customerWhatsapp || booking.customerPhone,
-        notification: notifyRes,
-      });
+      const anySent = Array.isArray(notifyResults) && notifyResults.some((r) => r.success);
+      const allSent = Array.isArray(notifyResults) && notifyResults.length > 0 && notifyResults.every((r) => r.success);
+
+      // If at least one recipient received WhatsApp message, mark SENT. If neither, mark NOT_SENT.
+      booking.notificationStatus = anySent ? 'SENT' : (allSent ? 'SENT' : 'NOT_SENT');
+      booking.notificationSentAt = now;
+      booking.lastNotificationMessage = Array.isArray(notifyResults) && notifyResults.length > 0
+        ? notifyResults.map((r) => `[${r.recipientRole}] ${r.message}`).join('\n---\n')
+        : (booking.lastNotificationMessage || '');
+
+      try {
+        await booking.save();
+      } catch (saveErr) {
+        console.warn(`[Dispatch] Fallback saving booking ${booking.orderId}:`, saveErr.message);
+        booking.notificationStatus = 'NOT_SENT';
+        await booking.save();
+      }
+
+      if (Array.isArray(notifyResults)) {
+        notifyResults.forEach((nr) => {
+          notificationResults.push({
+            orderId: booking.orderId,
+            recipientRole: nr.recipientRole,
+            recipientLabel: nr.recipientLabel,
+            customerName: nr.recipientName,
+            phone: nr.phone,
+            notification: nr,
+          });
+        });
+      } else {
+        notificationResults.push({
+          orderId: booking.orderId,
+          customerName: booking.customerName,
+          phone: booking.customerWhatsapp || booking.customerPhone,
+          notification: notifyResults,
+        });
+      }
     }
 
     // Create BusDispatch manifest record (Scoped to this tenant)

@@ -30,6 +30,7 @@ import {
 import { api } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { useLiveData } from '../../context/LiveDataContext';
+import { useAuth } from '../../context/AuthContext';
 
 const getBookedByInfo = (booking) => {
   if (!booking) return { name: 'Admin', roleLabel: 'Admin', isAdmin: true, branch: '' };
@@ -62,6 +63,8 @@ export const BookingsPage = ({
   standardRoutes = [],
   parcelTypes = [],
 }) => {
+  const { user } = useAuth();
+  const isStaff = user?.role === 'staff';
   const { showToast } = useToast();
 
   const [bookings, setBookings] = useState([]);
@@ -426,7 +429,7 @@ export const BookingsPage = ({
           </button>
 
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-            {isWaiting && (
+            {isWaiting && !isStaff && (
               <button
                 className="btn btn-primary btn-sm"
                 onClick={() => {
@@ -761,17 +764,21 @@ export const BookingsPage = ({
                 <Clock size={28} color="#94a3b8" style={{ margin: '0 auto 8px auto', display: 'block' }} />
                 <div style={{ fontWeight: 600, color: '#334155', fontSize: '0.875rem' }}>Waiting for Bus Assignment</div>
                 <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '4px 0 12px 0' }}>
-                  This consignment has not been assigned to an evening bus departure yet.
+                  {isStaff
+                    ? 'This consignment is awaiting bus assignment by administrators.'
+                    : 'This consignment has not been assigned to an evening bus departure yet.'}
                 </p>
-                <button
-                  type="button"
-                  className="btn btn-primary btn-sm"
-                  onClick={() => onNavigateModule('dispatch')}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                >
-                  <Bus size={14} />
-                  <span>Assign Bus & Driver in Dispatch</span>
-                </button>
+                {!isStaff && (
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-sm"
+                    onClick={() => onNavigateModule('dispatch')}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <Bus size={14} />
+                    <span>Assign Bus & Driver in Dispatch</span>
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -831,7 +838,11 @@ export const BookingsPage = ({
       <div className="page-header">
         <div>
           <h1 className="page-title">Consignment Bookings</h1>
-          <p className="page-subtitle">Click on any consignment record to view full manifest, bus assignment, and operations</p>
+          <p className="page-subtitle">
+            {isStaff
+              ? 'Click on any consignment record to view full manifest and delivery status'
+              : 'Click on any consignment record to view full manifest, bus assignment, and operations'}
+          </p>
         </div>
         <button
           className="btn btn-primary btn-sm"

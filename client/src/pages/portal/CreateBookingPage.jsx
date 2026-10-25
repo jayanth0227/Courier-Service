@@ -577,6 +577,7 @@ export const CreateBookingPage = ({
         notifyLocalChange('BOOKING_CREATED', res.data);
         await fetchCities();
         if (onRefreshCities) onRefreshCities();
+        // WhatsApp booking confirmation is sent automatically by the server via OpenWA
       }
     } catch (error) {
       showToast(error.message || 'Failed to create booking', 'error');

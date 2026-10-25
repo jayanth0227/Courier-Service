@@ -29,7 +29,7 @@ export const PortalLayout = ({
   const { companySettings: contextCompanySettings, setCompanySettings: setGlobalCompanySettings } = useCompanySettings();
 
   const isStaff = user?.role === 'staff';
-  const STAFF_ALLOWED = ['create-booking', 'bookings', 'dispatch', 'tracking'];
+  const STAFF_ALLOWED = ['create-booking', 'bookings', 'tracking'];
 
   // If controlled from App.jsx routing, use controlledModule; else maintain internal state
   const [internalModule, setInternalModule] = useState(() => {
@@ -43,7 +43,7 @@ export const PortalLayout = ({
   const rawModule = controlledModule || internalModule;
   const activeModule = isStaff && !STAFF_ALLOWED.includes(rawModule) ? 'create-booking' : rawModule;
 
-  // Protect staff routes: staff should only have access to create booking, booking list, bus dispatch, parcel tracking
+  // Protect staff routes: staff should only have access to create booking, booking list, parcel tracking
   useEffect(() => {
     if (isStaff && !STAFF_ALLOWED.includes(activeModule)) {
       handleSelectModule('create-booking');
@@ -51,6 +51,9 @@ export const PortalLayout = ({
   }, [activeModule, isStaff]);
 
   const handleSelectModule = (mod) => {
+    // Dismiss any active receipt bill or WhatsApp modal immediately when navigating
+    setReceiptBooking(null);
+    setWhatsAppBooking(null);
     const targetMod = isStaff && !STAFF_ALLOWED.includes(mod) ? 'create-booking' : mod;
     if (controlledOnSelectModule) {
       controlledOnSelectModule(targetMod);
@@ -60,6 +63,12 @@ export const PortalLayout = ({
       window.location.hash = `#${targetMod}`;
     }
   };
+
+  // When controlledModule changes from outside (e.g. URL hash change or topnav click), dismiss modals
+  useEffect(() => {
+    setReceiptBooking(null);
+    setWhatsAppBooking(null);
+  }, [controlledModule]);
 
   const [pendingDispatchCount, setPendingDispatchCount] = useState(0);
   const [companySettings, setCompanySettings] = useState(propCompanySettings || contextCompanySettings || null);
@@ -81,6 +90,7 @@ export const PortalLayout = ({
   const [showStaffModal, setShowStaffModal] = useState(false);
 
   const refreshPendingCount = async () => {
+    if (isStaff) return;
     try {
       const res = await api.dispatch.getPending();
       if (res.success) {
@@ -137,25 +147,31 @@ export const PortalLayout = ({
   };
 
   const refreshAllGlobalState = async () => {
-    await Promise.all([
+    const tasks = [
       fetchCities(),
       fetchParcelTypes(),
       fetchDestinations(),
       fetchSettings(),
-      refreshPendingCount(),
-    ]);
+    ];
+    if (!isStaff) {
+      tasks.push(refreshPendingCount());
+    }
+    await Promise.all(tasks);
   };
 
   useEffect(() => {
     refreshAllGlobalState();
-    const interval = setInterval(refreshPendingCount, 15000);
-    return () => clearInterval(interval);
-  }, []);
+    if (!isStaff) {
+      const interval = setInterval(refreshPendingCount, 15000);
+      return () => clearInterval(interval);
+    }
+  }, [isStaff]);
 
   const { subscribeToEvent } = useLiveData();
 
-  // Instant real-time badge updates without waiting for interval
+  // Instant real-time badge updates without waiting for interval (admin only)
   useEffect(() => {
+    if (isStaff) return;
     const unsubCreated = subscribeToEvent('BOOKING_CREATED', () => {
       refreshPendingCount();
     });
@@ -170,7 +186,7 @@ export const PortalLayout = ({
       unsubDispatched();
       unsubUpdated();
     };
-  }, [subscribeToEvent]);
+  }, [subscribeToEvent, isStaff]);
 
   const handleOpenAssignBus = (bookings, callback) => {
     setAssignBusBookings(bookings);
@@ -256,7 +272,7 @@ export const PortalLayout = ({
               />
             )}
 
-            {activeModule === 'dispatch' && (
+            {activeModule === 'dispatch' && !isStaff && (
               <BusDispatchPage
                 onOpenReceipt={(b) => setReceiptBooking(b)}
                 onOpenWhatsApp={(b) => setWhatsAppBooking(b)}

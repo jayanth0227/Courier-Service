@@ -56,6 +56,13 @@ router.get('/public', async (req, res, next) => {
           companyAddress: '',
           gstin: '',
           receiptFooterNote: 'Thank you for choosing our bus parcel service.',
+          termsAndConditions: `1. Goods carried strictly at owner's risk; company is not liable for leakage, breakage, or natural damages.
+2. Value of goods must be declared at booking; company liability for undeclared items is strictly limited to ₹500.
+3. Hazardous, contraband, inflammable, or prohibited goods are strictly not accepted.
+4. Demurrage will be levied if cargo is not claimed within 24 hours of bus arrival at destination.
+5. Consignee must verify package condition before counter delivery acknowledgment.
+6. Original LR copy or SMS verification must be produced at destination counter to claim consignment.
+7. All disputes are subject to local jurisdiction only.`,
           standardRoutes: [],
         },
       });
@@ -73,6 +80,7 @@ router.get('/public', async (req, res, next) => {
         fromCity: settings.fromCity || '',
         gstin: settings.gstin || '',
         receiptFooterNote: settings.receiptFooterNote,
+        termsAndConditions: settings.termsAndConditions,
         standardRoutes: settings.standardRoutes || [],
       },
     });
@@ -130,10 +138,12 @@ router.put('/', protect, tenantScope, authorize('admin', 'superadmin'), async (r
       fromCity,
       gstin,
       receiptFooterNote,
+      termsAndConditions,
       whatsappProvider,
       whatsappSenderNumber,
       whatsappApiKey,
       whatsappApiUrl,
+      openwaSessionId,
       standardRoutes,
       parcelTypes,
     } = req.body;
@@ -148,11 +158,16 @@ router.put('/', protect, tenantScope, authorize('admin', 'superadmin'), async (r
     if (fromCity !== undefined) settings.fromCity = fromCity.trim();
     if (gstin !== undefined) settings.gstin = gstin.trim();
     if (receiptFooterNote !== undefined) settings.receiptFooterNote = receiptFooterNote.trim();
+    if (termsAndConditions !== undefined) settings.termsAndConditions = termsAndConditions.trim();
 
-    if (whatsappProvider !== undefined) settings.whatsappProvider = whatsappProvider;
-    if (whatsappSenderNumber !== undefined) settings.whatsappSenderNumber = whatsappSenderNumber.trim();
-    if (whatsappApiKey !== undefined) settings.whatsappApiKey = whatsappApiKey.trim();
-    if (whatsappApiUrl !== undefined) settings.whatsappApiUrl = whatsappApiUrl.trim();
+    // WhatsApp configuration is centrally managed by Super Admin per tenant
+    if (req.user && req.user.role === 'superadmin') {
+      if (whatsappProvider !== undefined) settings.whatsappProvider = whatsappProvider;
+      if (whatsappSenderNumber !== undefined) settings.whatsappSenderNumber = whatsappSenderNumber.trim();
+      if (whatsappApiKey !== undefined) settings.whatsappApiKey = whatsappApiKey.trim();
+      if (whatsappApiUrl !== undefined) settings.whatsappApiUrl = whatsappApiUrl.trim();
+      if (openwaSessionId !== undefined) settings.openwaSessionId = openwaSessionId.trim();
+    }
     if (standardRoutes && Array.isArray(standardRoutes)) {
       settings.standardRoutes = standardRoutes;
       // Sync with Destination collection for this tenant

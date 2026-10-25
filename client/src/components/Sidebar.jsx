@@ -20,21 +20,30 @@ export const Sidebar = ({ activeModule, onSelectModule, pendingDispatchCount = 0
   const { companySettings: contextCompanySettings } = useCompanySettings();
   const company = propCompanySettings || contextCompanySettings || {};
 
-  const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'create-booking', label: 'Create Booking', icon: PackagePlus },
-    { id: 'bookings', label: 'Bookings List', icon: Package },
-    {
-      id: 'dispatch',
-      label: 'Bus Dispatch',
-      icon: Bus,
-      badge: pendingDispatchCount > 0 ? pendingDispatchCount : null,
-    },
-    { id: 'tracking', label: 'Parcel Tracking', icon: Search },
-    { id: 'customers', label: 'Customers', icon: Users },
-    { id: 'reports', label: 'Reports & Revenue', icon: BarChart3 },
-    { id: 'settings', label: 'System Settings', icon: Settings },
-  ];
+  const isStaff = user?.role === 'staff';
+  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
+
+  const navItems = isStaff
+    ? [
+        { id: 'create-booking', label: 'Create Booking', icon: PackagePlus },
+        { id: 'bookings', label: 'Bookings List', icon: Package },
+        { id: 'tracking', label: 'Parcel Tracking', icon: Search },
+      ]
+    : [
+        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { id: 'create-booking', label: 'Create Booking', icon: PackagePlus },
+        { id: 'bookings', label: 'Bookings List', icon: Package },
+        {
+          id: 'dispatch',
+          label: 'Bus Dispatch',
+          icon: Bus,
+          badge: pendingDispatchCount > 0 ? pendingDispatchCount : null,
+        },
+        { id: 'tracking', label: 'Parcel Tracking', icon: Search },
+        { id: 'customers', label: 'Customers', icon: Users },
+        { id: 'reports', label: 'Reports & Revenue', icon: BarChart3 },
+        ...(isAdmin ? [{ id: 'settings', label: 'System Settings', icon: Settings }] : []),
+      ];
 
   return (
     <aside className="portal-sidebar no-print">

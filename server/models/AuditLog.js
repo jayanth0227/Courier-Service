@@ -54,6 +54,7 @@ const auditLogSchema = new mongoose.Schema(
         'CITY_MUTATED',
         'DESTINATION_MUTATED',
         'SETTINGS_UPDATED',
+        'TENANT_WHATSAPP_CONFIG_UPDATED',
         'UNAUTHORIZED_ACCESS_ATTEMPT',
         'SECURITY_POLICY_VIOLATION',
       ],

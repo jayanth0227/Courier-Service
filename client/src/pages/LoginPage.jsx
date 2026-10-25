@@ -274,38 +274,6 @@ export const LoginPage = ({ onNavigate, onLoginSuccess, companySettings: propCom
               {loading ? 'Authenticating...' : 'Sign In to Portal'}
             </button>
           </form>
-
-          {/* Quick Demo Credentials Box */}
-          <div
-            style={{
-              marginTop: '1.5rem',
-              paddingTop: '1rem',
-              borderTop: '1px dashed #e2e8f0',
-              fontSize: '0.75rem',
-              color: '#64748b',
-            }}
-          >
-            <div style={{ fontWeight: 600, color: '#475569', marginBottom: '0.5rem', fontFamily: 'var(--font-family)' }}>
-              Quick Credentials Auto-Fill:
-            </div>
-            <div>
-              <button
-                type="button"
-                className="btn btn-outline btn-sm"
-                style={{
-                  width: '100%',
-                  fontSize: '0.75rem',
-                  padding: '0.45rem',
-                }}
-                onClick={() => {
-                  setIdentifier('superadmin');
-                  setPassword('superadmin123');
-                }}
-              >
-                Platform Super Admin
-              </button>
-            </div>
-          </div>
         </div>
       </div>
 

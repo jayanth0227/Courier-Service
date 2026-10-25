@@ -9,5 +9,17 @@
     "predev": "node ../scripts/clean-ports.js 5000",
     "dev": "node ../scripts/clean-ports.js 5000 && node server.js",
     "start": "node server.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^4.21.2",
+    "express-rate-limit": "^8.7.0",
+    "helmet": "^8.3.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.9.5",
+    "morgan": "^1.10.0",
+    "nodemailer": "^10.2.1"
   }
 }

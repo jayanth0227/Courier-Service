@@ -147,7 +147,7 @@ const bookingSchema = new mongoose.Schema(
     ],
     notificationStatus: {
       type: String,
-      enum: ['NOT_SENT', 'SENT', 'FAILED'],
+      enum: ['NOT_SENT', 'SENT', 'FAILED', 'PARTIAL'],
       default: 'NOT_SENT',
     },
     notificationSentAt: {

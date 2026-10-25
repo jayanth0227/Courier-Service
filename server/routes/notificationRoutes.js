@@ -63,33 +63,66 @@ router.post('/resend/:bookingId', async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Booking not found' });
     }
 
-    const busNumber = booking.busDetails?.busNumber || 'Assigned Bus';
-    const route = booking.busDetails?.route || booking.destination;
-    const departureTime = booking.busDetails?.departureTime || 'Evening Dispatch';
-    const operator = booking.busDetails?.operator || '';
+    const busDetails = booking.busDetails || {};
+    const busNumber = busDetails.busNumber || 'Assigned Bus';
+    const busName = busDetails.busName || busDetails.operator || '';
+    const operator = busDetails.operator || busDetails.busName || '';
+    const route = busDetails.route || booking.destination;
+    const fromCity = busDetails.fromCity || booking.fromCity;
+    const toCity = busDetails.toCity || booking.toCity;
+    const originAddress = busDetails.originAddress || '';
+    const destinationAddress = busDetails.destinationAddress || booking.deliveryAddress;
+    const departureTime = busDetails.departureTime || 'Evening Dispatch';
+    const arrivalTime = busDetails.arrivalTime || '';
+    const platformNumber = busDetails.platformNumber || '';
+    const driverName = busDetails.driverName || '';
+    const driverPhone = busDetails.driverPhone || '';
+    const alternatePhone = busDetails.alternatePhone || '';
+    const dispatchNotes = busDetails.dispatchNotes || '';
 
-    const notifyRes = await whatsappService.sendDispatchNotification({
+    const notifyResults = await whatsappService.sendDispatchNotification({
       booking,
+      tenantId: req.tenantId || booking.tenantId,
       busNumber,
-      route,
-      departureTime,
+      busName,
       operator,
+      route,
+      fromCity,
+      toCity,
+      originAddress,
+      destinationAddress,
+      departureTime,
+      arrivalTime,
+      platformNumber,
+      driverName,
+      driverPhone,
+      alternatePhone,
+      dispatchNotes,
     });
 
-    if (notifyRes.success) {
-      booking.notificationStatus = 'SENT';
-      booking.notificationSentAt = new Date();
-      booking.lastNotificationMessage = notifyRes.message;
+    const anySent = Array.isArray(notifyResults) && notifyResults.some((r) => r.success);
+    const allSent = Array.isArray(notifyResults) && notifyResults.every((r) => r.success);
+
+    booking.notificationStatus = anySent ? 'SENT' : 'NOT_SENT';
+    booking.notificationSentAt = new Date();
+    booking.lastNotificationMessage = Array.isArray(notifyResults)
+      ? notifyResults.map((r) => `[${r.recipientRole}] ${r.message}`).join('\n---\n')
+      : (notifyResults.message || '');
+    try {
+      await booking.save();
+    } catch {
+      booking.notificationStatus = 'NOT_SENT';
       await booking.save();
     }
 
     res.json({
-      success: notifyRes.success,
-      message: notifyRes.success
-        ? `WhatsApp notification sent to ${notifyRes.recipientPhone}`
-        : `Failed to send notification: ${notifyRes.error}`,
-      directLink: notifyRes.directLink,
-      data: notifyRes,
+      success: anySent,
+      message: anySent
+        ? `WhatsApp dispatch notification triggered for ${notifyResults.length} recipient(s)`
+        : `Failed to send notification: ${notifyResults[0]?.failureReason || 'Provider error'}`,
+      directLink: notifyResults.directLink || notifyResults[0]?.directLink,
+      notifications: notifyResults,
+      data: notifyResults,
     });
   } catch (error) {
     next(error);

@@ -557,6 +557,28 @@ export const api = {
       });
       return handleResponse(res);
     },
+    getTenantWhatsApp: async (id) => {
+      const res = await fetch(`${API_BASE}/superadmin/tenants/${id}/whatsapp`, {
+        headers: getHeaders(),
+      });
+      return handleResponse(res);
+    },
+    updateTenantWhatsApp: async (id, data) => {
+      const res = await fetch(`${API_BASE}/superadmin/tenants/${id}/whatsapp`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      return handleResponse(res);
+    },
+    testTenantWhatsApp: async (id, data) => {
+      const res = await fetch(`${API_BASE}/superadmin/tenants/${id}/test-whatsapp`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      return handleResponse(res);
+    },
     getSettings: async () => {
       const res = await fetch(`${API_BASE}/superadmin/settings`, {
         headers: getHeaders(),
@@ -568,6 +590,21 @@ export const api = {
         method: 'PUT',
         headers: getHeaders(),
         body: JSON.stringify(data),
+      });
+      return handleResponse(res);
+    },
+    sendTenantCredentials: async (id, data = {}) => {
+      const res = await fetch(`${API_BASE}/superadmin/tenants/${id}/send-credentials`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      return handleResponse(res);
+    },
+    testSmtp: async () => {
+      const res = await fetch(`${API_BASE}/superadmin/test-smtp`, {
+        method: 'POST',
+        headers: getHeaders(),
       });
       return handleResponse(res);
     },

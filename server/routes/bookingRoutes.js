@@ -10,6 +10,7 @@ const { protect, authorize } = require('../middleware/auth');
 const tenantScope = require('../middleware/tenantScope');
 const { escapeRegex } = require('../middleware/security');
 const liveEmitter = require('../services/liveEmitter');
+const whatsappService = require('../services/whatsappService');
 
 // All booking routes require authentication & tenant scoping
 router.use(protect, tenantScope);
@@ -215,6 +216,11 @@ router.post('/', async (req, res, next) => {
 
     // Real-time broadcast to all connected portal windows for this tenant
     liveEmitter.broadcast(req.tenantId, 'BOOKING_CREATED', booking);
+
+    // Auto-send WhatsApp booking confirmation (non-blocking — don't delay response)
+    whatsappService.sendBookingConfirmation(booking, req.tenantId).catch((err) => {
+      console.warn('[WhatsApp Auto-Send] Booking confirmation failed (non-critical):', err.message);
+    });
 
     res.status(201).json({
       success: true,

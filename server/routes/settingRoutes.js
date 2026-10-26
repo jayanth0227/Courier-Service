@@ -44,6 +44,116 @@ router.get('/public', async (req, res, next) => {
       }
     }
 
+    const defaultHeroStats = [
+      { label: 'Active Hubs', value: '8+', subtext: 'Connected Destination Cities' },
+      { label: 'Daily Fleet', value: '180+', subtext: 'Scheduled Bus Dispatches' },
+      { label: 'All Cargo', value: '100%', subtext: 'Standard Freight Categories' },
+      { label: 'Verified SLA', value: '99.8%', subtext: 'Handover & Timely Delivery' },
+    ];
+
+    const defaultServices = [
+      {
+        id: 'whatsapp-service',
+        title: 'Automated WhatsApp Notifications',
+        description: 'The moment a parcel is booked, an automated WhatsApp alert is dispatched to both sender and consignee with the 6-digit LR tracking number and live status link.',
+        badge: 'Instant Delivery Alert',
+        icon: 'MessageSquare',
+        highlight: true,
+      },
+      {
+        id: 'tracking-service',
+        title: 'Zero-Friction Parcel Tracking',
+        description: 'Customers and vendors easily track consignments in real-time using their 6-digit Order ID, displaying assigned bus number, driver dispatch contact, and destination counter.',
+        badge: 'Real-Time Telemetry',
+        icon: 'Search',
+        highlight: true,
+      },
+      {
+        id: 'batch-assign-service',
+        title: 'Assign Multiple Parcels to Bus at a Time',
+        description: 'Counter dispatchers can batch-select dozens of waiting parcels for any destination city and allocate them to a scheduled passenger bus luggage bay in one click.',
+        badge: 'Bulk Bay Dispatch',
+        icon: 'Bus',
+        highlight: true,
+      },
+      {
+        id: 'counter-booking-service',
+        title: 'Counter Booking Engine for Vendors',
+        description: 'High-speed counter interface for commercial merchants: auto-generates 6-digit Order IDs, calculates weight-based or category pricing, and prints receipts instantly.',
+        badge: 'High Speed Booking',
+        icon: 'Package',
+        highlight: false,
+      },
+      {
+        id: 'staff-minimal-access',
+        title: 'Staff Login with Minimal Scoped Access',
+        description: 'Counter clerks, loading supervisors, and delivery operators log in with strictly scoped permissions to create bookings and load buses without accessing corporate financials.',
+        badge: 'Role Security',
+        icon: 'ShieldCheck',
+        highlight: false,
+      },
+      {
+        id: 'scheduled-bus-network',
+        title: 'Daily Scheduled Passenger Bus Connectivity',
+        description: 'Leveraging existing high-frequency intercity passenger bus timetables, providing faster turnaround and lower demurrage than conventional slow trucking networks.',
+        badge: 'Express Transit',
+        icon: 'Truck',
+        highlight: false,
+      },
+    ];
+
+    const defaultSteps = [
+      {
+        stepNumber: 1,
+        title: 'Book Parcel & Generate 6-Digit Order ID',
+        description: 'The vendor presents goods at the origin hub counter. The counter staff records destination, weight, and parties, instantly generating an official 6-digit LR tracking ID.',
+        tag: '1. Booking',
+      },
+      {
+        stepNumber: 2,
+        title: 'Automated WhatsApp Message Delivered',
+        description: 'System automatically sends a structured WhatsApp message to the consignor and consignee containing consignment details and a single-click live tracking link.',
+        tag: '2. WhatsApp Alert',
+      },
+      {
+        stepNumber: 3,
+        title: 'Assign Multiple Parcels to Bus Bay',
+        description: 'Hub staff groups queued parcels by destination route and batch-assigns them to a scheduled passenger bus with a generated driver dispatch manifest.',
+        tag: '3. Fleet Assignment',
+      },
+      {
+        stepNumber: 4,
+        title: 'Intercity Bus Transit & Live Monitoring',
+        description: 'The parcel travels inside the secure luggage bay of the scheduled bus. Both vendor and customer monitor transit progress and arrival ETA online.',
+        tag: '4. Transit',
+      },
+      {
+        stepNumber: 5,
+        title: 'Destination Counter Verification & Handover',
+        description: 'Upon bus arrival at the destination terminal, counter staff unloads cargo. Consignee presents the 6-digit Order ID or WhatsApp receipt for verified handover.',
+        tag: '5. Handover',
+      },
+    ];
+
+    const defaultVendorBenefits = [
+      {
+        title: 'Same-Day & Overnight Passenger Bus Timings',
+        description: 'Eliminates regional warehouse consolidation delays. Your parcels travel directly on express passenger bus schedules.',
+      },
+      {
+        title: 'Zero WhatsApp Overhead for Merchants',
+        description: 'No manual photo-sharing or texting waybills. Customers receive automated WhatsApp confirmation and tracking links instantly.',
+      },
+      {
+        title: 'Bulk Dispatch Tools for High-Volume Shippers',
+        description: 'Assign dozens of cartons and sacks across multiple departure routes within seconds with complete digital manifests.',
+      },
+      {
+        title: 'Minimal Operator Training Required',
+        description: 'Staff portals are intuitive and role-restricted, allowing counter clerks to execute bookings and dispatches with zero friction.',
+      },
+    ];
+
     if (!settings) {
       return res.json({
         success: true,
@@ -64,6 +174,25 @@ router.get('/public', async (req, res, next) => {
 6. Original LR copy or SMS verification must be produced at destination counter to claim consignment.
 7. All disputes are subject to local jurisdiction only.`,
           standardRoutes: [],
+          announcementText: 'Scheduled passenger bus parcel dispatch active across all hub counters with instant WhatsApp alerts.',
+          announcementLink: '#services',
+          showAnnouncement: true,
+          heroBadge: 'Verified Counter-to-Counter Parcel Network',
+          heroTitle: 'Premier Bus Parcel & Logistics Network',
+          heroSubtitle: 'Ship commercial cartons, grain sacks, industrial parts, documents, and merchandise across state routes via daily scheduled passenger buses. Real-time 6-digit Order ID tracking and instant WhatsApp dispatch alerts.',
+          heroPrimaryCtaText: 'Operations Portal',
+          heroPrimaryCtaLink: '#login',
+          heroSecondaryCtaText: 'Track Consignment',
+          heroSecondaryCtaLink: '#track',
+          heroStats: defaultHeroStats,
+          servicesTitle: 'Enterprise Bus Parcel Services for Commercial Vendors',
+          servicesSubtitle: 'Engineered for high-volume traders, wholesalers, retail vendors, and transport counter operators needing scheduled dispatch with zero communication friction.',
+          services: defaultServices,
+          howItWorksTitle: 'How It Works: Step-by-Step Logistics Workflow',
+          howItWorksSubtitle: 'From counter parcel booking to verified destination counter handover across our scheduled bus network.',
+          howItWorksSteps: defaultSteps,
+          vendorBenefitsTitle: 'Why Leading Commercial Vendors Choose Us',
+          vendorBenefits: defaultVendorBenefits,
         },
       });
     }
@@ -82,6 +211,25 @@ router.get('/public', async (req, res, next) => {
         receiptFooterNote: settings.receiptFooterNote,
         termsAndConditions: settings.termsAndConditions,
         standardRoutes: settings.standardRoutes || [],
+        announcementText: settings.announcementText || 'Scheduled passenger bus parcel dispatch active across all hub counters with instant WhatsApp alerts.',
+        announcementLink: settings.announcementLink || '#services',
+        showAnnouncement: settings.showAnnouncement !== false,
+        heroBadge: settings.heroBadge || 'Verified Counter-to-Counter Parcel Network',
+        heroTitle: settings.heroTitle || 'Premier Bus Parcel & Logistics Network',
+        heroSubtitle: settings.heroSubtitle || 'Ship commercial cartons, grain sacks, industrial parts, documents, and merchandise across state routes via daily scheduled passenger buses. Real-time 6-digit Order ID tracking and instant WhatsApp dispatch alerts.',
+        heroPrimaryCtaText: settings.heroPrimaryCtaText || 'Operations Portal',
+        heroPrimaryCtaLink: settings.heroPrimaryCtaLink || '#login',
+        heroSecondaryCtaText: settings.heroSecondaryCtaText || 'Track Consignment',
+        heroSecondaryCtaLink: settings.heroSecondaryCtaLink || '#track',
+        heroStats: (settings.heroStats && settings.heroStats.length > 0) ? settings.heroStats : defaultHeroStats,
+        servicesTitle: settings.servicesTitle || 'Enterprise Bus Parcel Services for Commercial Vendors',
+        servicesSubtitle: settings.servicesSubtitle || 'Engineered for high-volume traders, wholesalers, retail vendors, and transport counter operators needing scheduled dispatch with zero communication friction.',
+        services: (settings.services && settings.services.length > 0) ? settings.services : defaultServices,
+        howItWorksTitle: settings.howItWorksTitle || 'How It Works: Step-by-Step Logistics Workflow',
+        howItWorksSubtitle: settings.howItWorksSubtitle || 'From counter parcel booking to verified destination counter handover across our scheduled bus network.',
+        howItWorksSteps: (settings.howItWorksSteps && settings.howItWorksSteps.length > 0) ? settings.howItWorksSteps : defaultSteps,
+        vendorBenefitsTitle: settings.vendorBenefitsTitle || 'Why Leading Commercial Vendors Choose Us',
+        vendorBenefits: (settings.vendorBenefits && settings.vendorBenefits.length > 0) ? settings.vendorBenefits : defaultVendorBenefits,
       },
     });
   } catch (error) {

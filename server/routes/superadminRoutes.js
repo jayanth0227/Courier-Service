@@ -735,6 +735,26 @@ router.put('/settings', async (req, res, next) => {
       whatsappApiKey,
       whatsappApiUrl,
       openwaSessionId,
+      // Dynamic CMS fields
+      announcementText,
+      announcementLink,
+      showAnnouncement,
+      heroBadge,
+      heroTitle,
+      heroSubtitle,
+      heroPrimaryCtaText,
+      heroPrimaryCtaLink,
+      heroSecondaryCtaText,
+      heroSecondaryCtaLink,
+      heroStats,
+      servicesTitle,
+      servicesSubtitle,
+      services,
+      howItWorksTitle,
+      howItWorksSubtitle,
+      howItWorksSteps,
+      vendorBenefitsTitle,
+      vendorBenefits,
     } = req.body;
 
     let settings = null;
@@ -778,6 +798,27 @@ router.put('/settings', async (req, res, next) => {
     if (whatsappApiUrl !== undefined) settings.whatsappApiUrl = whatsappApiUrl.trim();
     if (openwaSessionId !== undefined) settings.openwaSessionId = openwaSessionId.trim();
 
+    // CMS Fields
+    if (announcementText !== undefined) settings.announcementText = announcementText.trim();
+    if (announcementLink !== undefined) settings.announcementLink = announcementLink.trim();
+    if (showAnnouncement !== undefined) settings.showAnnouncement = Boolean(showAnnouncement);
+    if (heroBadge !== undefined) settings.heroBadge = heroBadge.trim();
+    if (heroTitle !== undefined) settings.heroTitle = heroTitle.trim();
+    if (heroSubtitle !== undefined) settings.heroSubtitle = heroSubtitle.trim();
+    if (heroPrimaryCtaText !== undefined) settings.heroPrimaryCtaText = heroPrimaryCtaText.trim();
+    if (heroPrimaryCtaLink !== undefined) settings.heroPrimaryCtaLink = heroPrimaryCtaLink.trim();
+    if (heroSecondaryCtaText !== undefined) settings.heroSecondaryCtaText = heroSecondaryCtaText.trim();
+    if (heroSecondaryCtaLink !== undefined) settings.heroSecondaryCtaLink = heroSecondaryCtaLink.trim();
+    if (Array.isArray(heroStats)) settings.heroStats = heroStats;
+    if (servicesTitle !== undefined) settings.servicesTitle = servicesTitle.trim();
+    if (servicesSubtitle !== undefined) settings.servicesSubtitle = servicesSubtitle.trim();
+    if (Array.isArray(services)) settings.services = services;
+    if (howItWorksTitle !== undefined) settings.howItWorksTitle = howItWorksTitle.trim();
+    if (howItWorksSubtitle !== undefined) settings.howItWorksSubtitle = howItWorksSubtitle.trim();
+    if (Array.isArray(howItWorksSteps)) settings.howItWorksSteps = howItWorksSteps;
+    if (vendorBenefitsTitle !== undefined) settings.vendorBenefitsTitle = vendorBenefitsTitle.trim();
+    if (Array.isArray(vendorBenefits)) settings.vendorBenefits = vendorBenefits;
+
     await settings.save();
 
     // Also sync companyName to default/first tenant if exists
@@ -795,6 +836,159 @@ router.put('/settings', async (req, res, next) => {
     res.json({
       success: true,
       message: 'Company Profile & Website CMS updated successfully by Super Admin',
+      data: settings,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// @route   POST /api/superadmin/settings/reset-defaults
+// @desc    Reset CMS configuration to standard Enterprise SaaS defaults (Superadmin only)
+router.post('/settings/reset-defaults', async (req, res, next) => {
+  try {
+    let settings = await Setting.findOne({ isPlatformDefault: true });
+    if (!settings) {
+      settings = await Setting.findOne({ tenantId: null });
+    }
+    if (!settings) {
+      settings = new Setting({ isPlatformDefault: true, tenantId: null });
+    }
+
+    settings.announcementText = 'Scheduled passenger bus parcel dispatch active across all hub counters with instant WhatsApp alerts.';
+    settings.announcementLink = '#services';
+    settings.showAnnouncement = true;
+    settings.heroBadge = 'Verified Counter-to-Counter Parcel Network';
+    settings.heroTitle = 'Premier Bus Parcel & Logistics Network';
+    settings.heroSubtitle = 'Ship commercial cartons, grain sacks, industrial parts, documents, and merchandise across state routes via daily scheduled passenger buses. Real-time 6-digit Order ID tracking and instant WhatsApp dispatch alerts.';
+    settings.heroPrimaryCtaText = 'Operations Portal';
+    settings.heroPrimaryCtaLink = '#login';
+    settings.heroSecondaryCtaText = 'Track Consignment';
+    settings.heroSecondaryCtaLink = '#track';
+    settings.heroStats = [
+      { label: 'Active Hubs', value: '8+', subtext: 'Connected Destination Cities' },
+      { label: 'Daily Fleet', value: '180+', subtext: 'Scheduled Bus Dispatches' },
+      { label: 'All Cargo', value: '100%', subtext: 'Standard Freight Categories' },
+      { label: 'Verified SLA', value: '99.8%', subtext: 'Handover & Timely Delivery' },
+    ];
+    settings.servicesTitle = 'Enterprise Bus Parcel Services for Commercial Vendors';
+    settings.servicesSubtitle = 'Engineered for high-volume traders, wholesalers, retail vendors, and transport counter operators needing scheduled dispatch with zero communication friction.';
+    settings.services = [
+      {
+        id: 'whatsapp-service',
+        title: 'Automated WhatsApp Notifications',
+        description: 'The moment a parcel is booked, an automated WhatsApp alert is dispatched to both sender and consignee with the 6-digit LR tracking number and live status link.',
+        badge: 'Instant Delivery Alert',
+        icon: 'MessageSquare',
+        highlight: true,
+      },
+      {
+        id: 'tracking-service',
+        title: 'Zero-Friction Parcel Tracking',
+        description: 'Customers and vendors easily track consignments in real-time using their 6-digit Order ID, displaying assigned bus number, driver dispatch contact, and destination counter.',
+        badge: 'Real-Time Telemetry',
+        icon: 'Search',
+        highlight: true,
+      },
+      {
+        id: 'batch-assign-service',
+        title: 'Assign Multiple Parcels to Bus at a Time',
+        description: 'Counter dispatchers can batch-select dozens of waiting parcels for any destination city and allocate them to a scheduled passenger bus luggage bay in one click.',
+        badge: 'Bulk Bay Dispatch',
+        icon: 'Bus',
+        highlight: true,
+      },
+      {
+        id: 'counter-booking-service',
+        title: 'Counter Booking Engine for Vendors',
+        description: 'High-speed counter interface for commercial merchants: auto-generates 6-digit Order IDs, calculates weight-based or category pricing, and prints receipts instantly.',
+        badge: 'High Speed Booking',
+        icon: 'Package',
+        highlight: false,
+      },
+      {
+        id: 'staff-minimal-access',
+        title: 'Staff Login with Minimal Scoped Access',
+        description: 'Counter clerks, loading supervisors, and delivery operators log in with strictly scoped permissions to create bookings and load buses without accessing corporate financials.',
+        badge: 'Role Security',
+        icon: 'ShieldCheck',
+        highlight: false,
+      },
+      {
+        id: 'scheduled-bus-network',
+        title: 'Daily Scheduled Passenger Bus Connectivity',
+        description: 'Leveraging existing high-frequency intercity passenger bus timetables, providing faster turnaround and lower demurrage than conventional slow trucking networks.',
+        badge: 'Express Transit',
+        icon: 'Truck',
+        highlight: false,
+      },
+    ];
+    settings.howItWorksTitle = 'How It Works: Step-by-Step Logistics Workflow';
+    settings.howItWorksSubtitle = 'From counter parcel booking to verified destination counter handover across our scheduled bus network.';
+    settings.howItWorksSteps = [
+      {
+        stepNumber: 1,
+        title: 'Book Parcel & Generate 6-Digit Order ID',
+        description: 'The vendor presents goods at the origin hub counter. The counter staff records destination, weight, and parties, instantly generating an official 6-digit LR tracking ID.',
+        tag: '1. Booking',
+      },
+      {
+        stepNumber: 2,
+        title: 'Automated WhatsApp Message Delivered',
+        description: 'System automatically sends a structured WhatsApp message to the consignor and consignee containing consignment details and a single-click live tracking link.',
+        tag: '2. WhatsApp Alert',
+      },
+      {
+        stepNumber: 3,
+        title: 'Assign Multiple Parcels to Bus Bay',
+        description: 'Hub staff groups queued parcels by destination route and batch-assigns them to a scheduled passenger bus with a generated driver dispatch manifest.',
+        tag: '3. Fleet Assignment',
+      },
+      {
+        stepNumber: 4,
+        title: 'Intercity Bus Transit & Live Monitoring',
+        description: 'The parcel travels inside the secure luggage bay of the scheduled bus. Both vendor and customer monitor transit progress and arrival ETA online.',
+        tag: '4. Transit',
+      },
+      {
+        stepNumber: 5,
+        title: 'Destination Counter Verification & Handover',
+        description: 'Upon bus arrival at the destination terminal, counter staff unloads cargo. Consignee presents the 6-digit Order ID or WhatsApp receipt for verified handover.',
+        tag: '5. Handover',
+      },
+    ];
+    settings.vendorBenefitsTitle = 'Why Leading Commercial Vendors Choose Us';
+    settings.vendorBenefits = [
+      {
+        title: 'Same-Day & Overnight Passenger Bus Timings',
+        description: 'Eliminates regional warehouse consolidation delays. Your parcels travel directly on express passenger bus schedules.',
+      },
+      {
+        title: 'Zero WhatsApp Overhead for Merchants',
+        description: 'No manual photo-sharing or texting waybills. Customers receive automated WhatsApp confirmation and tracking links instantly.',
+      },
+      {
+        title: 'Bulk Dispatch Tools for High-Volume Shippers',
+        description: 'Assign dozens of cartons and sacks across multiple departure routes within seconds with complete digital manifests.',
+      },
+      {
+        title: 'Minimal Operator Training Required',
+        description: 'Staff portals are intuitive and role-restricted, allowing counter clerks to execute bookings and dispatches with zero friction.',
+      },
+    ];
+
+    await settings.save();
+
+    await logSecurityEvent({
+      req,
+      action: 'SETTINGS_RESET_DEFAULTS',
+      severity: 'WARNING',
+      details: { isPlatformDefault: true },
+    });
+
+    res.json({
+      success: true,
+      message: 'Website CMS has been reset to Enterprise SaaS standard presets',
       data: settings,
     });
   } catch (error) {

@@ -593,6 +593,13 @@ export const api = {
       });
       return handleResponse(res);
     },
+    resetCmsDefaults: async () => {
+      const res = await fetch(`${API_BASE}/superadmin/settings/reset-defaults`, {
+        method: 'POST',
+        headers: getHeaders(),
+      });
+      return handleResponse(res);
+    },
     sendTenantCredentials: async (id, data = {}) => {
       const res = await fetch(`${API_BASE}/superadmin/tenants/${id}/send-credentials`, {
         method: 'POST',
@@ -622,6 +629,32 @@ export const api = {
     getActions: async () => {
       const res = await fetch(`${API_BASE}/audit-logs/actions`, {
         headers: getHeaders(),
+      });
+      return handleResponse(res);
+    },
+  },
+
+  // Inquiries & Leads API
+  inquiries: {
+    create: async (data) => {
+      const res = await fetch(`${API_BASE}/inquiries`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      return handleResponse(res);
+    },
+    list: async () => {
+      const res = await fetch(`${API_BASE}/inquiries`, {
+        headers: getHeaders(),
+      });
+      return handleResponse(res);
+    },
+    update: async (id, data) => {
+      const res = await fetch(`${API_BASE}/inquiries/${id}`, {
+        method: 'PATCH',
+        headers: getHeaders(),
+        body: JSON.stringify(data),
       });
       return handleResponse(res);
     },

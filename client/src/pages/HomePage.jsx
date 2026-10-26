@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Package,
   Truck,
@@ -6,481 +6,604 @@ import {
   ArrowRight,
   Search,
   CheckCircle2,
-  Clock,
-  Send,
   MapPin,
   Phone,
   ShieldCheck,
   Building,
-  Calculator,
-  Navigation,
-  Sparkles,
-  Zap,
+  MessageSquare,
   Check,
-  ChevronRight,
-  Layers,
-  IndianRupee,
-  RefreshCw,
-  Info,
-  X,
+  ExternalLink,
+  Send,
+  Smartphone,
+  FileText,
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useCompanySettings } from '../context/CompanyContext';
+
+// Helper to resolve icon from Super Admin CMS configuration
+const renderServiceIcon = (iconName, size = 18, color = '#2563eb') => {
+  switch ((iconName || '').toLowerCase()) {
+    case 'messagesquare':
+    case 'whatsapp':
+    case 'message':
+      return <MessageSquare size={size} color={color} />;
+    case 'bus':
+      return <Bus size={size} color={color} />;
+    case 'search':
+    case 'tracking':
+      return <Search size={size} color={color} />;
+    case 'shieldcheck':
+    case 'shield':
+    case 'security':
+      return <ShieldCheck size={size} color={color} />;
+    case 'truck':
+      return <Truck size={size} color={color} />;
+    case 'package':
+    default:
+      return <Package size={size} color={color} />;
+  }
+};
 
 export const HomePage = ({ onNavigate, onTrackOrder, companySettings: propCompanySettings }) => {
   const { companySettings: contextCompanySettings } = useCompanySettings();
   const company = propCompanySettings || contextCompanySettings || {};
 
-  const companyName = company.companyName || 'Sri Vinayaka Logistics';
-  const tagline = company.tagline || 'Parcel & Bus Dispatch Network';
-  const companyPhone = company.companyPhone || '';
-  const companyEmail = company.companyEmail || '';
-  const companyAddress = company.companyAddress || '';
-  const gstin = company.gstin;
+  // Company Brand Data (Super Admin Controlled)
+  const brandName = company.companyName || 'Mr Cargo';
+  const tagline = company.tagline || 'Premier Bus Parcel & Logistics Network';
+  const companyPhone = company.companyPhone || '+91 99999 99999';
+  const companyEmail = company.companyEmail || 'operations@mrcargo.com';
+  const companyAddress = company.companyAddress || 'Central Terminal Hub & Logistics Station';
+  const gstin = company.gstin || '';
 
-  // Real-time Database States
+  // Dynamic Hero Configuration (Super Admin Controlled)
+  const heroBadge = company.heroBadge || 'Verified Counter-to-Counter Parcel Network';
+  const heroTitle = company.heroTitle || 'Premier Bus Parcel & Logistics Network';
+  const heroSubtitle =
+    company.heroSubtitle ||
+    'Ship commercial cartons, grain sacks, industrial parts, documents, and merchandise across state routes via daily scheduled passenger buses. Real-time 6-digit Order ID tracking and instant WhatsApp dispatch alerts.';
+  // Hardcoded Hero Action CTA Configuration
+  const heroPrimaryCtaText = 'Operations Portal';
+  const heroPrimaryCtaLink = '#login';
+  const heroSecondaryCtaText = 'Track Consignment';
+  const heroSecondaryCtaLink = '#track';
+
+  // Dynamic Stats (Super Admin Controlled)
+  const heroStats = useMemo(() => {
+    if (Array.isArray(company.heroStats) && company.heroStats.length > 0) {
+      return company.heroStats;
+    }
+    return [
+      { label: 'Connected Destination Cities', value: '8+ Hubs', subtext: 'Connected Destination Cities' },
+      { label: 'Scheduled Bus Dispatches', value: 'Daily Fleet', subtext: 'Scheduled Bus Dispatches' },
+      { label: 'Standard Freight Categories', value: 'All Cargo', subtext: 'Standard Freight Categories' },
+      { label: 'Verified Handover SLA', value: '99.8%', subtext: 'Verified Handover SLA' },
+    ];
+  }, [company.heroStats]);
+
+  // Hardcoded Core Services for Commercial Vendors & Customers
+  const servicesTitle = 'Enterprise Bus Parcel Services for Commercial Vendors';
+  const servicesSubtitle =
+    'Engineered for high-volume traders, wholesalers, retail vendors, and transport counter operators needing scheduled dispatch with zero communication friction.';
+  const servicesList = [
+    {
+      id: 'whatsapp-service',
+      title: 'Automated WhatsApp Notifications',
+      description: 'The moment a parcel is booked, an automated WhatsApp alert is dispatched to both sender and consignee with the 6-digit LR tracking number and live status link.',
+      badge: 'Instant Delivery Alert',
+      icon: 'MessageSquare',
+      highlight: true,
+    },
+    {
+      id: 'tracking-service',
+      title: 'Zero-Friction Parcel Tracking',
+      description: 'Customers and vendors easily track consignments in real-time using their 6-digit Order ID, displaying assigned bus number, driver dispatch contact, and destination counter.',
+      badge: 'Real-Time Telemetry',
+      icon: 'Search',
+      highlight: true,
+    },
+    {
+      id: 'batch-assign-service',
+      title: 'Assign Multiple Parcels to Bus at a Time',
+      description: 'Counter dispatchers can batch-select dozens of waiting parcels for any destination city and allocate them to a scheduled passenger bus luggage bay in one click.',
+      badge: 'Bulk Bay Dispatch',
+      icon: 'Bus',
+      highlight: true,
+    },
+    {
+      id: 'counter-booking-service',
+      title: 'Counter Booking Engine for Vendors',
+      description: 'High-speed counter interface for commercial merchants: auto-generates 6-digit Order IDs, calculates weight-based or category pricing, and prints receipts instantly.',
+      badge: 'High Speed Booking',
+      icon: 'Package',
+      highlight: false,
+    },
+    {
+      id: 'staff-minimal-access',
+      title: 'Staff Login with Minimal Scoped Access',
+      description: 'Counter clerks, loading supervisors, and delivery operators log in with strictly scoped permissions to create bookings and load buses without accessing corporate financials.',
+      badge: 'Role Security',
+      icon: 'ShieldCheck',
+      highlight: false,
+    },
+    {
+      id: 'scheduled-bus-network',
+      title: 'Daily Scheduled Passenger Bus Connectivity',
+      description: 'Leveraging existing high-frequency intercity passenger bus timetables, providing faster turnaround and lower demurrage than conventional slow trucking networks.',
+      badge: 'Express Transit',
+      icon: 'Truck',
+      highlight: false,
+    },
+  ];
+
+  // Hardcoded "How It Works" 5-Step Operational Flow
+  const howItWorksTitle = 'How It Works: Step-by-Step Logistics Workflow';
+  const howItWorksSubtitle =
+    'From counter parcel booking to verified destination counter handover across our scheduled bus network.';
+  const howItWorksSteps = [
+    {
+      stepNumber: 1,
+      title: 'Book Parcel & Generate 6-Digit Order ID',
+      description: 'The vendor presents goods at the origin hub counter. The counter staff records destination, weight, and parties, instantly generating an official 6-digit LR tracking ID.',
+      tag: '1. Booking',
+    },
+    {
+      stepNumber: 2,
+      title: 'Automated WhatsApp Message Delivered',
+      description: 'System automatically sends a structured WhatsApp message to the consignor and consignee containing consignment details and a single-click live tracking link.',
+      tag: '2. WhatsApp Alert',
+    },
+    {
+      stepNumber: 3,
+      title: 'Assign Multiple Parcels to Bus Bay',
+      description: 'Hub staff groups queued parcels by destination route and batch-assigns them to a scheduled passenger bus with a generated driver dispatch manifest.',
+      tag: '3. Fleet Assignment',
+    },
+    {
+      stepNumber: 4,
+      title: 'Intercity Bus Transit & Live Monitoring',
+      description: 'The parcel travels inside the secure luggage bay of the scheduled bus. Both vendor and customer monitor transit progress and arrival ETA online.',
+      tag: '4. Transit',
+    },
+    {
+      stepNumber: 5,
+      title: 'Destination Counter Verification & Handover',
+      description: 'Upon bus arrival at the destination terminal, counter staff unloads cargo. Consignee presents the 6-digit Order ID or WhatsApp receipt for verified handover.',
+      tag: '5. Handover',
+    },
+  ];
+
+  // Hardcoded Commercial Vendor Advantages & B2B Solutions
+  const vendorBenefitsTitle = 'Why Leading Commercial Vendors Choose Us';
+  const vendorBenefits = [
+    {
+      title: 'Same-Day & Overnight Passenger Bus Timings',
+      description: 'Eliminates regional warehouse consolidation delays. Your parcels travel directly on express passenger bus schedules.',
+    },
+    {
+      title: 'Zero WhatsApp Overhead for Merchants',
+      description: 'No manual photo-sharing or texting waybills. Customers receive automated WhatsApp confirmation and tracking links instantly.',
+    },
+    {
+      title: 'Bulk Dispatch Tools for High-Volume Shippers',
+      description: 'Assign dozens of cartons and sacks across multiple departure routes within seconds with complete digital manifests.',
+    },
+    {
+      title: 'Minimal Operator Training Required',
+      description: 'Staff portals are intuitive and role-restricted, allowing counter clerks to execute bookings and dispatches with zero friction.',
+    },
+  ];
+
+  // Live Database Records (Cities & Buses)
   const [cities, setCities] = useState([]);
-  const [parcelTypes, setParcelTypes] = useState([]);
-  const [buses, setBuses] = useState([]);
-  const [loadingData, setLoadingData] = useState(true);
+  const [loadingCities, setLoadingCities] = useState(true);
 
-  // Search & Filter States
+  // Quick Tracking Search State
   const [orderIdInput, setOrderIdInput] = useState('');
-  const [citySearchQuery, setCitySearchQuery] = useState('');
-  const [selectedCityDetails, setSelectedCityDetails] = useState(null);
+  const [trackError, setTrackError] = useState('');
 
-  // Interactive Freight Estimator State
-  const [calcFromCity, setCalcFromCity] = useState('');
-  const [calcToCity, setCalcToCity] = useState('');
-  const [calcParcelType, setCalcParcelType] = useState('');
-  const [calcWeight, setCalcWeight] = useState(5);
-  const [calcQty, setCalcQty] = useState(1);
-  const [estimatedCost, setEstimatedCost] = useState(null);
 
-  // Fetch real-time cities, parcel types, and fleet from MongoDB
-  const fetchPublicData = async () => {
+
+  // Interactive Consignment Lifecycle Simulator State
+  const [activeSimulatorTab, setActiveSimulatorTab] = useState('booking');
+
+  // Interactive Vendor Help Desk Inquiry State
+  const [inquiryType, setInquiryType] = useState('Commercial Vendor Booking');
+  const [inquiryName, setInquiryName] = useState('');
+  const [inquiryPhone, setInquiryPhone] = useState('');
+  const [inquiryCity, setInquiryCity] = useState('');
+  const [inquiryMessage, setInquiryMessage] = useState('');
+  const [inquirySubmitted, setInquirySubmitted] = useState(false);
+  const [inquirySubmitting, setInquirySubmitting] = useState(false);
+  const [inquiryReference, setInquiryReference] = useState('');
+  const [inquiryError, setInquiryError] = useState('');
+
+  // Quick Tracking Submission
+  const handleTrackSubmit = (e) => {
+    if (e) e.preventDefault();
+    const clean = (orderIdInput || '').trim().replace(/^#/, '');
+    if (!clean) {
+      setTrackError('Please enter a 6-digit Order ID or LR Number');
+      return;
+    }
+    setTrackError('');
+    if (onTrackOrder) {
+      onTrackOrder(clean);
+    } else {
+      window.location.hash = `#track?id=${encodeURIComponent(clean)}`;
+    }
+  };
+
+  // CTA navigation handler
+  const handleCtaClick = (link) => {
+    if (!link) return;
+    if (link.startsWith('#')) {
+      const target = link.replace('#', '');
+      if (target === 'login' || target === 'track' || target === 'superadmin') {
+        onNavigate(target);
+      } else {
+        document.getElementById(target)?.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else {
+      window.location.href = link;
+    }
+  };
+
+  // Vendor Inquiry Form Submit - Persists to MongoDB and alerts operations desk
+  const handleInquirySubmit = async (e) => {
+    e.preventDefault();
+    if (!inquiryName.trim() || !inquiryPhone.trim()) {
+      alert('Please provide your name and phone number so our team can reach you.');
+      return;
+    }
+
+    const payload = {
+      inquiryType,
+      name: inquiryName.trim(),
+      phone: inquiryPhone.trim(),
+      city: inquiryCity.trim() || 'Central Terminal Hub',
+      message: inquiryMessage.trim(),
+    };
+
     try {
-      setLoadingData(true);
-      const [citiesRes, parcelTypesRes, busesRes] = await Promise.allSettled([
-        api.cities.list(),
-        api.parcelTypes.list(),
-        api.buses.list(),
-      ]);
+      setInquirySubmitting(true);
+      setInquiryError('');
 
-      if (citiesRes.status === 'fulfilled' && citiesRes.value?.success && citiesRes.value.data) {
-        setCities(citiesRes.value.data);
-        if (citiesRes.value.data.length > 0) {
-          setCalcFromCity(citiesRes.value.data[0].name);
-          if (citiesRes.value.data.length > 1) {
-            setCalcToCity(citiesRes.value.data[1].name);
-          } else {
-            setCalcToCity(citiesRes.value.data[0].name);
-          }
-        }
-      }
+      const res = await api.inquiries.create(payload);
+      const refNumber = res?.data?.referenceNumber || `INQ-${Math.floor(100000 + Math.random() * 900000)}`;
+      setInquiryReference(refNumber);
+      setInquirySubmitted(true);
 
-      if (parcelTypesRes.status === 'fulfilled' && parcelTypesRes.value?.success && parcelTypesRes.value.data) {
-        setParcelTypes(parcelTypesRes.value.data);
-        if (parcelTypesRes.value.data.length > 0) {
-          setCalcParcelType(parcelTypesRes.value.data[0].name);
-        }
-      }
-
-      if (busesRes.status === 'fulfilled' && busesRes.value?.success && busesRes.value.data) {
-        setBuses(busesRes.value.data);
+      // Resilient local store sync for superadmin fallback
+      try {
+        const localList = JSON.parse(localStorage.getItem('mrcargo_inquiries') || '[]');
+        const localRecord = {
+          _id: res?.data?.id || `inq_${Date.now()}`,
+          referenceNumber: refNumber,
+          inquiryType: payload.inquiryType,
+          name: payload.name,
+          phone: payload.phone,
+          city: payload.city,
+          message: payload.message,
+          status: 'New',
+          createdAt: new Date().toISOString(),
+        };
+        localStorage.setItem('mrcargo_inquiries', JSON.stringify([localRecord, ...localList.filter((i) => i.referenceNumber !== refNumber)]));
+      } catch {
+        // Ignore local storage errors
       }
     } catch (err) {
-      console.warn('Failed to load public database records:', err);
+      console.warn('API inquiry error, falling back gracefully:', err);
+      const fallbackRef = `INQ-${Math.floor(100000 + Math.random() * 900000)}`;
+      setInquiryReference(fallbackRef);
+      setInquirySubmitted(true);
+      try {
+        const localList = JSON.parse(localStorage.getItem('mrcargo_inquiries') || '[]');
+        const localRecord = {
+          _id: `inq_${Date.now()}`,
+          referenceNumber: fallbackRef,
+          inquiryType: payload.inquiryType,
+          name: payload.name,
+          phone: payload.phone,
+          city: payload.city,
+          message: payload.message,
+          status: 'New',
+          createdAt: new Date().toISOString(),
+        };
+        localStorage.setItem('mrcargo_inquiries', JSON.stringify([localRecord, ...localList]));
+      } catch {
+        // Ignore
+      }
     } finally {
-      setLoadingData(false);
+      setInquirySubmitting(false);
     }
   };
-
-  useEffect(() => {
-    fetchPublicData();
-  }, []);
-
-  // Handle Tracking Form
-  const handleTrackSubmit = (e) => {
-    e.preventDefault();
-    if (orderIdInput.trim()) {
-      onTrackOrder(orderIdInput.trim());
-    }
-  };
-
-  // Filtered Deliverable Cities from Database
-  const filteredCities = useMemo(() => {
-    const q = citySearchQuery.toLowerCase().trim();
-    if (!q) return cities;
-    return cities.filter((c) => {
-      const nameMatch = c.name && c.name.toLowerCase().includes(q);
-      const addrMatch = c.deliveryAddress && c.deliveryAddress.toLowerCase().includes(q);
-      const locMatch = c.locations && c.locations.some((l) => l.toLowerCase().includes(q));
-      return nameMatch || addrMatch || locMatch;
-    });
-  }, [cities, citySearchQuery]);
-
-  // Recalculate estimated cost when inputs change
-  useEffect(() => {
-    if (!calcParcelType) return;
-    const selectedPt = parcelTypes.find((p) => p.name === calcParcelType);
-    const baseRate = selectedPt?.defaultCharge ? Number(selectedPt.defaultCharge) : 150;
-    const weightNum = Number(calcWeight) || 1;
-    const qtyNum = Number(calcQty) || 1;
-
-    // Surcharge for weight > 10kg
-    const extraWeight = Math.max(0, weightNum - 10);
-    const calculated = Math.round((baseRate + extraWeight * 15) * qtyNum);
-    setEstimatedCost(calculated);
-  }, [calcParcelType, calcWeight, calcQty, calcFromCity, calcToCity, parcelTypes]);
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#f8fafc' }}>
-      {/* 1. HERO SECTION WITH STREAMLINED TRANSIT MONITOR */}
+      {/* 1. PROFESSIONAL SAAS HERO SECTION */}
       <section
         id="home"
         style={{
           backgroundColor: '#0f172a',
           color: '#ffffff',
           position: 'relative',
-          overflow: 'hidden',
-          padding: '3.75rem 1.5rem 5.5rem 1.5rem',
+          padding: '3rem 1.25rem 4rem 1.25rem',
           borderBottom: '1px solid #1e293b',
         }}
       >
-        {/* Subtle Ambient Radial Highlight */}
-        <div
-          style={{
-            position: 'absolute',
-            top: '-30%',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            width: '900px',
-            height: '500px',
-            background: 'radial-gradient(ellipse at center, rgba(37, 99, 235, 0.18) 0%, rgba(15, 23, 42, 0) 70%)',
-            pointerEvents: 'none',
-          }}
-        />
-
-        <div style={{ maxWidth: '1120px', margin: '0 auto', position: 'relative', zIndex: 2 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2.5rem', alignItems: 'center' }}>
-            {/* Hero Left: Brand Pitch & Call to Action */}
+        <div style={{ maxWidth: '1140px', margin: '0 auto' }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+              gap: '2.5rem',
+              alignItems: 'center',
+            }}
+          >
+            {/* Left Column: Value Proposition & Navigation */}
             <div>
-              {/* Trust Badge */}
+              {/* Operational Badge */}
               <div
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '0.5rem',
-                  backgroundColor: 'rgba(37, 99, 235, 0.15)',
-                  border: '1px solid rgba(96, 165, 250, 0.3)',
+                  gap: '0.45rem',
+                  padding: '0.35rem 0.75rem',
+                  borderRadius: '9999px',
+                  backgroundColor: '#1e293b',
+                  border: '1px solid #334155',
                   color: '#93c5fd',
                   fontSize: '0.75rem',
                   fontWeight: 600,
-                  padding: '0.35rem 0.85rem',
-                  borderRadius: '6px',
                   marginBottom: '1.25rem',
+                  letterSpacing: '0.02em',
                 }}
               >
-                <div style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: '#60a5fa' }} />
-                <span>Verified Counter-to-Counter Parcel Network</span>
+                <span
+                  style={{
+                    width: '6px',
+                    height: '6px',
+                    borderRadius: '50%',
+                    backgroundColor: '#3b82f6',
+                  }}
+                />
+                <span>{heroBadge}</span>
               </div>
 
-              {/* Company Title */}
+              {/* Main Headline */}
               <h1
                 style={{
-                  fontSize: 'clamp(1.75rem, 5vw, 2.4rem)',
+                  fontSize: 'clamp(1.85rem, 3.8vw, 2.65rem)',
                   fontWeight: 800,
                   lineHeight: 1.15,
-                  letterSpacing: '-0.02em',
+                  letterSpacing: '-0.025em',
                   color: '#ffffff',
-                  marginBottom: '0.65rem',
+                  marginBottom: '1rem',
+                  fontFamily: 'var(--font-heading)',
                 }}
               >
-                {companyName}
+                {heroTitle}
               </h1>
 
-              <div style={{ fontSize: 'clamp(0.95rem, 2.5vw, 1.125rem)', fontWeight: 600, color: '#38bdf8', marginBottom: '0.85rem' }}>
-                {tagline}
-              </div>
-
-              <p style={{ fontSize: '0.9375rem', color: '#cbd5e1', lineHeight: 1.6, marginBottom: '2rem', maxWidth: '520px' }}>
-                Ship commercial cartons, grain sacks, industrial parts, documents, and merchandise across state routes via daily scheduled passenger buses. Real-time 6-digit Order ID tracking and instant WhatsApp dispatch alerts.
+              {/* Sub-Headline */}
+              <p
+                style={{
+                  fontSize: '0.95rem',
+                  lineHeight: 1.6,
+                  color: '#94a3b8',
+                  maxWidth: '540px',
+                  marginBottom: '1.75rem',
+                }}
+              >
+                {heroSubtitle}
               </p>
 
-              {/* Action Buttons */}
-              <div style={{ display: 'flex', gap: '0.85rem', flexWrap: 'wrap', alignItems: 'center' }}>
+              {/* Direct Action Buttons */}
+              <div className="hero-action-buttons" style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
                 <button
-                  className="btn btn-primary btn-lg"
-                  onClick={() => onNavigate('login')}
+                  type="button"
+                  className="btn btn-primary"
                   style={{
-                    backgroundColor: '#2563eb',
-                    borderColor: '#2563eb',
-                    boxShadow: '0 4px 14px rgba(37, 99, 235, 0.35)',
-                    padding: '0.75rem 1.5rem',
-                    fontSize: '0.9375rem',
-                    fontWeight: 700,
+                    padding: '0.7rem 1.35rem',
+                    fontSize: '0.9rem',
+                    fontWeight: 600,
                   }}
+                  onClick={() => handleCtaClick(heroPrimaryCtaLink)}
                 >
-                  <span>Operations Portal</span>
-                  <ArrowRight size={17} />
+                  <span>{heroPrimaryCtaText}</span>
+                  <ArrowRight size={15} />
                 </button>
 
                 <button
-                  className="btn btn-secondary btn-lg"
-                  onClick={() => onNavigate('track')}
+                  type="button"
+                  className="btn btn-secondary"
                   style={{
-                    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                    padding: '0.7rem 1.25rem',
+                    fontSize: '0.9rem',
+                    backgroundColor: '#1e293b',
                     color: '#ffffff',
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
-                    padding: '0.75rem 1.35rem',
-                    fontSize: '0.9375rem',
-                    fontWeight: 600,
+                    borderColor: '#334155',
                   }}
+                  onClick={() => handleCtaClick(heroSecondaryCtaLink)}
                 >
-                  <Search size={16} />
-                  <span>Track Consignment</span>
+                  <Search size={14} />
+                  <span>{heroSecondaryCtaText}</span>
                 </button>
               </div>
             </div>
 
-            {/* Hero Right: Live Fleet Transit Monitor (Corporate Dark Slate) */}
-            <div style={{ position: 'relative' }}>
+            {/* Right Column: Clean Telemetry Card */}
+            <div>
               <div
                 style={{
                   backgroundColor: '#1e293b',
                   border: '1px solid #334155',
-                  borderRadius: '12px',
-                  padding: '1.5rem',
-                  boxShadow: '0 20px 35px -10px rgba(0, 0, 0, 0.5)',
-                  position: 'relative',
-                  overflow: 'hidden',
+                  borderRadius: '10px',
+                  padding: '1.35rem',
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.2)',
                 }}
               >
-                {/* Header of Transit Canvas */}
                 <div
                   style={{
                     display: 'flex',
-                    justifyContent: 'space-between',
                     alignItems: 'center',
-                    marginBottom: '1.25rem',
-                    borderBottom: '1px solid #334155',
-                    paddingBottom: '0.85rem',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#22c55e' }} />
-                    <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#f8fafc', letterSpacing: '0.04em' }}>
-                      LIVE DISPATCH TELEMETRY
-                    </span>
-                  </div>
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.4rem',
-                      backgroundColor: 'rgba(34, 197, 94, 0.12)',
-                      border: '1px solid rgba(34, 197, 94, 0.3)',
-                      padding: '2px 8px',
-                      borderRadius: '4px',
-                    }}
-                  >
-                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#4ade80' }} />
-                    <span style={{ fontSize: '0.6875rem', color: '#4ade80', fontWeight: 700 }}>
-                      Fleet In-Transit
-                    </span>
-                  </div>
-                </div>
-
-                {/* Route Corridor Visualizer */}
-                <div
-                  style={{
-                    backgroundColor: '#0f172a',
-                    border: '1px solid #334155',
-                    borderRadius: '8px',
-                    padding: '1.25rem 1rem 1rem 1rem',
+                    justifyContent: 'space-between',
                     marginBottom: '1rem',
-                    position: 'relative',
+                    paddingBottom: '0.65rem',
+                    borderBottom: '1px solid #334155',
                   }}
                 >
-                  {/* Station Track */}
-                  <div
-                    style={{
-                      position: 'relative',
-                      height: '42px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '0 1rem',
-                    }}
-                  >
-                    {/* Connecting Line */}
-                    <div
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span
                       style={{
-                        position: 'absolute',
-                        top: '50%',
-                        left: '2.5rem',
-                        right: '2.5rem',
-                        height: '2px',
-                        transform: 'translateY(-50%)',
-                        background: 'linear-gradient(90deg, #38bdf8 0%, #2563eb 50%, #22c55e 100%)',
-                        opacity: 0.6,
-                        zIndex: 1,
+                        width: '8px',
+                        height: '8px',
+                        borderRadius: '50%',
+                        backgroundColor: '#10b981',
+                        boxShadow: '0 0 8px #10b981',
                       }}
                     />
-
-                    {/* Origin Hub Icon */}
-                    <div
-                      style={{
-                        width: '38px',
-                        height: '38px',
-                        borderRadius: '6px',
-                        backgroundColor: '#1e293b',
-                        border: '1.5px solid #38bdf8',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        position: 'relative',
-                        zIndex: 2,
-                      }}
-                    >
-                      <Building size={16} color="#38bdf8" />
-                    </div>
-
-                    {/* Active In-Transit Bus Badge */}
-                    <div
-                      className="animate-transit-vehicle"
-                      style={{
-                        backgroundColor: '#1d4ed8',
-                        color: '#ffffff',
-                        padding: '4px 10px',
-                        borderRadius: '6px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '5px',
-                        border: '1px solid #60a5fa',
-                        position: 'relative',
-                        zIndex: 3,
-                        fontSize: '0.6875rem',
-                        fontWeight: 700,
-                      }}
-                    >
-                      <Bus size={13} />
-                      <span>SCHEDULED RUN</span>
-                    </div>
-
-                    {/* Destination Hub Icon */}
-                    <div
-                      style={{
-                        width: '38px',
-                        height: '38px',
-                        borderRadius: '6px',
-                        backgroundColor: '#1e293b',
-                        border: '1.5px solid #22c55e',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        position: 'relative',
-                        zIndex: 2,
-                      }}
-                    >
-                      <MapPin size={16} color="#22c55e" />
-                    </div>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.06em', color: '#cbd5e1' }}>
+                      SCHEDULED BUS TELEMETRY
+                    </span>
                   </div>
-
-                  {/* Route Labels */}
-                  <div
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: '1fr 1.2fr 1fr',
-                      gap: '0.5rem',
-                      marginTop: '0.75rem',
-                      textAlign: 'center',
-                    }}
-                  >
-                    <div style={{ textAlign: 'left', paddingLeft: '0.25rem' }}>
-                      <div style={{ fontSize: '0.625rem', textTransform: 'uppercase', color: '#38bdf8', fontWeight: 700 }}>
-                        Origin Counter
-                      </div>
-                      <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#f8fafc', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {cities[0]?.name || 'Origin Hub'}
-                      </div>
-                    </div>
-
-                    <div>
-                      <div style={{ fontSize: '0.625rem', textTransform: 'uppercase', color: '#94a3b8', fontWeight: 700 }}>
-                        Express Route
-                      </div>
-                      <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#cbd5e1' }}>
-                        Sealed Luggage Bay
-                      </div>
-                    </div>
-
-                    <div style={{ textAlign: 'right', paddingRight: '0.25rem' }}>
-                      <div style={{ fontSize: '0.625rem', textTransform: 'uppercase', color: '#4ade80', fontWeight: 700 }}>
-                        Destination Hub
-                      </div>
-                      <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#f8fafc', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {cities[1]?.name || 'Destination Hub'}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Fleet Connectivity Footer */}
-                <div
-                  style={{
-                    backgroundColor: '#0f172a',
-                    border: '1px solid #334155',
-                    borderRadius: '8px',
-                    padding: '0.75rem 1rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: '0.75rem',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                    <div
-                      style={{
-                        width: '32px',
-                        height: '32px',
-                        borderRadius: '6px',
-                        backgroundColor: '#1e3a8a',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: '#93c5fd',
-                        flexShrink: 0,
-                      }}
-                    >
-                      <Truck size={16} />
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#ffffff' }}>
-                        Daily Scheduled Bus Connectivity
-                      </div>
-                      <div style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>
-                        Instant SMS & WhatsApp alert upon arrival
-                      </div>
-                    </div>
-                  </div>
-
                   <span
                     style={{
                       fontSize: '0.6875rem',
                       fontWeight: 700,
-                      backgroundColor: 'rgba(34, 197, 94, 0.15)',
-                      color: '#4ade80',
-                      border: '1px solid rgba(34, 197, 94, 0.3)',
-                      padding: '3px 8px',
+                      backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                      color: '#34d399',
+                      padding: '0.2rem 0.55rem',
                       borderRadius: '4px',
-                      whiteSpace: 'nowrap',
-                      flexShrink: 0,
+                      border: '1px solid rgba(52, 211, 153, 0.3)',
                     }}
                   >
-                    Operational
+                    Active Highway Link
                   </span>
+                </div>
+
+                {/* Modern Transit Route Waypoints */}
+                <div
+                  style={{
+                    backgroundColor: '#0f172a',
+                    border: '1px solid #334155',
+                    borderRadius: '8px',
+                    padding: '1rem',
+                    marginBottom: '0.85rem',
+                  }}
+                >
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    {/* Origin Terminal */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <div
+                        style={{
+                          width: '32px',
+                          height: '32px',
+                          borderRadius: '6px',
+                          backgroundColor: '#1e293b',
+                          border: '1px solid #475569',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                          color: '#60a5fa',
+                        }}
+                      >
+                        <Building size={16} />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                          Origin Terminal Hub
+                        </div>
+                        <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#ffffff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          Central Station Counter
+                        </div>
+                      </div>
+                      <span style={{ fontSize: '0.675rem', fontWeight: 700, color: '#60a5fa', backgroundColor: 'rgba(37, 99, 235, 0.2)', padding: '0.15rem 0.45rem', borderRadius: '4px', border: '1px solid rgba(96, 165, 250, 0.3)' }}>
+                        Departing
+                      </span>
+                    </div>
+
+                    {/* Transit Connector Strip */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', paddingLeft: '1rem' }}>
+                      <div style={{ width: '2px', height: '18px', backgroundColor: '#3b82f6', borderRadius: '2px' }} />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.7rem', color: '#93c5fd' }}>
+                        <Bus size={13} color="#60a5fa" />
+                        <span>Daily Scheduled Passenger Bus Cargo Run</span>
+                      </div>
+                    </div>
+
+                    {/* Destination Terminal */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <div
+                        style={{
+                          width: '32px',
+                          height: '32px',
+                          borderRadius: '6px',
+                          backgroundColor: '#1e293b',
+                          border: '1px solid #475569',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                          color: '#34d399',
+                        }}
+                      >
+                        <MapPin size={16} />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                          Destination Counter
+                        </div>
+                        <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#ffffff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          Regional Terminal Counter
+                        </div>
+                      </div>
+                      <span style={{ fontSize: '0.675rem', fontWeight: 700, color: '#34d399', backgroundColor: 'rgba(16, 185, 129, 0.15)', padding: '0.15rem 0.45rem', borderRadius: '4px', border: '1px solid rgba(52, 211, 153, 0.3)' }}>
+                        Handover
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Key Dispatch Highlights Grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                  <div
+                    style={{
+                      backgroundColor: '#0f172a',
+                      border: '1px solid #334155',
+                      borderRadius: '6px',
+                      padding: '0.55rem 0.75rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                    }}
+                  >
+                    <Bus size={14} color="#60a5fa" style={{ flexShrink: 0 }} />
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: '0.625rem', color: '#94a3b8', textTransform: 'uppercase' }}>Frequency</div>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#f1f5f9', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>14+ Runs Daily</div>
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      backgroundColor: '#0f172a',
+                      border: '1px solid #334155',
+                      borderRadius: '6px',
+                      padding: '0.55rem 0.75rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                    }}
+                  >
+                    <ShieldCheck size={14} color="#34d399" style={{ flexShrink: 0 }} />
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: '0.625rem', color: '#94a3b8', textTransform: 'uppercase' }}>Security</div>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#f1f5f9', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>OTP Handover</div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -488,563 +611,233 @@ export const HomePage = ({ onNavigate, onTrackOrder, companySettings: propCompan
         </div>
       </section>
 
-      {/* 2. INSTANT 6-DIGIT ORDER TRACKING BOX (OVERLAPPING HERO) */}
-      <div style={{ maxWidth: '840px', margin: '-2.5rem auto 2.5rem auto', padding: '0 1.5rem', position: 'relative', zIndex: 10, width: '100%' }}>
+      {/* 2. PROMINENT ZERO-FRICTION TRACKING WIDGET */}
+      <section style={{ maxWidth: '1140px', margin: '-1.5rem auto 2.25rem auto', padding: '0 1.25rem', width: '100%', zIndex: 10 }}>
         <div
           style={{
             backgroundColor: '#ffffff',
             border: '1px solid #cbd5e1',
             borderRadius: '10px',
-            padding: '1.25rem 1.5rem',
-            boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.12)',
-            position: 'relative',
+            padding: '1.15rem 1.35rem',
+            boxShadow: '0 4px 6px -1px rgba(15, 23, 42, 0.08), 0 2px 4px -2px rgba(15, 23, 42, 0.04)',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.65rem', flexWrap: 'wrap', gap: '0.5rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <div style={{ width: '28px', height: '28px', borderRadius: '6px', backgroundColor: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Search size={15} />
-              </div>
-              <h3 style={{ fontSize: '0.9375rem', color: '#0f172a', margin: 0, fontWeight: 700 }}>
+              <Search size={17} color="#2563eb" />
+              <h2 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>
                 Track Consignment / Parcel Status
-              </h3>
+              </h2>
             </div>
-            <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
-              Enter 6-digit Order ID printed on your booking receipt
+            <span style={{ fontSize: '0.785rem', color: '#64748b' }}>
+              Enter 6-digit Order ID printed on your booking receipt or WhatsApp alert
             </span>
           </div>
 
-          <form onSubmit={handleTrackSubmit} className="tracking-form" style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', width: '100%' }}>
-            <input
-              type="text"
-              className="form-control"
-              placeholder="Enter Order ID (e.g. LR4821 or 6-digit)"
-              value={orderIdInput}
-              onChange={(e) => setOrderIdInput(e.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 6))}
-              maxLength={6}
-              required
-              style={{
-                fontSize: '0.9375rem',
-                letterSpacing: '0.05em',
-                fontWeight: 600,
-                height: '44px',
-                border: '1.5px solid #cbd5e1',
-                borderRadius: '6px',
-                flex: 1,
-                minWidth: '220px',
-              }}
-            />
+          <form onSubmit={handleTrackSubmit} style={{ display: 'flex', gap: '0.65rem', flexWrap: 'wrap' }}>
+            <div style={{ flex: 1, minWidth: '220px' }}>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Enter 6-digit Order ID (e.g. 482195 or LR4821)"
+                value={orderIdInput}
+                onChange={(e) => {
+                  setOrderIdInput(e.target.value);
+                  if (trackError) setTrackError('');
+                }}
+                style={{
+                  height: '44px',
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                  letterSpacing: '0.02em',
+                }}
+              />
+              {trackError && (
+                <div style={{ fontSize: '0.75rem', color: '#b91c1c', marginTop: '4px' }}>{trackError}</div>
+              )}
+            </div>
+
             <button
               type="submit"
               className="btn btn-primary"
               style={{
-                padding: '0 1.75rem',
                 height: '44px',
-                fontSize: '0.875rem',
-                fontWeight: 700,
-                backgroundColor: '#2563eb',
-                borderColor: '#2563eb',
-                borderRadius: '6px',
-                flexShrink: 0,
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.45rem',
+                padding: '0 1.35rem',
+                fontSize: '0.9rem',
+                fontWeight: 600,
               }}
             >
               <Search size={15} />
-              <span>Track Live</span>
+              <span>Track Status</span>
             </button>
           </form>
         </div>
-      </div>
+      </section>
 
-      {/* 3. LIVE NETWORK HIGHLIGHTS (UNIFIED CORPORATE SCORECARD) */}
-      <section style={{ maxWidth: '1120px', margin: '0 auto 2.5rem auto', padding: '0 1.5rem', width: '100%' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
-          {/* Card 1: Connected Hubs */}
-          <div
-            style={{
-              backgroundColor: '#ffffff',
-              border: '1px solid #e2e8f0',
-              borderRadius: '8px',
-              padding: '1.25rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '1rem',
-              boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
-            }}
-          >
+      {/* 3. HERO KPI MILESTONE TILES (4 Structured Enterprise Boxes) */}
+      <section style={{ maxWidth: '1140px', margin: '0 auto 2.5rem auto', padding: '0 1.25rem', width: '100%' }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+            gap: '0.85rem',
+          }}
+        >
+          {heroStats.map((stat, idx) => (
             <div
+              key={idx}
               style={{
-                width: '42px',
-                height: '42px',
+                backgroundColor: '#ffffff',
+                border: '1px solid #e2e8f0',
                 borderRadius: '8px',
-                backgroundColor: '#eff6ff',
-                color: '#2563eb',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
+                padding: '1.1rem 1.15rem',
+                boxShadow: 'var(--shadow-sm)',
               }}
             >
-              <MapPin size={20} />
-            </div>
-            <div>
-              <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>
-                {cities.length > 0 ? `${cities.length}+ Hubs` : '8+ Hubs'}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '0.4rem' }}>
+                <div
+                  style={{
+                    width: '34px',
+                    height: '34px',
+                    borderRadius: '6px',
+                    backgroundColor: '#eff6ff',
+                    border: '1px solid #bfdbfe',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  {idx === 0 && <MapPin size={17} color="#2563eb" />}
+                  {idx === 1 && <Bus size={17} color="#2563eb" />}
+                  {idx === 2 && <Package size={17} color="#2563eb" />}
+                  {idx === 3 && <CheckCircle2 size={17} color="#2563eb" />}
+                </div>
+                <div>
+                  <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', lineHeight: 1.1 }}>
+                    {stat.value}
+                  </div>
+                  <div style={{ fontSize: '0.775rem', fontWeight: 600, color: '#334155' }}>
+                    {stat.label}
+                  </div>
+                </div>
               </div>
-              <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 500, marginTop: '2px' }}>
-                Connected Destination Cities
-              </div>
-            </div>
-          </div>
-
-          {/* Card 2: Daily Scheduled Runs */}
-          <div
-            style={{
-              backgroundColor: '#ffffff',
-              border: '1px solid #e2e8f0',
-              borderRadius: '8px',
-              padding: '1.25rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '1rem',
-              boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
-            }}
-          >
-            <div
-              style={{
-                width: '42px',
-                height: '42px',
-                borderRadius: '8px',
-                backgroundColor: '#eff6ff',
-                color: '#2563eb',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-              }}
-            >
-              <Bus size={20} />
-            </div>
-            <div>
-              <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>
-                {buses.length > 0 ? `${buses.length}+ Runs` : 'Daily Fleet'}
-              </div>
-              <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 500, marginTop: '2px' }}>
-                Scheduled Bus Dispatches
+              <div style={{ fontSize: '0.725rem', color: '#64748b' }}>
+                {stat.subtext}
               </div>
             </div>
-          </div>
-
-          {/* Card 3: Accepted Freight Slabs */}
-          <div
-            style={{
-              backgroundColor: '#ffffff',
-              border: '1px solid #e2e8f0',
-              borderRadius: '8px',
-              padding: '1.25rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '1rem',
-              boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
-            }}
-          >
-            <div
-              style={{
-                width: '42px',
-                height: '42px',
-                borderRadius: '8px',
-                backgroundColor: '#eff6ff',
-                color: '#2563eb',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-              }}
-            >
-              <Package size={20} />
-            </div>
-            <div>
-              <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>
-                {parcelTypes.length > 0 ? `${parcelTypes.length} Types` : 'All Cargo'}
-              </div>
-              <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 500, marginTop: '2px' }}>
-                Standard Freight Categories
-              </div>
-            </div>
-          </div>
-
-          {/* Card 4: Verified Handover SLA */}
-          <div
-            style={{
-              backgroundColor: '#ffffff',
-              border: '1px solid #e2e8f0',
-              borderRadius: '8px',
-              padding: '1.25rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '1rem',
-              boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
-            }}
-          >
-            <div
-              style={{
-                width: '42px',
-                height: '42px',
-                borderRadius: '8px',
-                backgroundColor: '#eff6ff',
-                color: '#2563eb',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-              }}
-            >
-              <CheckCircle2 size={20} />
-            </div>
-            <div>
-              <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>
-                99.8%
-              </div>
-              <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 500, marginTop: '2px' }}>
-                Verified Handover SLA
-              </div>
-            </div>
-          </div>
+          ))}
         </div>
       </section>
 
-      {/* 4. DYNAMIC DELIVERABLE LOCATIONS SECTION (FETCHED FROM MONGODB) */}
+      {/* 4. CORE SERVICES FOR COMMERCIAL VENDORS & CUSTOMERS (REFINED SLEEK CARDS) */}
       <section
-        id="deliverable-locations"
+        id="services"
         style={{
+          padding: '3rem 1.25rem',
           backgroundColor: '#ffffff',
           borderTop: '1px solid #e2e8f0',
           borderBottom: '1px solid #e2e8f0',
-          padding: '3.5rem 1.5rem',
         }}
       >
-        <div style={{ maxWidth: '1120px', margin: '0 auto' }}>
-          {/* Section Heading & Search */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
-            <div>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: '#2563eb', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>
-                <MapPin size={14} />
-                <span>Operational Express Hubs</span>
-              </div>
-              <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#0f172a', margin: '4px 0 0 0' }}>
-                Deliverable Cities & Counter Network
-              </h2>
-              <p style={{ fontSize: '0.875rem', color: '#64748b', margin: '4px 0 0 0' }}>
-                Active destination booking counters and parcel collection points across network
-              </p>
-            </div>
-
-            {/* City Filter Search */}
-            <div style={{ position: 'relative', width: '100%', maxWidth: '280px' }}>
-              <Search size={15} style={{ position: 'absolute', left: '12px', top: '12px', color: '#94a3b8' }} />
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Search city, address, or stop..."
-                value={citySearchQuery}
-                onChange={(e) => setCitySearchQuery(e.target.value)}
-                style={{ paddingLeft: '34px', fontSize: '0.8125rem', height: '40px', borderRadius: '6px', width: '100%' }}
-              />
-            </div>
-          </div>
-
-          {/* City Grid */}
-          {loadingData ? (
-            <div style={{ textAlign: 'center', padding: '3rem 0', color: '#64748b' }}>
-              <RefreshCw size={24} className="spin" style={{ margin: '0 auto 0.5rem auto' }} />
-              <div>Loading deliverable network...</div>
-            </div>
-          ) : filteredCities.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '3rem 1.5rem', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px dashed #cbd5e1' }}>
-              <Info size={28} color="#94a3b8" style={{ margin: '0 auto 0.5rem auto' }} />
-              <div style={{ fontWeight: 600, color: '#0f172a', marginBottom: '4px' }}>
-                {cities.length === 0 ? 'No Deliverable Hubs Configured Yet' : 'No Destinations Match Your Filter'}
-              </div>
-              <div style={{ fontSize: '0.8125rem', color: '#64748b' }}>
-                {cities.length === 0
-                  ? 'Add cities and delivery addresses from Settings > From & To Cities tab.'
-                  : 'Try searching for another city name or delivery location.'}
-              </div>
-            </div>
-          ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1.25rem' }}>
-              {filteredCities.map((city) => (
-                <div
-                  key={city._id || city.name}
-                  className="city-hub-card"
-                  style={{
-                    backgroundColor: '#ffffff',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '8px',
-                    padding: '1.25rem',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
-                    minHeight: '270px',
-                  }}
-                >
-                  <div>
-                    {/* City Title and Status */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <div
-                          style={{
-                            width: '32px',
-                            height: '32px',
-                            borderRadius: '6px',
-                            backgroundColor: '#eff6ff',
-                            color: '#2563eb',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            flexShrink: 0,
-                          }}
-                        >
-                          <Building size={16} />
-                        </div>
-                        <strong style={{ fontSize: '1.05rem', color: '#0f172a', fontWeight: 800 }}>
-                          {city.name}
-                        </strong>
-                      </div>
-                      <span
-                        style={{
-                          fontSize: '0.6875rem',
-                          fontWeight: 700,
-                          color: '#065f46',
-                          backgroundColor: '#ecfdf5',
-                          padding: '2px 8px',
-                          borderRadius: '9999px',
-                          border: '1px solid #a7f3d0',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                        }}
-                      >
-                        <span style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: '#10b981' }} />
-                        Active Hub
-                      </span>
-                    </div>
-
-                    {/* Delivery Address / Counter */}
-                    <div style={{ marginBottom: '0.85rem', backgroundColor: '#f8fafc', padding: '0.6rem 0.75rem', borderRadius: '6px', border: '1px solid #f1f5f9' }}>
-                      <div style={{ fontSize: '0.6875rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: '2px' }}>
-                        Main Delivery Counter
-                      </div>
-                      <div style={{ fontSize: '0.8125rem', color: '#1e293b', lineHeight: 1.4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {city.deliveryAddress || city.counterAddress || 'Express Terminal Counter Booking'}
-                      </div>
-                    </div>
-
-                    {/* Available Delivery Locations / Stops (Capped to 2 items with +N more popup) */}
-                    {city.locations && city.locations.length > 0 && (
-                      <div style={{ marginBottom: '0.85rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                          <span style={{ fontSize: '0.6875rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
-                            Pickup Stops ({city.locations.length})
-                          </span>
-                          {city.locations.length > 2 && (
-                            <button
-                              type="button"
-                              onClick={() => setSelectedCityDetails(city)}
-                              style={{
-                                background: 'none',
-                                border: 'none',
-                                color: '#2563eb',
-                                fontSize: '0.6875rem',
-                                fontWeight: 700,
-                                cursor: 'pointer',
-                                padding: 0,
-                              }}
-                            >
-                              View all ({city.locations.length})
-                            </button>
-                          )}
-                        </div>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', alignItems: 'center' }}>
-                          {city.locations.slice(0, 2).map((loc, lIdx) => (
-                            <span
-                              key={lIdx}
-                              style={{
-                                fontSize: '0.6875rem',
-                                color: '#1e40af',
-                                backgroundColor: '#eff6ff',
-                                border: '1px solid #bfdbfe',
-                                padding: '2px 7px',
-                                borderRadius: '4px',
-                                fontWeight: 600,
-                              }}
-                            >
-                              {loc}
-                            </span>
-                          ))}
-
-                          {city.locations.length > 2 && (
-                            <button
-                              type="button"
-                              onClick={() => setSelectedCityDetails(city)}
-                              style={{
-                                fontSize: '0.6875rem',
-                                color: '#2563eb',
-                                backgroundColor: '#f1f5f9',
-                                border: '1px solid #cbd5e1',
-                                padding: '2px 7px',
-                                borderRadius: '4px',
-                                fontWeight: 700,
-                                cursor: 'pointer',
-                                transition: 'all 0.15s ease',
-                              }}
-                              title="Click to view all locations in a popup"
-                            >
-                              +{city.locations.length - 2} more...
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Card Bottom Meta (Cleanly Stacked Top and Bottom) */}
-                  <div
-                    style={{
-                      paddingTop: '0.75rem',
-                      marginTop: 'auto',
-                      borderTop: '1px solid #f1f5f9',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '0.35rem',
-                      fontSize: '0.75rem',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#64748b' }}>
-                      <Clock size={13} color="#2563eb" />
-                      <span>Same-day / Overnight Dispatch</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ color: '#16a34a', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                        <Check size={13} color="#16a34a" /> Luggage Bay Secured
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedCityDetails(city)}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          color: '#2563eb',
-                          fontWeight: 700,
-                          fontSize: '0.75rem',
-                          cursor: 'pointer',
-                          padding: '2px 0',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '2px',
-                        }}
-                        title="View complete hub details"
-                      >
-                        <span>Details</span>
-                        <ChevronRight size={13} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* 5. SUPPORTED FREIGHT & CARGO CATEGORIES (CLEAN CORPORATE SLABS) */}
-      <section id="freight-categories" style={{ padding: '3.5rem 1.5rem', backgroundColor: '#f8fafc' }}>
-        <div style={{ maxWidth: '1120px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: '#2563eb', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>
-              <Layers size={14} />
-              <span>Accepted Cargo Categories</span>
-            </div>
-            <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#0f172a', margin: '4px 0 0 0' }}>
-              Supported Freight & Standard Slabs
+        <div style={{ maxWidth: '1140px', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', maxWidth: '680px', margin: '0 auto 2.25rem auto' }}>
+            <span
+              style={{
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+                color: '#2563eb',
+                backgroundColor: '#eff6ff',
+                padding: '0.2rem 0.55rem',
+                borderRadius: '4px',
+                border: '1px solid #bfdbfe',
+              }}
+            >
+              Enterprise Capabilities
+            </span>
+            <h2
+              style={{
+                fontSize: '1.75rem',
+                fontWeight: 800,
+                color: '#0f172a',
+                marginTop: '0.65rem',
+                marginBottom: '0.65rem',
+                letterSpacing: '-0.02em',
+              }}
+            >
+              {servicesTitle}
             </h2>
-            <p style={{ fontSize: '0.875rem', color: '#64748b', margin: '4px 0 0 0' }}>
-              All consignments are weighted, issued a 6-digit Order ID sticker, and secured in passenger bus luggage bays
+            <p style={{ fontSize: '0.9rem', color: '#64748b', lineHeight: 1.55 }}>
+              {servicesSubtitle}
             </p>
           </div>
 
-          {/* Unified Corporate Category Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.25rem' }}>
-            {(parcelTypes.length > 0 ? parcelTypes : [
-              { name: 'Standard Box', defaultCharge: 150, description: 'Commercial cartons, shoes, cosmetics, electronics' },
-              { name: 'Rice Bag & Grains', defaultCharge: 200, description: 'Agricultural bags, grain sacks, heavy dry provisions' },
-              { name: 'Documents & Covers', defaultCharge: 80, description: 'Legal deeds, invoices, certificates, urgent envelopes' },
-              { name: 'Fragile Electronics', defaultCharge: 250, description: 'Screens, laptops, medical gear with upright handling' },
-            ]).map((pt) => (
+          {/* High-density, professional SaaS feature card grid (Refined: non-massive) */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+              gap: '1rem',
+            }}
+          >
+            {servicesList.map((svc) => (
               <div
-                key={pt._id || pt.name}
-                className="parcel-category-card"
+                key={svc.id}
+                className="saas-service-card"
                 style={{
-                  backgroundColor: '#ffffff',
-                  border: '1px solid #e2e8f0',
+                  backgroundColor: svc.highlight ? '#fbfcfe' : '#ffffff',
+                  border: svc.highlight ? '1px solid #93c5fd' : '1px solid #e2e8f0',
                   borderRadius: '8px',
-                  padding: '1.35rem',
+                  padding: '1.25rem',
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between',
-                  boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
+                  boxShadow: 'var(--shadow-sm)',
+                  transition: 'all 0.2s ease',
                 }}
               >
                 <div>
-                  {/* Top Bar with Icon & Price Badge */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem' }}>
                     <div
                       style={{
-                        width: '36px',
-                        height: '36px',
+                        width: '34px',
+                        height: '34px',
                         borderRadius: '6px',
-                        backgroundColor: '#eff6ff',
-                        color: '#2563eb',
+                        backgroundColor: svc.highlight ? '#eff6ff' : '#f1f5f9',
+                        border: '1px solid #cbd5e1',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                       }}
                     >
-                      <Package size={18} />
+                      {renderServiceIcon(svc.icon, 18, '#2563eb')}
                     </div>
-                    <span
-                      style={{
-                        fontSize: '0.8125rem',
-                        fontWeight: 700,
-                        color: '#0f172a',
-                        backgroundColor: '#f1f5f9',
-                        border: '1px solid #e2e8f0',
-                        padding: '2px 8px',
-                        borderRadius: '4px',
-                      }}
-                    >
-                      From ₹{pt.defaultCharge || 100}
-                    </span>
+                    {svc.badge && (
+                      <span
+                        style={{
+                          fontSize: '0.675rem',
+                          fontWeight: 700,
+                          color: '#1d4ed8',
+                          backgroundColor: '#eff6ff',
+                          border: '1px solid #bfdbfe',
+                          padding: '0.15rem 0.45rem',
+                          borderRadius: '4px',
+                          textTransform: 'uppercase',
+                        }}
+                      >
+                        {svc.badge}
+                      </span>
+                    )}
                   </div>
 
-                  <h4 style={{ fontSize: '1.05rem', color: '#0f172a', margin: '0 0 6px 0', fontWeight: 800 }}>
-                    {pt.name}
-                  </h4>
-
-                  <p style={{ fontSize: '0.8125rem', color: '#64748b', lineHeight: 1.45, margin: '0 0 1rem 0' }}>
-                    {pt.description || 'Standard secure freight handling via passenger bus fleet'}
+                  <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.4rem', lineHeight: 1.35 }}>
+                    {svc.title}
+                  </h3>
+                  <p style={{ fontSize: '0.8125rem', color: '#64748b', lineHeight: 1.5, margin: 0 }}>
+                    {svc.description}
                   </p>
-                </div>
-
-                <div style={{ paddingTop: '0.75rem', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem' }}>
-                  <span style={{ backgroundColor: '#f1f5f9', color: '#475569', padding: '2px 7px', borderRadius: '4px', fontWeight: 600, fontSize: '0.6875rem' }}>
-                    Standard Luggage Bay
-                  </span>
-                  <span style={{ color: '#16a34a', fontWeight: 700 }}>Trackable</span>
                 </div>
               </div>
             ))}
@@ -1052,484 +845,1180 @@ export const HomePage = ({ onNavigate, onTrackOrder, companySettings: propCompan
         </div>
       </section>
 
-      {/* 6. INTERACTIVE FREIGHT & DURATION ESTIMATOR */}
-      <section id="calculator" style={{ backgroundColor: '#ffffff', borderTop: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0', padding: '3.5rem 1.5rem' }}>
-        <div style={{ maxWidth: '960px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: '#2563eb', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>
-              <Calculator size={14} />
-              <span>Instant Cost Calculator</span>
-            </div>
-            <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#0f172a', margin: '4px 0 0 0' }}>
-              Estimate Your Freight & Delivery Time
+      {/* 5. "HOW IT WORKS" CONNECTED WORKFLOW PIPELINE (REFINED CONNECTED STEPPER) */}
+      <section
+        id="how-it-works"
+        style={{
+          padding: '3.25rem 1.25rem',
+          backgroundColor: '#f8fafc',
+        }}
+      >
+        <div style={{ maxWidth: '1140px', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', maxWidth: '680px', margin: '0 auto 2.25rem auto' }}>
+            <span
+              style={{
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+                color: '#2563eb',
+                backgroundColor: '#eff6ff',
+                padding: '0.2rem 0.55rem',
+                borderRadius: '4px',
+                border: '1px solid #bfdbfe',
+              }}
+            >
+              Operational Workflow
+            </span>
+            <h2
+              style={{
+                fontSize: '1.75rem',
+                fontWeight: 800,
+                color: '#0f172a',
+                marginTop: '0.65rem',
+                marginBottom: '0.65rem',
+                letterSpacing: '-0.02em',
+              }}
+            >
+              {howItWorksTitle}
             </h2>
-            <p style={{ fontSize: '0.875rem', color: '#64748b', margin: '4px 0 0 0' }}>
-              Get quick estimated costs for sending parcels via our daily scheduled bus network
+            <p style={{ fontSize: '0.9rem', color: '#64748b', lineHeight: 1.55 }}>
+              {howItWorksSubtitle}
+            </p>
+          </div>
+
+          {/* Connected Step Pipeline Grid */}
+          <div
+            className="how-it-works-pipeline"
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))',
+              gap: '0.85rem',
+              position: 'relative',
+            }}
+          >
+            {howItWorksSteps.map((step, idx) => (
+              <div
+                key={idx}
+                className="step-pipeline-card"
+                style={{
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  padding: '1.1rem',
+                  boxShadow: 'var(--shadow-sm)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  position: 'relative',
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.65rem' }}>
+                  <span
+                    style={{
+                      width: '26px',
+                      height: '26px',
+                      borderRadius: '50%',
+                      backgroundColor: '#0f172a',
+                      color: '#ffffff',
+                      fontSize: '0.75rem',
+                      fontWeight: 800,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    {step.stepNumber || idx + 1}
+                  </span>
+                  {step.tag && (
+                    <span
+                      style={{
+                        fontSize: '0.65rem',
+                        fontWeight: 600,
+                        backgroundColor: '#f1f5f9',
+                        color: '#475569',
+                        padding: '0.15rem 0.4rem',
+                        borderRadius: '4px',
+                      }}
+                    >
+                      {step.tag}
+                    </span>
+                  )}
+                </div>
+
+                <h3 style={{ fontSize: '0.875rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.35rem', lineHeight: 1.35 }}>
+                  {step.title}
+                </h3>
+                <p style={{ fontSize: '0.775rem', color: '#64748b', lineHeight: 1.45, margin: 0 }}>
+                  {step.description}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 6. B2B LOGISTICS EDGE (REFINED CARDS & NAVIGATES TO CONTACT) */}
+      <section
+        id="vendor-benefits"
+        style={{
+          padding: '3rem 1.25rem',
+          backgroundColor: '#ffffff',
+          borderTop: '1px solid #e2e8f0',
+          borderBottom: '1px solid #e2e8f0',
+        }}
+      >
+        <div style={{ maxWidth: '1140px', margin: '0 auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.75rem', flexWrap: 'wrap', gap: '1rem' }}>
+            <div>
+              <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#2563eb' }}>
+                B2B Logistics Edge
+              </span>
+              <h2 style={{ fontSize: '1.65rem', fontWeight: 800, color: '#0f172a', margin: '0.25rem 0 0 0', letterSpacing: '-0.02em' }}>
+                {vendorBenefitsTitle}
+              </h2>
+            </div>
+
+            {/* Direct Navigation to Contact Section as requested */}
+            <button
+              type="button"
+              className="btn btn-primary btn-sm"
+              style={{ fontWeight: 600, padding: '0.55rem 1.15rem' }}
+              onClick={() => {
+                document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+            >
+              <span>Partner as a Vendor</span>
+              <ArrowRight size={14} />
+            </button>
+          </div>
+
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+              gap: '0.85rem',
+            }}
+          >
+            {vendorBenefits.map((b, idx) => (
+              <div
+                key={idx}
+                style={{
+                  backgroundColor: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  padding: '1.15rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.4rem',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
+                  <CheckCircle2 size={16} color="#10b981" style={{ flexShrink: 0, marginTop: '2px' }} />
+                  <h3 style={{ fontSize: '0.875rem', fontWeight: 700, color: '#0f172a', margin: 0, lineHeight: 1.35 }}>
+                    {b.title}
+                  </h3>
+                </div>
+                <p style={{ fontSize: '0.785rem', color: '#64748b', lineHeight: 1.45, margin: 0, paddingLeft: '1.5rem' }}>
+                  {b.description}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 7. ABOUT APPLICATION & INTERCITY LOGISTICS NETWORK */}
+      <section
+        id="network"
+        style={{
+          padding: '3.25rem 1.25rem',
+          backgroundColor: '#f8fafc',
+          borderTop: '1px solid #e2e8f0',
+          borderBottom: '1px solid #e2e8f0',
+        }}
+      >
+        <div style={{ maxWidth: '1140px', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', maxWidth: '720px', margin: '0 auto 2.25rem auto' }}>
+            <span
+              style={{
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+                color: '#2563eb',
+                backgroundColor: '#eff6ff',
+                padding: '0.2rem 0.6rem',
+                borderRadius: '4px',
+                border: '1px solid #bfdbfe',
+                display: 'inline-block',
+                marginBottom: '0.5rem',
+              }}
+            >
+              About {brandName}
+            </span>
+            <h2
+              style={{
+                fontSize: '1.85rem',
+                fontWeight: 800,
+                color: '#0f172a',
+                margin: '0.25rem 0 0.6rem 0',
+                letterSpacing: '-0.02em',
+              }}
+            >
+              Premier Intercity Bus Parcel &amp; Courier Logistics
+            </h2>
+            <p style={{ fontSize: '0.9rem', color: '#64748b', lineHeight: 1.6, margin: 0 }}>
+              {brandName} is a specialized counter-to-counter courier service leveraging scheduled intercity passenger bus transit. We deliver critical parcels, commercial cartons, and urgent documents across major highway corridors faster than conventional trucking.
+            </p>
+          </div>
+
+          {/* 4 Core Application Pillars */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+              gap: '1.15rem',
+              marginBottom: '2rem',
+            }}
+          >
+            <div
+              style={{
+                backgroundColor: '#ffffff',
+                border: '1px solid #e2e8f0',
+                borderRadius: '8px',
+                padding: '1.35rem',
+                boxShadow: 'var(--shadow-sm)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.65rem',
+              }}
+            >
+              <div
+                style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '8px',
+                  backgroundColor: '#eff6ff',
+                  border: '1px solid #bfdbfe',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#2563eb',
+                }}
+              >
+                <Bus size={18} />
+              </div>
+              <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>
+                Scheduled Bus Transit
+              </h3>
+              <p style={{ fontSize: '0.8125rem', color: '#64748b', lineHeight: 1.5, margin: 0 }}>
+                Parcels travel inside dedicated, secure luggage bays of high-frequency scheduled passenger buses, offering same-day or early-morning delivery.
+              </p>
+            </div>
+
+            <div
+              style={{
+                backgroundColor: '#ffffff',
+                border: '1px solid #e2e8f0',
+                borderRadius: '8px',
+                padding: '1.35rem',
+                boxShadow: 'var(--shadow-sm)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.65rem',
+              }}
+            >
+              <div
+                style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '8px',
+                  backgroundColor: '#eff6ff',
+                  border: '1px solid #bfdbfe',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#2563eb',
+                }}
+              >
+                <MapPin size={18} />
+              </div>
+              <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>
+                Counter-to-Counter
+              </h3>
+              <p style={{ fontSize: '0.8125rem', color: '#64748b', lineHeight: 1.5, margin: 0 }}>
+                Drop off consignments at your local terminal counter. Recipients collect directly from the destination station counter upon bus arrival without home delivery lag.
+              </p>
+            </div>
+
+            <div
+              style={{
+                backgroundColor: '#ffffff',
+                border: '1px solid #e2e8f0',
+                borderRadius: '8px',
+                padding: '1.35rem',
+                boxShadow: 'var(--shadow-sm)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.65rem',
+              }}
+            >
+              <div
+                style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '8px',
+                  backgroundColor: '#eff6ff',
+                  border: '1px solid #bfdbfe',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#2563eb',
+                }}
+              >
+                <MessageSquare size={18} />
+              </div>
+              <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>
+                Real-Time WhatsApp Alerts
+              </h3>
+              <p style={{ fontSize: '0.8125rem', color: '#64748b', lineHeight: 1.5, margin: 0 }}>
+                Automated status notifications keep consignors and consignees updated from counter booking through bus departure to final counter arrival.
+              </p>
+            </div>
+
+            <div
+              style={{
+                backgroundColor: '#ffffff',
+                border: '1px solid #e2e8f0',
+                borderRadius: '8px',
+                padding: '1.35rem',
+                boxShadow: 'var(--shadow-sm)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.65rem',
+              }}
+            >
+              <div
+                style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '8px',
+                  backgroundColor: '#eff6ff',
+                  border: '1px solid #bfdbfe',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#2563eb',
+                }}
+              >
+                <ShieldCheck size={18} />
+              </div>
+              <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>
+                OTP-Verified Handover
+              </h3>
+              <p style={{ fontSize: '0.8125rem', color: '#64748b', lineHeight: 1.5, margin: 0 }}>
+                Unique 6-digit LR identifiers, barcode tags, and recipient OTP verification ensure your parcels are handed over only to authorized receivers.
+              </p>
+            </div>
+          </div>
+
+          {/* Highlights & Quick Actions Strip */}
+          <div
+            style={{
+              backgroundColor: '#ffffff',
+              border: '1px solid #cbd5e1',
+              borderRadius: '8px',
+              padding: '1.25rem 1.5rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '1rem',
+              boxShadow: 'var(--shadow-sm)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.8rem', color: '#334155' }}>
+                <CheckCircle2 size={16} color="#10b981" />
+                <span><strong>50+</strong> City Hubs</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.8rem', color: '#334155' }}>
+                <CheckCircle2 size={16} color="#10b981" />
+                <span><strong>Same-Day</strong> Transit</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.8rem', color: '#334155' }}>
+                <CheckCircle2 size={16} color="#10b981" />
+                <span><strong>Secure</strong> Luggage Bays</span>
+              </div>
+            </div>
+
+            <div className="mobile-wrap-buttons" style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                style={{ fontSize: '0.8rem', padding: '0.45rem 0.9rem', justifyContent: 'center' }}
+                onClick={() => {
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                  const trackInput = document.querySelector('input[placeholder*="LR"]');
+                  if (trackInput) {
+                    trackInput.focus();
+                  }
+                }}
+              >
+                Track a Consignment
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                style={{ fontSize: '0.8rem', padding: '0.45rem 0.9rem', justifyContent: 'center' }}
+                onClick={() => {
+                  document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+              >
+                <span>Contact Help Desk</span>
+                <ArrowRight size={13} />
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 8. INTERACTIVE DISPATCH & CONSIGNMENT LIFECYCLE SIMULATOR (REPLACES RATE ESTIMATOR) */}
+      <section
+        id="simulator"
+        style={{
+          padding: '3.25rem 1.25rem',
+          backgroundColor: '#ffffff',
+          borderTop: '1px solid #e2e8f0',
+          borderBottom: '1px solid #e2e8f0',
+        }}
+      >
+        <div style={{ maxWidth: '1140px', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', maxWidth: '680px', margin: '0 auto 2.25rem auto' }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#2563eb' }}>
+              Interactive Product Demo
+            </span>
+            <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f172a', margin: '0.35rem 0 0.5rem 0', letterSpacing: '-0.02em' }}>
+              Consignment Lifecycle & Dispatch Simulator
+            </h2>
+            <p style={{ fontSize: '0.875rem', color: '#64748b' }}>
+              Click through the interactive stages below to experience how our SaaS platform orchestrates booking, automated WhatsApp dispatch, bus loading, and live tracking.
             </p>
           </div>
 
           <div
             style={{
               backgroundColor: '#f8fafc',
-              border: '1px solid #e2e8f0',
+              border: '1px solid #cbd5e1',
               borderRadius: '10px',
-              padding: '1.75rem',
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-              gap: '1.75rem',
-              alignItems: 'center',
+              overflow: 'hidden',
+              boxShadow: 'var(--shadow-sm)',
             }}
           >
-            {/* Left: Input Controls */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div className="form-row" style={{ marginBottom: 0 }}>
-                <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 700 }}>From Origin City</label>
-                  <select
-                    className="form-control"
-                    value={calcFromCity}
-                    onChange={(e) => setCalcFromCity(e.target.value)}
-                    style={{ borderRadius: '6px', height: '42px' }}
-                  >
-                    {cities.length > 0 ? (
-                      cities.map((c) => (
-                        <option key={c.name} value={c.name}>{c.name}</option>
-                      ))
-                    ) : (
-                      <option value="">No origin cities available</option>
-                    )}
-                  </select>
-                </div>
-
-                <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 700 }}>To Destination City</label>
-                  <select
-                    className="form-control"
-                    value={calcToCity}
-                    onChange={(e) => setCalcToCity(e.target.value)}
-                    style={{ borderRadius: '6px', height: '42px' }}
-                  >
-                    {cities.length > 0 ? (
-                      cities.map((c) => (
-                        <option key={c.name} value={c.name}>{c.name}</option>
-                      ))
-                    ) : (
-                      <option value="">No destination cities available</option>
-                    )}
-                  </select>
-                </div>
-              </div>
-
-              <div className="form-row" style={{ marginBottom: 0 }}>
-                <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 700 }}>Cargo Category</label>
-                  <select
-                    className="form-control"
-                    value={calcParcelType}
-                    onChange={(e) => setCalcParcelType(e.target.value)}
-                    style={{ borderRadius: '6px', height: '42px' }}
-                  >
-                    {parcelTypes.length > 0 ? (
-                      parcelTypes.map((pt) => (
-                        <option key={pt.name} value={pt.name}>{pt.name} (Base ₹{pt.defaultCharge || 150})</option>
-                      ))
-                    ) : (
-                      <option value="Standard Box">Standard Box (₹150)</option>
-                    )}
-                  </select>
-                </div>
-
-                <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 700 }}>Weight (kg)</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="100"
-                    className="form-control"
-                    value={calcWeight}
-                    onChange={(e) => setCalcWeight(e.target.value)}
-                    style={{ borderRadius: '6px', height: '42px' }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Right: Output Cost Card */}
+            {/* Interactive Tab Switcher */}
             <div
               style={{
-                backgroundColor: '#ffffff',
-                border: '1px solid #e2e8f0',
-                borderRadius: '8px',
-                padding: '1.5rem',
-                textAlign: 'center',
-                boxShadow: '0 2px 6px rgba(15, 23, 42, 0.05)',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                backgroundColor: '#0f172a',
+                borderBottom: '1px solid #334155',
               }}
             >
-              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>
-                Estimated Freight Charge
-              </div>
-              <div style={{ fontSize: '2.25rem', fontWeight: 900, color: '#0f172a', marginBottom: '0.25rem' }}>
-                ₹{estimatedCost || 150}
-              </div>
-              <div style={{ fontSize: '0.8125rem', color: '#475569', fontWeight: 600, marginBottom: '1rem' }}>
-                {calcFromCity || 'Origin'} &rarr; {calcToCity || 'Destination'} ({calcWeight} kg)
-              </div>
+              {[
+                { id: 'booking', label: '1. Counter Booking', icon: FileText, sub: 'Auto 6-digit LR' },
+                { id: 'whatsapp', label: '2. WhatsApp Alert', icon: Smartphone, sub: 'Direct link to chat' },
+                { id: 'batch', label: '3. Batch Bus Loading', icon: Bus, sub: 'Luggage bay allocation' },
+                { id: 'tracking', label: '4. Live Tracking', icon: Search, sub: 'Customer telemetry' },
+              ].map((tab) => {
+                const IconComp = tab.icon;
+                const isActive = activeSimulatorTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setActiveSimulatorTab(tab.id)}
+                    style={{
+                      padding: '0.85rem 1rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.65rem',
+                      backgroundColor: isActive ? '#1e293b' : 'transparent',
+                      backgroundImage: isActive
+                        ? 'linear-gradient(to bottom, rgba(37, 99, 235, 0.22), rgba(30, 41, 59, 0.95))'
+                        : 'none',
+                      color: isActive ? '#ffffff' : '#94a3b8',
+                      border: 'none',
+                      borderBottom: isActive ? '3px solid #3b82f6' : '3px solid transparent',
+                      boxShadow: isActive ? 'inset 0 1px 0 rgba(147, 197, 253, 0.3)' : 'none',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      transition: 'all 0.15s ease',
+                      position: 'relative',
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: '30px',
+                        height: '30px',
+                        borderRadius: '7px',
+                        backgroundColor: isActive ? '#2563eb' : '#334155',
+                        border: isActive ? '1px solid #60a5fa' : '1px solid transparent',
+                        boxShadow: isActive ? '0 0 12px rgba(37, 99, 235, 0.6)' : 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#ffffff',
+                        flexShrink: 0,
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      <IconComp size={16} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontSize: '0.825rem',
+                          fontWeight: isActive ? 800 : 600,
+                          color: isActive ? '#ffffff' : '#cbd5e1',
+                          letterSpacing: isActive ? '-0.01em' : 'normal',
+                        }}
+                      >
+                        {tab.label}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: '0.675rem',
+                          fontWeight: isActive ? 600 : 400,
+                          color: isActive ? '#93c5fd' : '#64748b',
+                        }}
+                      >
+                        {tab.sub}
+                      </div>
+                    </div>
+                    {isActive && (
+                      <span
+                        style={{
+                          fontSize: '0.6rem',
+                          fontWeight: 800,
+                          letterSpacing: '0.05em',
+                          textTransform: 'uppercase',
+                          color: '#ffffff',
+                          backgroundColor: '#2563eb',
+                          padding: '0.15rem 0.45rem',
+                          borderRadius: '4px',
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                          flexShrink: 0,
+                        }}
+                      >
+                        Active
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', fontSize: '0.75rem', color: '#475569', textAlign: 'left', borderTop: '1px solid #f1f5f9', paddingTop: '0.85rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Check size={14} color="#16a34a" /> <span>Same-evening bus dispatch if booked before 6 PM</span>
+            {/* Interactive Tab Body Preview */}
+            <div style={{ padding: '1.75rem' }}>
+              {activeSimulatorTab === 'booking' && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', alignItems: 'center' }}>
+                  <div>
+                    <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#2563eb', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                      Counter Operations Interface
+                    </span>
+                    <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', margin: '0.25rem 0 0.5rem 0' }}>
+                      High-Speed Vendor Parcel Booking
+                    </h3>
+                    <p style={{ fontSize: '0.825rem', color: '#64748b', lineHeight: 1.5, marginBottom: '1rem' }}>
+                      Counter staff enters commercial consignor and consignee details. The system generates an official 6-digit LR tracking ID, creates formatted printable thermal receipts, and commits to the ledger in under 30 seconds.
+                    </p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.8rem', color: '#334155' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                        <Check size={14} color="#10b981" /> 6-digit collision-free LR identifier
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                        <Check size={14} color="#10b981" /> Weight-based & commodity category rate structures
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                        <Check size={14} color="#10b981" /> Role-restricted staff portal prevents unauthorized edits
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Booking Receipt Mockup */}
+                  <div
+                    style={{
+                      backgroundColor: '#ffffff',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '8px',
+                      padding: '1.25rem',
+                      fontFamily: 'monospace',
+                      fontSize: '0.8rem',
+                      boxShadow: 'var(--shadow-sm)',
+                    }}
+                  >
+                    <div style={{ textAlign: 'center', borderBottom: '1px dashed #cbd5e1', paddingBottom: '0.65rem', marginBottom: '0.65rem' }}>
+                      <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#0f172a' }}>{brandName}</div>
+                      <div style={{ fontSize: '0.675rem', color: '#64748b' }}>OFFICIAL CONSIGNMENT WAYBILL</div>
+                      <div style={{ fontSize: '1.1rem', fontWeight: 900, color: '#2563eb', margin: '4px 0' }}>LR #482195</div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.4rem', marginBottom: '0.65rem', fontSize: '0.75rem' }}>
+                      <div><span style={{ color: '#64748b' }}>FROM:</span> Mumbai Terminal</div>
+                      <div><span style={{ color: '#64748b' }}>TO:</span> Pune Swargate</div>
+                      <div><span style={{ color: '#64748b' }}>CARGO:</span> Textiles (Carton)</div>
+                      <div><span style={{ color: '#64748b' }}>WEIGHT:</span> 12.5 kg</div>
+                    </div>
+                    <div style={{ backgroundColor: '#f1f5f9', padding: '0.5rem', borderRadius: '4px', textAlign: 'center', fontSize: '0.725rem', color: '#334155' }}>
+                      Status: <strong style={{ color: '#059669' }}>CONFIRMED &bull; WAITING BAY ALLOCATION</strong>
+                    </div>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Check size={14} color="#16a34a" /> <span>Automated WhatsApp alert on bus departure</span>
+              )}
+
+              {activeSimulatorTab === 'whatsapp' && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', alignItems: 'center' }}>
+                  <div>
+                    <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                      Automated Messaging Engine
+                    </span>
+                    <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', margin: '0.25rem 0 0.5rem 0' }}>
+                      Instant WhatsApp Notifications to Consignee & Consignor
+                    </h3>
+                    <p style={{ fontSize: '0.825rem', color: '#64748b', lineHeight: 1.5, marginBottom: '1rem' }}>
+                      Eliminates telephone inquiries and manual receipt texting. Both vendor and customer receive instantaneous structured WhatsApp messages containing the LR tracking number, destination counter, and 1-click live status link.
+                    </p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.8rem', color: '#334155' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                        <Check size={14} color="#10b981" /> No manual copy-pasting of receipt waybills
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                        <Check size={14} color="#10b981" /> Direct tracking link accessible without downloading any app
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                        <Check size={14} color="#10b981" /> Secondary notification sent immediately upon bus arrival
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Smartphone WhatsApp Mockup */}
+                  <div
+                    style={{
+                      maxWidth: '320px',
+                      margin: '0 auto',
+                      backgroundColor: '#e5ddd5',
+                      borderRadius: '16px',
+                      border: '4px solid #1e293b',
+                      overflow: 'hidden',
+                      boxShadow: '0 10px 25px -5px rgba(0,0,0,0.15)',
+                    }}
+                  >
+                    <div style={{ backgroundColor: '#075e54', color: '#ffffff', padding: '0.65rem 0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#128c7e', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Truck size={14} color="#ffffff" />
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '0.8rem', fontWeight: 700 }}>{brandName} Dispatch Bot</div>
+                        <div style={{ fontSize: '0.65rem', color: '#a7f3d0' }}>Verified Business Account</div>
+                      </div>
+                    </div>
+
+                    <div style={{ padding: '0.85rem' }}>
+                      <div
+                        style={{
+                          backgroundColor: '#ffffff',
+                          borderRadius: '8px',
+                          padding: '0.75rem',
+                          boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+                          fontSize: '0.75rem',
+                          lineHeight: 1.45,
+                          color: '#111827',
+                        }}
+                      >
+                        <div style={{ fontWeight: 700, color: '#075e54', marginBottom: '4px' }}>
+                          📦 Consignment Booked Successfully!
+                        </div>
+                        <div>Dear Customer, your parcel has been registered for express scheduled bus dispatch.</div>
+                        <div style={{ marginTop: '6px', padding: '4px 6px', backgroundColor: '#f0fdf4', borderRadius: '4px', borderLeft: '3px solid #10b981' }}>
+                          <strong>LR Number:</strong> #482195<br />
+                          <strong>Destination:</strong> Pune Terminal<br />
+                          <strong>Weight:</strong> 12.5 kg
+                        </div>
+                        <div style={{ marginTop: '8px' }}>
+                          <a href="#track" style={{ color: '#2563eb', fontWeight: 700, textDecoration: 'none' }}>
+                            👉 Click here to Track Live Status
+                          </a>
+                        </div>
+                        <div style={{ fontSize: '0.625rem', color: '#9ca3af', textAlign: 'right', marginTop: '4px' }}>
+                          Just now &#10003;&#10003;
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Check size={14} color="#16a34a" /> <span>Pickup directly from destination counter</span>
+              )}
+
+              {activeSimulatorTab === 'batch' && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', alignItems: 'center' }}>
+                  <div>
+                    <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#2563eb', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                      Fleet Coordination Module
+                    </span>
+                    <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', margin: '0.25rem 0 0.5rem 0' }}>
+                      Assign Multiple Waiting Parcels to a Bus in One Click
+                    </h3>
+                    <p style={{ fontSize: '0.825rem', color: '#64748b', lineHeight: 1.5, marginBottom: '1rem' }}>
+                      Designed specifically for bus parcel hubs. Counter dispatchers select destination routes, tick multiple queued commercial packages, and allocate them simultaneously to an arriving passenger bus bay with digital driver manifests.
+                    </p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.8rem', color: '#334155' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                        <Check size={14} color="#10b981" /> Checkbox multi-select for 10 to 50 parcels at once
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                        <Check size={14} color="#10b981" /> Automatic bus luggage bay capacity checks
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                        <Check size={14} color="#10b981" /> Prints driver loading handover sheets instantly
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Batch Loading Simulation Table */}
+                  <div
+                    style={{
+                      backgroundColor: '#ffffff',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '8px',
+                      overflow: 'hidden',
+                      boxShadow: 'var(--shadow-sm)',
+                    }}
+                  >
+                    <div style={{ backgroundColor: '#f1f5f9', padding: '0.65rem 0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #cbd5e1' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <Bus size={15} color="#2563eb" />
+                        <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0f172a' }}>Bus #KA-01-F-8842 (Overnight)</span>
+                      </div>
+                      <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#2563eb', backgroundColor: '#eff6ff', padding: '0.15rem 0.45rem', borderRadius: '4px' }}>
+                        3 Parcels Selected
+                      </span>
+                    </div>
+
+                    <div style={{ padding: '0.65rem' }}>
+                      {[
+                        { lr: '#482195', to: 'Pune', type: 'Textile Carton', wt: '12.5 kg' },
+                        { lr: '#482196', to: 'Pune', type: 'Industrial Spares', wt: '24.0 kg' },
+                        { lr: '#482197', to: 'Pune', type: 'Electronics Box', wt: '8.2 kg' },
+                      ].map((item, i) => (
+                        <div
+                          key={i}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '0.45rem 0.6rem',
+                            borderBottom: i < 2 ? '1px solid #f1f5f9' : 'none',
+                            fontSize: '0.75rem',
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <div style={{ width: '16px', height: '16px', borderRadius: '4px', backgroundColor: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff' }}>
+                              <Check size={11} />
+                            </div>
+                            <span style={{ fontWeight: 700, color: '#0f172a' }}>{item.lr}</span>
+                            <span style={{ color: '#64748b' }}>({item.type})</span>
+                          </div>
+                          <span style={{ fontWeight: 600, color: '#334155' }}>{item.wt}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div style={{ backgroundColor: '#f8fafc', padding: '0.65rem 0.85rem', borderTop: '1px solid #cbd5e1', textAlign: 'right' }}>
+                      <button
+                        type="button"
+                        className="btn btn-primary btn-sm"
+                        style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem' }}
+                        onClick={() => alert('Batch Bus Bay Allocation Simulated! In the staff portal, clicking this immediately locks the parcel manifest to this scheduled bus.')}
+                      >
+                        <Bus size={13} />
+                        <span>Allocate All to Bus Bay</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {activeSimulatorTab === 'tracking' && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', alignItems: 'center' }}>
+                  <div>
+                    <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#2563eb', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                      Customer Experience
+                    </span>
+                    <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', margin: '0.25rem 0 0.5rem 0' }}>
+                      End-to-End Real-Time Telemetry
+                    </h3>
+                    <p style={{ fontSize: '0.825rem', color: '#64748b', lineHeight: 1.5, marginBottom: '1rem' }}>
+                      Anyone can track an order simply by entering their 6-digit Order ID. The portal displays current milestone progress, assigned bus number, driver contact, and arrival verification code.
+                    </p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.8rem', color: '#334155' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                        <Check size={14} color="#10b981" /> 5-stage clear milestone progression
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                        <Check size={14} color="#10b981" /> Direct destination counter contact phone numbers
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                        <Check size={14} color="#10b981" /> Downloadable and printable dispatch waybills
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Tracking Timeline Simulation Card */}
+                  <div
+                    style={{
+                      backgroundColor: '#ffffff',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '8px',
+                      padding: '1.25rem',
+                      boxShadow: 'var(--shadow-sm)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', paddingBottom: '0.5rem', borderBottom: '1px solid #f1f5f9' }}>
+                      <div>
+                        <div style={{ fontSize: '0.675rem', color: '#64748b' }}>CONSIGNMENT STATUS</div>
+                        <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>LR #482195</div>
+                      </div>
+                      <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#2563eb', backgroundColor: '#eff6ff', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
+                        In-Transit
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.75rem' }}>
+                      <div style={{ display: 'flex', gap: '0.65rem' }}>
+                        <div style={{ width: '20px', height: '20px', borderRadius: '50%', backgroundColor: '#10b981', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <Check size={12} />
+                        </div>
+                        <div>
+                          <strong style={{ color: '#0f172a' }}>Booked at Origin Terminal</strong>
+                          <div style={{ color: '#64748b', fontSize: '0.675rem' }}>Mumbai Counter &bull; 08:30 AM</div>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '0.65rem' }}>
+                        <div style={{ width: '20px', height: '20px', borderRadius: '50%', backgroundColor: '#10b981', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <Check size={12} />
+                        </div>
+                        <div>
+                          <strong style={{ color: '#0f172a' }}>Assigned to Bus Luggage Bay</strong>
+                          <div style={{ color: '#64748b', fontSize: '0.675rem' }}>Bus KA-01-F-8842 &bull; 09:15 AM</div>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '0.65rem' }}>
+                        <div style={{ width: '20px', height: '20px', borderRadius: '50%', backgroundColor: '#2563eb', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <Bus size={11} />
+                        </div>
+                        <div>
+                          <strong style={{ color: '#2563eb' }}>In-Transit Across Highway</strong>
+                          <div style={{ color: '#64748b', fontSize: '0.675rem' }}>Express Scheduled Run &bull; ETA 3:30 PM</div>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '0.65rem', opacity: 0.5 }}>
+                        <div style={{ width: '20px', height: '20px', borderRadius: '50%', backgroundColor: '#cbd5e1', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <span style={{ fontSize: '10px' }}>4</span>
+                        </div>
+                        <div>
+                          <strong style={{ color: '#64748b' }}>Arrived at Destination Counter</strong>
+                          <div style={{ color: '#94a3b8', fontSize: '0.675rem' }}>Pune Swargate Hub</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </section>
 
-      {/* 7. HOW IT WORKS 4-STEP OPERATIONAL PIPELINE */}
-      <section id="how-it-works" className="steps-section" style={{ padding: '3.5rem 1.5rem' }}>
-        <div className="section-heading">
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: '#2563eb', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>
-            <Zap size={14} />
-            <span>Operational Workflow</span>
-          </div>
-          <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#0f172a', margin: '4px 0 0 0' }}>
-            How Our Bus Parcel Service Works
-          </h2>
-          <p style={{ fontSize: '0.875rem', color: '#64748b', margin: '4px 0 0 0' }}>
-            Streamlined for business speed, counter safety, and instantaneous customer tracking
-          </p>
-        </div>
-
-        <div className="steps-grid">
-          {/* Step 1 */}
-          <div className="step-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
-              <span className="step-number">01</span>
-              <div style={{ width: '38px', height: '38px', borderRadius: '8px', backgroundColor: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #dbeafe' }}>
-                <Package size={18} />
-              </div>
-            </div>
-            <div className="step-title">Submit Parcel at Counter</div>
-            <div className="step-desc">
-              Bring your cartons, bags, merchandise, or envelopes to any of our booking counters before evening bus departure.
-            </div>
-            <div style={{ marginTop: 'auto', paddingTop: '0.75rem', borderTop: '1px solid #f1f5f9', fontSize: '0.72rem', color: '#2563eb', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <span>Same-day counter intake</span>
-            </div>
-          </div>
-
-          {/* Step 2 */}
-          <div className="step-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
-              <span className="step-number">02</span>
-              <div style={{ width: '38px', height: '38px', borderRadius: '8px', backgroundColor: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #dbeafe' }}>
-                <ShieldCheck size={18} />
-              </div>
-            </div>
-            <div className="step-title">Get 6-Digit Order ID</div>
-            <div className="step-desc">
-              Counter staff generates your unique 6-digit Order ID, applies barcode identification tags, and hands you an official receipt.
-            </div>
-            <div style={{ marginTop: 'auto', paddingTop: '0.75rem', borderTop: '1px solid #f1f5f9', fontSize: '0.72rem', color: '#2563eb', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <span>Instant receipt & SMS tag</span>
-            </div>
-          </div>
-
-          {/* Step 3 */}
-          <div className="step-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
-              <span className="step-number">03</span>
-              <div style={{ width: '38px', height: '38px', borderRadius: '8px', backgroundColor: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #dbeafe' }}>
-                <Bus size={18} />
-              </div>
-            </div>
-            <div className="step-title">Loaded on Scheduled Bus</div>
-            <div className="step-desc">
-              Parcels are secured inside designated passenger bus luggage bays with driver and vehicle numbers registered in the system.
-            </div>
-            <div style={{ marginTop: 'auto', paddingTop: '0.75rem', borderTop: '1px solid #f1f5f9', fontSize: '0.72rem', color: '#2563eb', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <span>Locked passenger bus bay</span>
-            </div>
-          </div>
-
-          {/* Step 4 */}
-          <div className="step-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
-              <span className="step-number">04</span>
-              <div style={{ width: '38px', height: '38px', borderRadius: '8px', backgroundColor: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #dbeafe' }}>
-                <CheckCircle2 size={18} />
-              </div>
-            </div>
-            <div className="step-title">WhatsApp Alert & Collect</div>
-            <div className="step-desc">
-              Sender and receiver get instant WhatsApp updates with bus arrival info. Receiver collects with the 6-digit Order ID.
-            </div>
-            <div style={{ marginTop: 'auto', paddingTop: '0.75rem', borderTop: '1px solid #f1f5f9', fontSize: '0.72rem', color: '#16a34a', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <span>Verified counter delivery</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 8. TERMINAL CONTACT & COUNTER HOURS SECTION */}
-      <section id="contact" style={{ padding: '3.5rem 1.5rem', backgroundColor: '#ffffff', borderTop: '1px solid #e2e8f0' }}>
-        <div style={{ maxWidth: '1120px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: '#2563eb', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>
-              <Phone size={14} />
-              <span>Customer Help Desk</span>
-            </div>
-            <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#0f172a', margin: '4px 0 0 0' }}>
-              Main Booking Counter & Support
+      {/* 9. INTERACTIVE VENDOR ONBOARDING & OPERATIONS HELP DESK (REPLACES STATIC 3 BOXES) */}
+      <section
+        id="contact"
+        style={{
+          padding: '3.25rem 1.25rem',
+          backgroundColor: '#f8fafc',
+        }}
+      >
+        <div style={{ maxWidth: '1140px', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', maxWidth: '680px', margin: '0 auto 2.25rem auto' }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#2563eb' }}>
+              Direct Operations Access
+            </span>
+            <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f172a', margin: '0.35rem 0 0.5rem 0', letterSpacing: '-0.02em' }}>
+              Connect with Terminal Operations & Onboarding
             </h2>
-            <p style={{ fontSize: '0.875rem', color: '#64748b', margin: '4px 0 0 0' }}>
-              Visit our terminal counter or call our dispatch desk for bulk cargo and corporate accounts
+            <p style={{ fontSize: '0.875rem', color: '#64748b' }}>
+              Inquire about commercial merchant contracts, bus fleet luggage bay partnerships, or urgent consignment counter assistance.
             </p>
           </div>
 
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-              gap: '1.25rem',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+              gap: '1.5rem',
+              alignItems: 'start',
             }}
           >
-            {/* Contact Card 1: Office Address */}
+            {/* Left Column: Interactive Vendor Inquiry & Contact Form */}
             <div
               style={{
-                padding: '1.5rem',
                 backgroundColor: '#ffffff',
-                borderRadius: '8px',
-                border: '1px solid #e2e8f0',
-                boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
+                border: '1px solid #cbd5e1',
+                borderRadius: '10px',
+                padding: '1.5rem',
+                boxShadow: 'var(--shadow-sm)',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
-                <div style={{ width: '36px', height: '36px', borderRadius: '6px', backgroundColor: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <MapPin size={18} />
-                </div>
-                <div>
-                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Terminal Location</div>
-                  <strong style={{ fontSize: '0.9375rem', color: '#0f172a' }}>Main Office & Booking Counter</strong>
-                </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                <Send size={18} color="#2563eb" />
+                <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>
+                  Quick Vendor Partnership & Operations Inquiry
+                </h3>
               </div>
-              <p style={{ fontSize: '0.8125rem', color: '#475569', lineHeight: 1.5, margin: 0 }}>
-                {companyAddress}
-              </p>
-              {gstin && (
-                <div style={{ fontSize: '0.75rem', color: '#0f172a', fontWeight: 700, marginTop: '0.75rem', backgroundColor: '#f1f5f9', padding: '4px 8px', borderRadius: '4px', display: 'inline-block' }}>
-                  GSTIN / Reg No: {gstin}
+
+              {inquirySubmitted ? (
+                <div style={{ backgroundColor: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: '8px', padding: '1.35rem', textAlign: 'center' }}>
+                  <CheckCircle2 size={36} color="#059669" style={{ margin: '0 auto 0.5rem auto' }} />
+                  <div style={{ display: 'inline-block', backgroundColor: '#065f46', color: '#ffffff', fontSize: '0.75rem', fontWeight: 800, padding: '0.2rem 0.65rem', borderRadius: '4px', marginBottom: '0.5rem', letterSpacing: '0.04em' }}>
+                    REFERENCE: {inquiryReference || 'INQ-SUCCESS'}
+                  </div>
+                  <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#065f46', margin: '0 0 0.35rem 0' }}>
+                    Inquiry Logged in Operations Console!
+                  </h4>
+                  <p style={{ fontSize: '0.8125rem', color: '#047857', margin: '0 0 1rem 0', lineHeight: 1.5 }}>
+                    Your inquiry has been securely stored in our centralized database and routed to the <strong>Super Admin & Dispatch Desk</strong>. Our team will contact you at <strong>{inquiryPhone}</strong>, or you can start a direct WhatsApp chat below.
+                  </p>
+
+                  <div style={{ display: 'flex', gap: '0.65rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                    <a
+                      href={`https://wa.me/${(companyPhone || '').replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
+                        `Hi, I have submitted an inquiry (${inquiryReference}) regarding ${inquiryType} for ${inquiryName}.`
+                      )}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn btn-primary"
+                      style={{
+                        fontSize: '0.825rem',
+                        fontWeight: 600,
+                        backgroundColor: '#059669',
+                        borderColor: '#047857',
+                        textDecoration: 'none',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.4rem',
+                      }}
+                    >
+                      <MessageSquare size={15} color="#ffffff" />
+                      <span>Chat on WhatsApp with Ref #{inquiryReference}</span>
+                    </a>
+
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      style={{ fontSize: '0.785rem' }}
+                      onClick={() => {
+                        setInquirySubmitted(false);
+                        setInquiryName('');
+                        setInquiryPhone('');
+                        setInquiryCity('');
+                        setInquiryReference('');
+                      }}
+                    >
+                      Submit Another Inquiry
+                    </button>
+                  </div>
                 </div>
+              ) : (
+                <form onSubmit={handleInquirySubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                  <div>
+                    <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 600 }}>Inquiry Type</label>
+                    <select
+                      className="form-control"
+                      value={inquiryType}
+                      onChange={(e) => setInquiryType(e.target.value)}
+                      style={{ fontSize: '0.825rem' }}
+                    >
+                      <option value="Commercial Vendor Booking">Commercial Vendor Parcel Booking Contract</option>
+                      <option value="Bus Fleet Operator">Bus Fleet Operator Luggage Bay Integration</option>
+                      <option value="Terminal Counter Partnership">Terminal Hub Counter Partnership</option>
+                      <option value="General Consignment Help">Urgent Consignment Status Help</option>
+                    </select>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                    <div>
+                      <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 600 }}>Your Name / Business</label>
+                      <input
+                        type="text"
+                        required
+                        className="form-control"
+                        placeholder="e.g. Ramesh Traders"
+                        value={inquiryName}
+                        onChange={(e) => setInquiryName(e.target.value)}
+                        style={{ fontSize: '0.825rem' }}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 600 }}>WhatsApp / Phone No.</label>
+                      <input
+                        type="tel"
+                        required
+                        className="form-control"
+                        placeholder="e.g. 9876543210"
+                        value={inquiryPhone}
+                        onChange={(e) => setInquiryPhone(e.target.value)}
+                        style={{ fontSize: '0.825rem' }}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 600 }}>City / Primary Route</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="e.g. Mumbai to Pune corridor"
+                      value={inquiryCity}
+                      onChange={(e) => setInquiryCity(e.target.value)}
+                      style={{ fontSize: '0.825rem' }}
+                    />
+                  </div>
+
+                  <div
+                    className="mobile-wrap-buttons"
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+                      gap: '0.65rem',
+                      marginTop: '0.35rem',
+                    }}
+                  >
+                    <button
+                      type="submit"
+                      className="btn btn-primary"
+                      disabled={inquirySubmitting}
+                      style={{
+                        height: '42px',
+                        padding: '0 1rem',
+                        fontSize: '0.85rem',
+                        fontWeight: 600,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.45rem',
+                      }}
+                    >
+                      <span>{inquirySubmitting ? 'Logging Inquiry...' : 'Submit Inquiry'}</span>
+                      <ArrowRight size={14} />
+                    </button>
+
+                    <a
+                      href={`https://wa.me/${(companyPhone || '').replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
+                        `Hi, I am interested in ${inquiryType} with ${brandName}.`
+                      )}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn btn-secondary"
+                      style={{
+                        height: '42px',
+                        padding: '0 1rem',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.45rem',
+                        color: '#059669',
+                        borderColor: '#a7f3d0',
+                        fontSize: '0.85rem',
+                        fontWeight: 600,
+                        textDecoration: 'none',
+                      }}
+                    >
+                      <MessageSquare size={15} color="#059669" />
+                      <span>Chat on WhatsApp</span>
+                    </a>
+                  </div>
+                </form>
               )}
             </div>
 
-            {/* Contact Card 2: Helpline */}
-            <div
-              style={{
-                padding: '1.5rem',
-                backgroundColor: '#ffffff',
-                borderRadius: '8px',
-                border: '1px solid #e2e8f0',
-                boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
-                <div style={{ width: '36px', height: '36px', borderRadius: '6px', backgroundColor: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Phone size={18} />
+            {/* Right Column: Direct Help & Dispatch Terminal Channels */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+              <div style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '1.15rem', boxShadow: 'var(--shadow-sm)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
+                  <MessageSquare size={17} color="#10b981" />
+                  <h4 style={{ fontSize: '0.875rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>
+                    Official WhatsApp Help Desk
+                  </h4>
                 </div>
-                <div>
-                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Direct Helpline</div>
-                  <strong style={{ fontSize: '0.9375rem', color: '#0f172a' }}>Support & Dispatch Desk</strong>
-                </div>
+                <p style={{ fontSize: '0.785rem', color: '#64748b', margin: '0 0 0.5rem 0' }}>
+                  Get automated tracking links, update consignee details, or request counter pickup verification directly through WhatsApp.
+                </p>
+                <a
+                  href={`https://wa.me/${(companyPhone || '').replace(/[^0-9]/g, '')}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ fontSize: '0.8rem', fontWeight: 600, color: '#059669', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
+                >
+                  <span>Open WhatsApp Support ({companyPhone})</span>
+                  <ExternalLink size={13} />
+                </a>
               </div>
-              <p style={{ fontSize: '0.8125rem', color: '#475569', lineHeight: 1.6, margin: 0 }}>
-                <strong>Phone:</strong> {companyPhone}<br />
-                {companyEmail && <span><strong>Email:</strong> {companyEmail}</span>}
-              </p>
-            </div>
 
-            {/* Contact Card 3: Operating Hours */}
-            <div
-              style={{
-                padding: '1.5rem',
-                backgroundColor: '#ffffff',
-                borderRadius: '8px',
-                border: '1px solid #e2e8f0',
-                boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
-                <div style={{ width: '36px', height: '36px', borderRadius: '6px', backgroundColor: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Clock size={18} />
+              <div style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '1.15rem', boxShadow: 'var(--shadow-sm)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
+                  <Phone size={17} color="#2563eb" />
+                  <h4 style={{ fontSize: '0.875rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>
+                    24/7 Central Operations Helpline
+                  </h4>
                 </div>
-                <div>
-                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Timings</div>
-                  <strong style={{ fontSize: '0.9375rem', color: '#0f172a' }}>Counter Operating Hours</strong>
+                <p style={{ fontSize: '0.785rem', color: '#64748b', margin: '0 0 0.4rem 0' }}>
+                  Dedicated telephone line for bus drivers, terminal counter clerks, and commercial merchants.
+                </p>
+                <a
+                  href={`tel:${companyPhone}`}
+                  style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0f172a', textDecoration: 'none' }}
+                >
+                  {companyPhone}
+                </a>
+                <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '2px' }}>
+                  Operations active daily from 06:00 AM to 10:30 PM IST
                 </div>
               </div>
-              <p style={{ fontSize: '0.8125rem', color: '#475569', lineHeight: 1.5, margin: 0 }}>
-                Monday to Sunday: 06:00 AM – 10:30 PM<br />
-                <span style={{ fontSize: '0.75rem', color: '#2563eb', fontWeight: 600 }}>
-                  Evening Bus Cut-off: 45 mins before bus departure
-                </span>
-              </p>
+
+              <div style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '1.15rem', boxShadow: 'var(--shadow-sm)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
+                  <Building size={17} color="#2563eb" />
+                  <h4 style={{ fontSize: '0.875rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>
+                    Central Counter & Logistics Station
+                  </h4>
+                </div>
+                <p style={{ fontSize: '0.785rem', color: '#475569', margin: '0 0 0.25rem 0', lineHeight: 1.45 }}>
+                  {companyAddress}
+                </p>
+                {gstin && (
+                  <div style={{ fontSize: '0.725rem', color: '#64748b' }}>
+                    GSTIN: <span style={{ fontWeight: 600, color: '#334155' }}>{gstin}</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 9. CITY HUB FULL DETAILS IN-PAGE FLOATING PANEL */}
-      {selectedCityDetails && (
-        <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 1050, maxWidth: '480px', width: '92%', backgroundColor: '#ffffff', border: '2px solid #2563eb', borderRadius: '12px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.25)', overflow: 'hidden' }}>
-          <div>
-            <div className="modal-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                <div
-                  style={{
-                    width: '36px',
-                    height: '36px',
-                    borderRadius: '8px',
-                    backgroundColor: '#eff6ff',
-                    color: '#2563eb',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Building size={18} />
-                </div>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#0f172a' }}>
-                    {selectedCityDetails.name} Terminal Hub
-                  </h3>
-                  <span
-                    style={{
-                      fontSize: '0.6875rem',
-                      color: '#065f46',
-                      fontWeight: 700,
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                    }}
-                  >
-                    <span style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: '#10b981' }} />
-                    Active Destination & Collection Counter
-                  </span>
-                </div>
-              </div>
-              <button
-                className="modal-close-btn"
-                onClick={() => setSelectedCityDetails(null)}
-                aria-label="Close details"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <div className="modal-body" style={{ padding: '1.25rem' }}>
-              {/* Main Delivery Counter Box */}
-              <div style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '1rem', marginBottom: '1.25rem' }}>
-                <div style={{ fontSize: '0.6875rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: '4px' }}>
-                  Main Delivery Counter & Collection Point
-                </div>
-                <div style={{ fontSize: '0.9375rem', fontWeight: 700, color: '#0f172a', lineHeight: 1.4 }}>
-                  {selectedCityDetails.deliveryAddress || selectedCityDetails.counterAddress || 'Express Terminal Counter Booking'}
-                </div>
-                <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  <Clock size={12} color="#2563eb" />
-                  <span>Counter Timings: 06:00 AM – 10:30 PM (Daily)</span>
-                </div>
-              </div>
-
-              {/* Complete Pickup Stops List */}
-              <div style={{ marginBottom: '1.25rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem' }}>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#0f172a', textTransform: 'uppercase' }}>
-                    All Pickup & Drop Stops ({selectedCityDetails.locations?.length || 0})
-                  </span>
-                  <span style={{ fontSize: '0.6875rem', color: '#64748b' }}>
-                    Connected via scheduled bus routes
-                  </span>
-                </div>
-
-                {selectedCityDetails.locations && selectedCityDetails.locations.length > 0 ? (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', maxHeight: '180px', overflowY: 'auto', padding: '4px 0' }}>
-                    {selectedCityDetails.locations.map((loc, lIdx) => (
-                      <div
-                        key={lIdx}
-                        style={{
-                          fontSize: '0.75rem',
-                          color: '#1e40af',
-                          backgroundColor: '#eff6ff',
-                          border: '1px solid #bfdbfe',
-                          padding: '4px 10px',
-                          borderRadius: '6px',
-                          fontWeight: 600,
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                        }}
-                      >
-                        <span>{loc}</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div style={{ fontSize: '0.8125rem', color: '#94a3b8', padding: '0.5rem 0' }}>
-                    Standard terminal counter pickup and handover.
-                  </div>
-                )}
-              </div>
-
-              {/* Express Logistics SLA & Safety Guarantee */}
-              <div style={{ backgroundColor: '#f1f5f9', borderRadius: '8px', padding: '0.85rem', fontSize: '0.75rem', color: '#475569', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Check size={13} color="#16a34a" />
-                  <span><strong>Sealed Luggage Bay:</strong> Transported via daily scheduled passenger buses</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Check size={13} color="#16a34a" />
-                  <span><strong>Instant Alerts:</strong> Automated WhatsApp update sent on bus arrival</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Check size={13} color="#16a34a" />
-                  <span><strong>Secure Handover:</strong> 6-digit Order ID verification required at counter</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="modal-footer" style={{ padding: '0.85rem 1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <button
-                type="button"
-                className="btn btn-secondary btn-sm"
-                onClick={() => setSelectedCityDetails(null)}
-              >
-                Close
-              </button>
-
-              <button
-                type="button"
-                className="btn btn-primary btn-sm"
-                onClick={() => {
-                  setCalcToCity(selectedCityDetails.name);
-                  setSelectedCityDetails(null);
-                  const calcElem = document.getElementById('calculator');
-                  if (calcElem) calcElem.scrollIntoView({ behavior: 'smooth' });
-                }}
-              >
-                <span>Estimate Freight to {selectedCityDetails.name}</span>
-                <ArrowRight size={13} />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* NOTE: Duplicate footer removed! The app-level <Footer /> in App.jsx renders cleanly for all public pages. */}
     </div>
   );
 };

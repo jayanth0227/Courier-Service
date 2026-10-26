@@ -33,6 +33,7 @@ const driverRoutes = require('./routes/driverRoutes');
 const superadminRoutes = require('./routes/superadminRoutes');
 const auditLogRoutes = require('./routes/auditLogRoutes');
 const liveRoutes = require('./routes/liveRoutes');
+const inquiryRoutes = require('./routes/inquiryRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -121,6 +122,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/superadmin', superadminRoutes);
 app.use('/api/audit-logs', adminActionLimiter, auditLogRoutes);
 app.use('/api/live', liveRoutes);
+app.use('/api/inquiries', inquiryRoutes);
 
 // Serve static assets if in production
 if (process.env.NODE_ENV === 'production') {

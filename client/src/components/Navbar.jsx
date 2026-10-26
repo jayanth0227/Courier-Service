@@ -25,17 +25,95 @@ export const Navbar = ({ activeTab, onNavigate, companySettings: propCompanySett
 
   return (
     <header className="public-header no-print">
-      <div className="public-navbar">
+      {/* Dynamic Top Announcement Bar (Controlled by Super Admin) */}
+      {company.showAnnouncement !== false && company.announcementText && (
+        <div
+          className="top-announcement-bar"
+          style={{
+            backgroundColor: '#0f172a',
+            color: '#f8fafc',
+            borderBottom: '1px solid #1e293b',
+            padding: '0.35rem 1rem',
+            fontSize: '0.75rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '0.5rem',
+            minHeight: '32px',
+          }}
+        >
+          <span
+            style={{
+              backgroundColor: '#1e3a8a',
+              color: '#93c5fd',
+              fontSize: '0.625rem',
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              letterSpacing: '0.04em',
+              padding: '0.1rem 0.4rem',
+              borderRadius: '4px',
+              flexShrink: 0,
+            }}
+          >
+            Announcement
+          </span>
+          <span
+            style={{
+              color: '#cbd5e1',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              maxWidth: '650px',
+            }}
+          >
+            {company.announcementText}
+          </span>
+          {company.announcementLink && (
+            <a
+              href={company.announcementLink}
+              style={{
+                color: '#60a5fa',
+                fontWeight: 600,
+                textDecoration: 'none',
+                marginLeft: '0.25rem',
+                flexShrink: 0,
+              }}
+              onClick={(e) => {
+                if (company.announcementLink.startsWith('#')) {
+                  e.preventDefault();
+                  const targetId = company.announcementLink.replace('#', '');
+                  handleLinkClick('home', targetId);
+                }
+              }}
+            >
+              Learn More &rarr;
+            </a>
+          )}
+        </div>
+      )}
+
+      <div
+        className="public-navbar"
+        style={{
+          maxWidth: '1200px',
+          margin: '0 auto',
+          padding: '0.65rem 1.25rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '1rem',
+        }}
+      >
         {/* Brand Logo & Title */}
         <div
           className="public-brand"
-          style={{ cursor: 'pointer' }}
+          style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.625rem' }}
           onClick={() => handleLinkClick('home')}
         >
           <div
             style={{
-              width: '38px',
-              height: '38px',
+              width: '36px',
+              height: '36px',
               borderRadius: '8px',
               backgroundColor: '#ffffff',
               border: '1px solid #e2e8f0',
@@ -68,33 +146,44 @@ export const Navbar = ({ activeTab, onNavigate, companySettings: propCompanySett
                 borderRadius: '6px',
               }}
             >
-              <Truck size={18} />
+              <Truck size={16} />
             </div>
           </div>
           <div>
-            <div className="public-brand-title">{brandName}</div>
+            <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', lineHeight: 1.15, letterSpacing: '-0.01em' }}>
+              {brandName}
+            </div>
             <div className="public-brand-sub" style={{ fontSize: '0.6875rem', color: '#64748b', fontWeight: 500 }}>
               {company.tagline || 'Parcel & Bus Dispatch Network'}
             </div>
           </div>
         </div>
 
-        {/* Mobile Hamburger Menu Toggle Button */}
-        <button
-          className="public-mobile-toggle"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          aria-label="Toggle Navigation Menu"
-        >
-          {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
-        </button>
-
-        {/* Desktop / Tablet Navigation Links */}
+        {/* Desktop Navigation Links */}
         <nav className="public-nav-desktop">
-          <ul className="public-nav-links">
+          <ul
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              listStyle: 'none',
+              margin: 0,
+              padding: 0,
+            }}
+          >
             <li>
               <a
                 href="#home"
-                className={`public-nav-link ${activeTab === 'home' ? 'active' : ''}`}
+                style={{
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                  color: activeTab === 'home' ? '#2563eb' : '#475569',
+                  backgroundColor: activeTab === 'home' ? '#eff6ff' : 'transparent',
+                  padding: '0.4rem 0.75rem',
+                  borderRadius: '6px',
+                  textDecoration: 'none',
+                  transition: 'all 0.15s ease',
+                }}
                 onClick={(e) => {
                   e.preventDefault();
                   handleLinkClick('home');
@@ -105,32 +194,57 @@ export const Navbar = ({ activeTab, onNavigate, companySettings: propCompanySett
             </li>
             <li>
               <a
+                href="#services"
+                style={{
+                  fontSize: '0.875rem',
+                  fontWeight: 500,
+                  color: '#475569',
+                  padding: '0.4rem 0.75rem',
+                  borderRadius: '6px',
+                  textDecoration: 'none',
+                  transition: 'all 0.15s ease',
+                }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleLinkClick('home', 'services');
+                }}
+              >
+                Services
+              </a>
+            </li>
+            <li>
+              <a
                 href="#track"
-                className={`public-nav-link ${activeTab === 'track' ? 'active' : ''}`}
+                style={{
+                  fontSize: '0.875rem',
+                  fontWeight: 500,
+                  color: activeTab === 'track' ? '#2563eb' : '#475569',
+                  backgroundColor: activeTab === 'track' ? '#eff6ff' : 'transparent',
+                  padding: '0.4rem 0.75rem',
+                  borderRadius: '6px',
+                  textDecoration: 'none',
+                  transition: 'all 0.15s ease',
+                }}
                 onClick={(e) => {
                   e.preventDefault();
                   handleLinkClick('track');
                 }}
               >
-                Track Parcel
-              </a>
-            </li>
-            <li>
-              <a
-                href="#deliverable-locations"
-                className="public-nav-link"
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleLinkClick('home', 'deliverable-locations');
-                }}
-              >
-                Hubs & Locations
+                Track Consignment
               </a>
             </li>
             <li>
               <a
                 href="#how-it-works"
-                className="public-nav-link"
+                style={{
+                  fontSize: '0.875rem',
+                  fontWeight: 500,
+                  color: '#475569',
+                  padding: '0.4rem 0.75rem',
+                  borderRadius: '6px',
+                  textDecoration: 'none',
+                  transition: 'all 0.15s ease',
+                }}
                 onClick={(e) => {
                   e.preventDefault();
                   handleLinkClick('home', 'how-it-works');
@@ -141,39 +255,92 @@ export const Navbar = ({ activeTab, onNavigate, companySettings: propCompanySett
             </li>
             <li>
               <a
+                href="#network"
+                style={{
+                  fontSize: '0.875rem',
+                  fontWeight: 500,
+                  color: '#475569',
+                  padding: '0.4rem 0.75rem',
+                  borderRadius: '6px',
+                  textDecoration: 'none',
+                  transition: 'all 0.15s ease',
+                }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleLinkClick('home', 'network');
+                }}
+              >
+                About Us
+              </a>
+            </li>
+            <li>
+              <a
                 href="#contact"
-                className="public-nav-link"
+                style={{
+                  fontSize: '0.875rem',
+                  fontWeight: 500,
+                  color: '#475569',
+                  padding: '0.4rem 0.75rem',
+                  borderRadius: '6px',
+                  textDecoration: 'none',
+                  transition: 'all 0.15s ease',
+                }}
                 onClick={(e) => {
                   e.preventDefault();
                   handleLinkClick('home', 'contact');
                 }}
               >
-                Contact
+                Help Desk
               </a>
-            </li>
-            <li>
-              {isAuthenticated ? (
-                <button
-                  className="btn btn-primary btn-sm"
-                  onClick={() => onNavigate(user?.role === 'superadmin' ? 'superadmin' : 'portal')}
-                >
-                  <LayoutDashboard size={14} />
-                  {user?.role === 'superadmin'
-                    ? 'SaaS Super Console'
-                    : `Operations Desk (${user?.username || 'staff'})`}
-                </button>
-              ) : (
-                <button
-                  className="btn btn-primary btn-sm"
-                  onClick={() => onNavigate('login')}
-                >
-                  <LogIn size={14} />
-                  Staff / Admin Login
-                </button>
-              )}
             </li>
           </ul>
         </nav>
+
+        {/* Right Action / Auth Button */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          {isAuthenticated ? (
+            <button
+              className="btn btn-primary btn-sm"
+              style={{
+                padding: '0.45rem 0.95rem',
+                fontSize: '0.8125rem',
+                fontWeight: 600,
+              }}
+              onClick={() => onNavigate(user?.role === 'superadmin' ? 'superadmin' : 'portal')}
+            >
+              <LayoutDashboard size={14} />
+              <span>{user?.role === 'superadmin' ? 'Super Console' : 'Operations Desk'}</span>
+            </button>
+          ) : (
+            <button
+              className="btn btn-primary btn-sm"
+              style={{
+                padding: '0.45rem 1rem',
+                fontSize: '0.8125rem',
+                fontWeight: 600,
+              }}
+              onClick={() => onNavigate('login')}
+            >
+              <LogIn size={14} />
+              <span>Staff Login</span>
+            </button>
+          )}
+
+          {/* Mobile Hamburger Menu Toggle Button */}
+          <button
+            className="public-mobile-toggle"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="Toggle Navigation Menu"
+            style={{
+              padding: '6px 8px',
+              borderRadius: '6px',
+              backgroundColor: '#f8fafc',
+              border: '1px solid #cbd5e1',
+            }}
+          >
+            {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile Collapsible Navigation Drawer */}
@@ -190,6 +357,16 @@ export const Navbar = ({ activeTab, onNavigate, companySettings: propCompanySett
             Home
           </a>
           <a
+            href="#services"
+            className="public-mobile-link"
+            onClick={(e) => {
+              e.preventDefault();
+              handleLinkClick('home', 'services');
+            }}
+          >
+            Vendor Services
+          </a>
+          <a
             href="#track"
             className={`public-mobile-link ${activeTab === 'track' ? 'active' : ''}`}
             onClick={(e) => {
@@ -197,17 +374,7 @@ export const Navbar = ({ activeTab, onNavigate, companySettings: propCompanySett
               handleLinkClick('track');
             }}
           >
-            Track Parcel
-          </a>
-          <a
-            href="#deliverable-locations"
-            className="public-mobile-link"
-            onClick={(e) => {
-              e.preventDefault();
-              handleLinkClick('home', 'deliverable-locations');
-            }}
-          >
-            Hubs & Deliverable Locations
+            Track Consignment
           </a>
           <a
             href="#how-it-works"
@@ -218,6 +385,16 @@ export const Navbar = ({ activeTab, onNavigate, companySettings: propCompanySett
             }}
           >
             How It Works
+          </a>
+          <a
+            href="#network"
+            className="public-mobile-link"
+            onClick={(e) => {
+              e.preventDefault();
+              handleLinkClick('home', 'network');
+            }}
+          >
+            About Us
           </a>
           <a
             href="#contact"
@@ -241,7 +418,7 @@ export const Navbar = ({ activeTab, onNavigate, companySettings: propCompanySett
                 }}
               >
                 <LayoutDashboard size={15} />
-                <span>{user?.role === 'superadmin' ? 'Open SaaS Console' : 'Open Operations Desk'}</span>
+                <span>{user?.role === 'superadmin' ? 'Open Super Console' : 'Open Operations Desk'}</span>
               </button>
             ) : (
               <button

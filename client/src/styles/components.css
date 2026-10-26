@@ -1966,3 +1966,124 @@
   }
 }
 
+/* Enterprise SaaS Mobile & Tablet Polish */
+@media (max-width: 768px) {
+  .public-navbar {
+    padding: 0.65rem 1rem;
+  }
+  .public-brand-title {
+    font-size: 1rem;
+  }
+  .public-mobile-drawer {
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  }
+}
+
+@media (max-width: 480px) {
+  .public-brand-sub {
+    display: none;
+  }
+}
+
+/* ==========================================================================
+   Enterprise SaaS Homepage Modern Component Styling
+   ========================================================================== */
+
+.saas-service-card {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.saas-service-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px -2px rgba(15, 23, 42, 0.08), 0 2px 6px -1px rgba(15, 23, 42, 0.04);
+  border-color: #94a3b8;
+}
+
+.step-pipeline-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.step-pipeline-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.08);
+  border-color: #3b82f6;
+}
+
+/* Pipeline Connecting Track on Desktop */
+@media (min-width: 992px) {
+  .how-it-works-pipeline::before {
+    content: '';
+    position: absolute;
+    top: 24px;
+    left: 20px;
+    right: 20px;
+    height: 2px;
+    background: linear-gradient(90deg, #cbd5e1 0%, #3b82f6 50%, #cbd5e1 100%);
+    z-index: 0;
+  }
+  .step-pipeline-card {
+    z-index: 1;
+  }
+}
+
+/* Mobile & Tablet Optimizations */
+@media (max-width: 900px) {
+  .public-nav-desktop {
+    display: none !important;
+  }
+  .public-mobile-toggle {
+    display: inline-flex !important;
+  }
+}
+
+@media (min-width: 901px) {
+  .public-nav-desktop {
+    display: flex !important;
+  }
+  .public-mobile-toggle {
+    display: none !important;
+  }
+  .public-mobile-drawer {
+    display: none !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .how-it-works-pipeline {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .step-pipeline-card {
+    border-left: 3px solid #2563eb !important;
+  }
+
+  .public-navbar {
+    padding: 0.65rem 1rem;
+  }
+
+  .public-brand-title {
+    font-size: 0.95rem;
+  }
+
+  .public-mobile-drawer {
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15);
+  }
+}
+
+@media (max-width: 480px) {
+  .public-brand-sub {
+    display: none;
+  }
+
+  .hero-action-buttons {
+    flex-direction: column !important;
+    width: 100%;
+  }
+
+  .hero-action-buttons .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+

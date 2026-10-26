@@ -34,6 +34,8 @@ import {
   EyeOff,
   Shuffle,
   MessageSquare,
+  ExternalLink,
+  RotateCcw,
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -62,6 +64,12 @@ export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigat
   const [whatsappConfigTenant, setWhatsappConfigTenant] = useState(null);
   const [emailSending, setEmailSending] = useState(false);
 
+  // Vendor Onboarding Inquiries & Leads State
+  const [inquiries, setInquiries] = useState([]);
+  const [inquiriesLoading, setInquiriesLoading] = useState(false);
+  const [newInquiriesCount, setNewInquiriesCount] = useState(0);
+  const [inquiryStatusFilter, setInquiryStatusFilter] = useState('ALL');
+
   // Website CMS & Company Profile State (Super Admin Only)
   const [cmsSettings, setCmsSettings] = useState({
     companyName: '',
@@ -72,6 +80,127 @@ export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigat
     companyAddress: '',
     gstin: '',
     receiptFooterNote: '',
+    announcementText: 'Scheduled passenger bus parcel dispatch active across all hub counters with instant WhatsApp alerts.',
+    announcementLink: '#services',
+    showAnnouncement: true,
+    heroBadge: 'Verified Counter-to-Counter Parcel Network',
+    heroTitle: 'Premier Bus Parcel & Logistics Network',
+    heroSubtitle: 'Ship commercial cartons, grain sacks, industrial parts, documents, and merchandise across state routes via daily scheduled passenger buses. Real-time 6-digit Order ID tracking and instant WhatsApp dispatch alerts.',
+    heroPrimaryCtaText: 'Operations Portal',
+    heroPrimaryCtaLink: '#login',
+    heroSecondaryCtaText: 'Track Consignment',
+    heroSecondaryCtaLink: '#track',
+    heroStats: [
+      { label: 'Active Hubs', value: '8+', subtext: 'Connected Destination Cities' },
+      { label: 'Daily Fleet', value: '180+', subtext: 'Scheduled Bus Dispatches' },
+      { label: 'All Cargo', value: '100%', subtext: 'Standard Freight Categories' },
+      { label: 'Verified SLA', value: '99.8%', subtext: 'Handover & Timely Delivery' },
+    ],
+    servicesTitle: 'Enterprise Bus Parcel Services for Commercial Vendors',
+    servicesSubtitle: 'Engineered for high-volume traders, wholesalers, retail vendors, and transport counter operators needing scheduled dispatch with zero communication friction.',
+    services: [
+      {
+        id: 'whatsapp-service',
+        title: 'Automated WhatsApp Notifications',
+        description: 'The moment a parcel is booked, an automated WhatsApp alert is dispatched to both sender and consignee with the 6-digit LR tracking number and live status link.',
+        badge: 'Instant Delivery Alert',
+        icon: 'MessageSquare',
+        highlight: true,
+      },
+      {
+        id: 'tracking-service',
+        title: 'Zero-Friction Parcel Tracking',
+        description: 'Customers and vendors easily track consignments in real-time using their 6-digit Order ID, displaying assigned bus number, driver dispatch contact, and destination counter.',
+        badge: 'Real-Time Telemetry',
+        icon: 'Search',
+        highlight: true,
+      },
+      {
+        id: 'batch-assign-service',
+        title: 'Assign Multiple Parcels to Bus at a Time',
+        description: 'Counter dispatchers can batch-select dozens of waiting parcels for any destination city and allocate them to a scheduled passenger bus luggage bay in one click.',
+        badge: 'Bulk Bay Dispatch',
+        icon: 'Bus',
+        highlight: true,
+      },
+      {
+        id: 'counter-booking-service',
+        title: 'Counter Booking Engine for Vendors',
+        description: 'High-speed counter interface for commercial merchants: auto-generates 6-digit Order IDs, calculates weight-based or category pricing, and prints receipts instantly.',
+        badge: 'High Speed Booking',
+        icon: 'Package',
+        highlight: false,
+      },
+      {
+        id: 'staff-minimal-access',
+        title: 'Staff Login with Minimal Scoped Access',
+        description: 'Counter clerks, loading supervisors, and delivery operators log in with strictly scoped permissions to create bookings and load buses without accessing corporate financials.',
+        badge: 'Role Security',
+        icon: 'ShieldCheck',
+        highlight: false,
+      },
+      {
+        id: 'scheduled-bus-network',
+        title: 'Daily Scheduled Passenger Bus Connectivity',
+        description: 'Leveraging existing high-frequency intercity passenger bus timetables, providing faster turnaround and lower demurrage than conventional slow trucking networks.',
+        badge: 'Express Transit',
+        icon: 'Truck',
+        highlight: false,
+      },
+    ],
+    howItWorksTitle: 'How It Works: Step-by-Step Logistics Workflow',
+    howItWorksSubtitle: 'From counter parcel booking to verified destination counter handover across our scheduled bus network.',
+    howItWorksSteps: [
+      {
+        stepNumber: 1,
+        title: 'Book Parcel & Generate 6-Digit Order ID',
+        description: 'The vendor presents goods at the origin hub counter. The counter staff records destination, weight, and parties, instantly generating an official 6-digit LR tracking ID.',
+        tag: '1. Booking',
+      },
+      {
+        stepNumber: 2,
+        title: 'Automated WhatsApp Message Delivered',
+        description: 'System automatically sends a structured WhatsApp message to the consignor and consignee containing consignment details and a single-click live tracking link.',
+        tag: '2. WhatsApp Alert',
+      },
+      {
+        stepNumber: 3,
+        title: 'Assign Multiple Parcels to Bus Bay',
+        description: 'Hub staff groups queued parcels by destination route and batch-assigns them to a scheduled passenger bus with a generated driver dispatch manifest.',
+        tag: '3. Fleet Assignment',
+      },
+      {
+        stepNumber: 4,
+        title: 'Intercity Bus Transit & Live Monitoring',
+        description: 'The parcel travels inside the secure luggage bay of the scheduled bus. Both vendor and customer monitor transit progress and arrival ETA online.',
+        tag: '4. Transit',
+      },
+      {
+        stepNumber: 5,
+        title: 'Destination Counter Verification & Handover',
+        description: 'Upon bus arrival at the destination terminal, counter staff unloads cargo. Consignee presents the 6-digit Order ID or WhatsApp receipt for verified handover.',
+        tag: '5. Handover',
+      },
+    ],
+    vendorBenefitsTitle: 'Why Leading Commercial Vendors Choose Us',
+    vendorBenefits: [
+      {
+        title: 'Same-Day & Overnight Passenger Bus Timings',
+        description: 'Eliminates regional warehouse consolidation delays. Your parcels travel directly on express passenger bus schedules.',
+      },
+      {
+        title: 'Zero WhatsApp Overhead for Merchants',
+        description: 'No manual photo-sharing or texting waybills. Customers receive automated WhatsApp confirmation and tracking links instantly.',
+      },
+      {
+        title: 'Bulk Dispatch Tools for High-Volume Shippers',
+        description: 'Assign dozens of cartons and sacks across multiple departure routes within seconds with complete digital manifests.',
+      },
+      {
+        title: 'Minimal Operator Training Required',
+        description: 'Staff portals are intuitive and role-restricted, allowing counter clerks to execute bookings and dispatches with zero friction.',
+      },
+    ],
   });
   const [cmsLoading, setCmsLoading] = useState(false);
   const [cmsSaving, setCmsSaving] = useState(false);
@@ -228,23 +357,111 @@ export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigat
   useEffect(() => {
     fetchDashboardData();
     fetchCmsSettings();
+    fetchInquiries();
   }, []);
+
+  const fetchInquiries = async () => {
+    try {
+      setInquiriesLoading(true);
+      let apiInquiries = [];
+      let apiNewCount = 0;
+      try {
+        const res = await api.inquiries.list();
+        if (res && res.success && Array.isArray(res.data)) {
+          apiInquiries = res.data;
+          apiNewCount = res.newCount !== undefined ? res.newCount : res.data.filter((i) => i.status === 'New').length;
+        }
+      } catch (apiErr) {
+        console.warn('API fetchInquiries warning:', apiErr);
+      }
+
+      // Merge with localStorage inquiries (for resilience)
+      let localInquiries = [];
+      try {
+        localInquiries = JSON.parse(localStorage.getItem('mrcargo_inquiries') || '[]');
+      } catch {
+        localInquiries = [];
+      }
+
+      const mergedMap = new Map();
+      apiInquiries.forEach((item) => mergedMap.set(item.referenceNumber || item._id, item));
+      localInquiries.forEach((item) => {
+        const key = item.referenceNumber || item._id;
+        if (!mergedMap.has(key)) {
+          mergedMap.set(key, item);
+        }
+      });
+
+      const finalInquiries = Array.from(mergedMap.values()).sort(
+        (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+      );
+
+      setInquiries(finalInquiries);
+      setNewInquiriesCount(finalInquiries.filter((i) => i.status === 'New').length);
+    } catch (err) {
+      console.warn('Failed to load inquiries:', err);
+    } finally {
+      setInquiriesLoading(false);
+    }
+  };
+
+  const handleUpdateInquiryStatus = async (id, status) => {
+    try {
+      if (id && !id.startsWith('inq_')) {
+        await api.inquiries.update(id, { status });
+      }
+      showToast(`Inquiry status updated to ${status}`, 'success');
+      setInquiries((prev) => prev.map((inq) => (inq._id === id ? { ...inq, status } : inq)));
+      setNewInquiriesCount((prev) => (status !== 'New' ? Math.max(0, prev - 1) : prev));
+
+      // Also update local storage copy
+      try {
+        const localList = JSON.parse(localStorage.getItem('mrcargo_inquiries') || '[]');
+        const updatedLocal = localList.map((inq) => (inq._id === id ? { ...inq, status } : inq));
+        localStorage.setItem('mrcargo_inquiries', JSON.stringify(updatedLocal));
+      } catch {
+        // Ignore
+      }
+    } catch (err) {
+      showToast(err.message || 'Failed to update status', 'error');
+    }
+  };
 
   const fetchCmsSettings = async () => {
     try {
       setCmsLoading(true);
       const res = await api.superadmin.getSettings();
       if (res && res.success && res.data) {
-        setCmsSettings({
-          companyName: res.data.companyName || '',
-          logoUrl: res.data.logoUrl || '/logo.png',
-          tagline: res.data.tagline || 'Parcel & Bus Dispatch Network',
-          companyPhone: res.data.companyPhone || '',
-          companyEmail: res.data.companyEmail || '',
-          companyAddress: res.data.companyAddress || '',
-          gstin: res.data.gstin || '',
-          receiptFooterNote: res.data.receiptFooterNote || '',
-        });
+        setCmsSettings((prev) => ({
+          ...prev,
+          companyName: res.data.companyName || prev.companyName,
+          logoUrl: res.data.logoUrl || prev.logoUrl || '/logo.png',
+          tagline: res.data.tagline || prev.tagline,
+          companyPhone: res.data.companyPhone || prev.companyPhone,
+          companyEmail: res.data.companyEmail || prev.companyEmail,
+          companyAddress: res.data.companyAddress || prev.companyAddress,
+          gstin: res.data.gstin || prev.gstin,
+          receiptFooterNote: res.data.receiptFooterNote || prev.receiptFooterNote,
+          announcementText: res.data.announcementText || prev.announcementText,
+          announcementLink: res.data.announcementLink || prev.announcementLink,
+          showAnnouncement: res.data.showAnnouncement !== undefined ? res.data.showAnnouncement : prev.showAnnouncement,
+          heroBadge: res.data.heroBadge || prev.heroBadge,
+          heroTitle: res.data.heroTitle || prev.heroTitle,
+          heroSubtitle: res.data.heroSubtitle || prev.heroSubtitle,
+          heroPrimaryCtaText: res.data.heroPrimaryCtaText || prev.heroPrimaryCtaText,
+          heroPrimaryCtaLink: res.data.heroPrimaryCtaLink || prev.heroPrimaryCtaLink,
+          heroSecondaryCtaText: res.data.heroSecondaryCtaText || prev.heroSecondaryCtaText,
+          heroSecondaryCtaLink: res.data.heroSecondaryCtaLink || prev.heroSecondaryCtaLink,
+          heroStats: (res.data.heroStats && res.data.heroStats.length > 0) ? res.data.heroStats : prev.heroStats,
+          servicesTitle: res.data.servicesTitle || prev.servicesTitle,
+          servicesSubtitle: res.data.servicesSubtitle || prev.servicesSubtitle,
+          services: (res.data.services && res.data.services.length > 0) ? res.data.services : prev.services,
+          howItWorksTitle: res.data.howItWorksTitle || prev.howItWorksTitle,
+          howItWorksSubtitle: res.data.howItWorksSubtitle || prev.howItWorksSubtitle,
+          howItWorksSteps: (res.data.howItWorksSteps && res.data.howItWorksSteps.length > 0) ? res.data.howItWorksSteps : prev.howItWorksSteps,
+          vendorBenefitsTitle: res.data.vendorBenefitsTitle || prev.vendorBenefitsTitle,
+          vendorBenefits: (res.data.vendorBenefits && res.data.vendorBenefits.length > 0) ? res.data.vendorBenefits : prev.vendorBenefits,
+        }));
       }
     } catch (err) {
       console.warn('Failed to load CMS settings:', err);
@@ -256,6 +473,8 @@ export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigat
   useEffect(() => {
     if (activeTab === 'cms') {
       fetchCmsSettings();
+    } else if (activeTab === 'inquiries') {
+      fetchInquiries();
     }
   }, [activeTab]);
 
@@ -283,7 +502,7 @@ export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigat
   };
 
   const handleSaveCmsSettings = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     if (!cmsSettings.companyName.trim()) {
       showToast('Company Name is required', 'error');
       return;
@@ -303,6 +522,34 @@ export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigat
       }
     } catch (err) {
       showToast(err.message || 'Failed to save Company Profile & CMS', 'error');
+    } finally {
+      setCmsSaving(false);
+    }
+  };
+
+  const handleResetCmsDefaults = async () => {
+    if (!window.confirm('Reset all public website headlines, metrics, vendor services, and workflow steps to Enterprise SaaS defaults?')) {
+      return;
+    }
+
+    try {
+      setCmsSaving(true);
+      const res = await api.superadmin.resetCmsDefaults();
+      if (res && res.success && res.data) {
+        setCmsSettings((prev) => ({
+          ...prev,
+          ...res.data,
+        }));
+        showToast('Website CMS reset to Enterprise SaaS standard presets!', 'success');
+        if (setGlobalCompanySettings) {
+          setGlobalCompanySettings(res.data);
+        }
+        if (refreshCompanySettings) {
+          refreshCompanySettings();
+        }
+      }
+    } catch (err) {
+      showToast(err.message || 'Failed to reset CMS defaults', 'error');
     } finally {
       setCmsSaving(false);
     }
@@ -619,6 +866,22 @@ export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigat
             <Globe size={16} />
             <span>Company Profile & Website CMS</span>
           </div>
+
+          <div
+            className={`portal-nav-item ${activeTab === 'inquiries' ? 'active' : ''}`}
+            onClick={() => {
+              setActiveTab('inquiries');
+              setSelectedTenantId(null);
+            }}
+          >
+            <MessageSquare size={16} />
+            <span>Vendor Inquiries & Leads</span>
+            {newInquiriesCount > 0 && (
+              <span className="portal-nav-badge" style={{ backgroundColor: '#10b981', color: '#ffffff', fontWeight: 800 }}>
+                {newInquiriesCount}
+              </span>
+            )}
+          </div>
         </nav>
       </header>
 
@@ -633,6 +896,8 @@ export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigat
                   ? 'Registered Courier Organizations'
                   : activeTab === 'analytics'
                   ? 'Platform Operations & Revenue Analytics'
+                  : activeTab === 'inquiries'
+                  ? 'Commercial Vendor Inquiries & Inbound Leads'
                   : 'Company Profile & Website CMS Management'}
               </h1>
               <p className="page-subtitle" style={{ color: '#475569', fontSize: '0.8125rem', marginTop: '3px' }}>
@@ -640,12 +905,24 @@ export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigat
                   ? 'Manage independent courier businesses, configure service limits, access branch portals, and onboard new organizations.'
                   : activeTab === 'analytics'
                   ? 'Platform-wide consignment totals, gross logistics freight revenue, and fleet utilization across all tenants.'
+                  : activeTab === 'inquiries'
+                  ? 'Direct inbound inquiries submitted via the public home page: vendor parcel booking contracts, bus fleet integrations, and terminal counter requests.'
                   : 'Super Admin exclusive control: customize platform logo, company sub-tagline, contact helpline, branch address, and receipt terms.'}
               </p>
             </div>
 
             <div style={{ display: 'flex', gap: '0.625rem', alignItems: 'center' }}>
-              {activeTab === 'cms' ? (
+              {activeTab === 'inquiries' ? (
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={fetchInquiries}
+                  disabled={inquiriesLoading}
+                >
+                  <RefreshCw size={14} className={inquiriesLoading ? 'spin' : ''} />
+                  <span>Refresh Leads</span>
+                </button>
+              ) : activeTab === 'cms' ? (
                 <button
                   type="button"
                   className="btn btn-secondary btn-sm"
@@ -681,8 +958,8 @@ export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigat
           </div>
         )}
 
-        {/* 4 Executive KPI Metric Cards (Only shown when not drilling into tenant detail view) */}
-        {activeTab !== 'cms' && !selectedTenantId && (
+        {/* 4 Executive KPI Metric Cards (Only shown on tenants & analytics views) */}
+        {activeTab !== 'cms' && activeTab !== 'inquiries' && !selectedTenantId && (
           <div className="dashboard-stats-grid" style={{ marginBottom: '1.25rem' }}>
           {/* Card 1: Total Tenants */}
           <div className="stat-card">
@@ -1208,9 +1485,72 @@ export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigat
 
         {/* Tab 3: Company Profile & Website CMS (Super Admin Exclusive) */}
         {activeTab === 'cms' && (
-          <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+          <div style={{ maxWidth: '1050px', margin: '0 auto', paddingBottom: '3rem' }}>
             <form onSubmit={handleSaveCmsSettings}>
-              {/* Brand Logo & Visual Identity Card */}
+              {/* CMS Control Header & Action Bar */}
+              <div
+                style={{
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  padding: '1.25rem 1.5rem',
+                  boxShadow: 'var(--shadow-sm)',
+                  marginBottom: '1.5rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '1rem',
+                  flexWrap: 'wrap',
+                }}
+              >
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '4px' }}>
+                    <Globe size={18} color="#2563eb" />
+                    <h3 style={{ fontSize: '1.05rem', color: '#0f172a', margin: 0, fontWeight: 700 }}>
+                      Public Website CMS & Platform Content
+                    </h3>
+                  </div>
+                  <p style={{ fontSize: '0.8125rem', color: '#64748b', margin: 0 }}>
+                    Control all homepage text, vendor services, 5-step operational workflow, and business details.
+                  </p>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => {
+                      if (onNavigatePublic) {
+                        onNavigatePublic('home');
+                      } else {
+                        window.location.hash = '#home';
+                      }
+                    }}
+                    title="Open live public homepage"
+                  >
+                    <ExternalLink size={14} />
+                    <span>Preview Public Site</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    onClick={handleResetCmsDefaults}
+                    disabled={cmsSaving || cmsLoading}
+                    title="Restore recommended SaaS presets for vendor bus parcel courier"
+                  >
+                    <RotateCcw size={14} />
+                    <span>Reset to SaaS Presets</span>
+                  </button>
+
+                  <button type="submit" className="btn btn-primary btn-sm" disabled={cmsSaving || cmsLoading}>
+                    <Save size={14} />
+                    <span>{cmsSaving ? 'Saving Changes...' : 'Save All Changes'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* CARD 1: Top Announcement Bar & Brand Identity */}
               <div
                 style={{
                   backgroundColor: '#ffffff',
@@ -1224,31 +1564,80 @@ export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigat
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
                   <Building size={18} color="#0f172a" />
                   <h3 style={{ fontSize: '1rem', color: '#0f172a', margin: 0, fontWeight: 700 }}>
-                    Brand Logo & Visual Identity
+                    Brand Identity & Top Announcement Bar
                   </h3>
                 </div>
                 <p style={{ fontSize: '0.8125rem', color: '#64748b', marginBottom: '1.25rem' }}>
-                  Upload company logo or select preset logo. Applies across Public Home, Tracking, TopNav, Bill Receipts, and Reports.
+                  Top-level branding and alert banner displayed above the public header.
                 </p>
 
+                {/* Announcement Bar Settings */}
+                <div
+                  style={{
+                    backgroundColor: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '6px',
+                    padding: '1rem',
+                    marginBottom: '1.25rem',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                    <div style={{ fontWeight: 600, fontSize: '0.875rem', color: '#0f172a' }}>
+                      Top Announcement Banner
+                    </div>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', fontSize: '0.8125rem', color: '#334155' }}>
+                      <input
+                        type="checkbox"
+                        checked={cmsSettings.showAnnouncement !== false}
+                        onChange={(e) => setCmsSettings({ ...cmsSettings, showAnnouncement: e.target.checked })}
+                      />
+                      <span>Enable Announcement Banner</span>
+                    </label>
+                  </div>
+
+                  <div className="form-row" style={{ marginBottom: 0 }}>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="form-label">Banner Text Notice</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder="e.g. Scheduled passenger bus parcel dispatch active across all hub counters with instant WhatsApp alerts."
+                        value={cmsSettings.announcementText || ''}
+                        onChange={(e) => setCmsSettings({ ...cmsSettings, announcementText: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="form-label">Banner Target Link (Anchor or URL)</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder="#services or #contact"
+                        value={cmsSettings.announcementLink || ''}
+                        onChange={(e) => setCmsSettings({ ...cmsSettings, announcementLink: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Logo Previews & File Upload */}
                 <div
                   style={{
                     display: 'grid',
                     gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
                     gap: '1.5rem',
                     alignItems: 'center',
+                    marginBottom: '1rem',
                   }}
                 >
-                  {/* Logo Previews (Light & Dark BG) */}
                   <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                     <div>
                       <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', marginBottom: '4px' }}>
-                        Light Header / Receipt Preview
+                        Light Header Preview
                       </div>
                       <div
                         style={{
                           width: '140px',
-                          height: '80px',
+                          height: '75px',
                           borderRadius: '6px',
                           border: '1px solid #cbd5e1',
                           backgroundColor: '#ffffff',
@@ -1272,12 +1661,12 @@ export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigat
 
                     <div>
                       <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', marginBottom: '4px' }}>
-                        Admin Dark TopNav Preview
+                        Dark Portal TopNav Preview
                       </div>
                       <div
                         style={{
                           width: '140px',
-                          height: '80px',
+                          height: '75px',
                           borderRadius: '6px',
                           border: '1px solid #334155',
                           backgroundColor: '#0f172a',
@@ -1300,22 +1689,17 @@ export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigat
                     </div>
                   </div>
 
-                  {/* Upload and Logo Actions */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                    <div>
-                      <label className="form-label" style={{ marginBottom: '4px' }}>
-                        Upload New Logo Image (PNG / JPG / SVG)
-                      </label>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleLogoFileUpload}
-                        className="form-control"
-                        style={{ padding: '6px 8px', fontSize: '0.8125rem' }}
-                      />
-                      <div className="form-hint">Converts to high-resolution format and applies platform-wide</div>
-                    </div>
-
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+                    <label className="form-label" style={{ marginBottom: 0 }}>
+                      Upload New Logo Image (PNG / JPG / SVG)
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleLogoFileUpload}
+                      className="form-control"
+                      style={{ padding: '6px 8px', fontSize: '0.8125rem' }}
+                    />
                     <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                       <button
                         type="button"
@@ -1327,7 +1711,6 @@ export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigat
                       >
                         Use Sleek SV Logo
                       </button>
-
                       <button
                         type="button"
                         className="btn btn-secondary btn-sm"
@@ -1342,8 +1725,7 @@ export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigat
                   </div>
                 </div>
 
-                {/* Custom Logo URL / Tagline */}
-                <div className="form-row" style={{ marginTop: '1rem', marginBottom: 0 }}>
+                <div className="form-row" style={{ marginBottom: 0 }}>
                   <div className="form-group" style={{ marginBottom: 0 }}>
                     <label className="form-label">Custom Logo Image URL / Path (Optional)</label>
                     <input
@@ -1354,9 +1736,8 @@ export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigat
                       onChange={(e) => setCmsSettings({ ...cmsSettings, logoUrl: e.target.value })}
                     />
                   </div>
-
                   <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="form-label">Company Sub-Tagline</label>
+                    <label className="form-label">Brand Sub-Tagline</label>
                     <input
                       type="text"
                       className="form-control"
@@ -1368,7 +1749,127 @@ export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigat
                 </div>
               </div>
 
-              {/* Company Details Card */}
+              {/* CARD 2: Hero Section & KPI Milestone Statistics */}
+              <div
+                style={{
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  padding: '1.5rem',
+                  boxShadow: 'var(--shadow-sm)',
+                  marginBottom: '1.5rem',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                  <TrendingUp size={18} color="#0f172a" />
+                  <h3 style={{ fontSize: '1rem', color: '#0f172a', margin: 0, fontWeight: 700 }}>
+                    Hero Section & KPI Milestone Statistics
+                  </h3>
+                </div>
+                <p style={{ fontSize: '0.8125rem', color: '#64748b', marginBottom: '1.25rem' }}>
+                  Headline, value proposition, CTA buttons, and the 4 metric counters displayed in the hero section.
+                </p>
+
+                <div className="form-group">
+                  <label className="form-label">Hero Badge Text</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="e.g. Verified Counter-to-Counter Parcel Network"
+                    value={cmsSettings.heroBadge || ''}
+                    onChange={(e) => setCmsSettings({ ...cmsSettings, heroBadge: e.target.value })}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Main Hero Headline</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="e.g. Premier Bus Parcel & Logistics Network"
+                    value={cmsSettings.heroTitle || ''}
+                    onChange={(e) => setCmsSettings({ ...cmsSettings, heroTitle: e.target.value })}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Hero Subtitle / Description</label>
+                  <textarea
+                    className="form-control"
+                    rows={3}
+                    placeholder="Describe how commercial vendors book parcels on scheduled buses and how customers track."
+                    value={cmsSettings.heroSubtitle || ''}
+                    onChange={(e) => setCmsSettings({ ...cmsSettings, heroSubtitle: e.target.value })}
+                  />
+                </div>
+
+                {/* 4 Hero KPI Milestone Stats */}
+                <div style={{ marginTop: '1rem', borderTop: '1px solid #f1f5f9', paddingTop: '1rem' }}>
+                  <div style={{ fontWeight: 600, fontSize: '0.875rem', color: '#0f172a', marginBottom: '0.75rem' }}>
+                    4 Key Hero Metric Counters
+                  </div>
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                      gap: '0.75rem',
+                    }}
+                  >
+                    {(cmsSettings.heroStats || []).map((stat, idx) => (
+                      <div
+                        key={idx}
+                        style={{
+                          backgroundColor: '#f8fafc',
+                          border: '1px solid #e2e8f0',
+                          borderRadius: '6px',
+                          padding: '0.75rem',
+                        }}
+                      >
+                        <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', marginBottom: '4px' }}>
+                          Metric Tile #{idx + 1}
+                        </div>
+                        <input
+                          type="text"
+                          className="form-control"
+                          placeholder="Value (e.g. 180+)"
+                          style={{ marginBottom: '4px', fontWeight: 700 }}
+                          value={stat.value || ''}
+                          onChange={(e) => {
+                            const updated = [...cmsSettings.heroStats];
+                            updated[idx] = { ...updated[idx], value: e.target.value };
+                            setCmsSettings({ ...cmsSettings, heroStats: updated });
+                          }}
+                        />
+                        <input
+                          type="text"
+                          className="form-control"
+                          placeholder="Label (e.g. Daily Fleet)"
+                          style={{ marginBottom: '4px' }}
+                          value={stat.label || ''}
+                          onChange={(e) => {
+                            const updated = [...cmsSettings.heroStats];
+                            updated[idx] = { ...updated[idx], label: e.target.value };
+                            setCmsSettings({ ...cmsSettings, heroStats: updated });
+                          }}
+                        />
+                        <input
+                          type="text"
+                          className="form-control"
+                          placeholder="Subtext (e.g. Scheduled Dispatches)"
+                          value={stat.subtext || ''}
+                          onChange={(e) => {
+                            const updated = [...cmsSettings.heroStats];
+                            updated[idx] = { ...updated[idx], subtext: e.target.value };
+                            setCmsSettings({ ...cmsSettings, heroStats: updated });
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* CARD 3: Corporate Contact & Counter Details */}
               <div
                 style={{
                   backgroundColor: '#ffffff',
@@ -1380,7 +1881,7 @@ export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigat
                 }}
               >
                 <h3 style={{ fontSize: '1rem', color: '#0f172a', marginBottom: '1rem', fontWeight: 700 }}>
-                  Company Details (Appears on Consignment Receipts & Public Portal)
+                  Corporate Contact & Counter Details (Public Portal & Bill Receipts)
                 </h3>
 
                 <div className="form-row">
@@ -1455,14 +1956,254 @@ export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigat
                 </div>
               </div>
 
-              {/* Save Bar */}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', alignItems: 'center' }}>
-                <button type="submit" className="btn btn-primary" disabled={cmsSaving || cmsLoading}>
-                  <Save size={16} />
-                  <span>{cmsSaving ? 'Saving Profile...' : 'Save Company Profile & CMS'}</span>
-                </button>
+              {/* Floating Save Action Bar */}
+              <div
+                style={{
+                  position: 'sticky',
+                  bottom: '1rem',
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #cbd5e1',
+                  borderRadius: '8px',
+                  padding: '0.875rem 1.25rem',
+                  boxShadow: 'var(--shadow-lg)',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  gap: '1rem',
+                  zIndex: 80,
+                }}
+              >
+                <div style={{ fontSize: '0.8125rem', color: '#475569' }}>
+                  Changes will apply immediately across Public Home, Tracking, and Consignment Receipts.
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={handleResetCmsDefaults}
+                    disabled={cmsSaving || cmsLoading}
+                  >
+                    <RotateCcw size={16} />
+                    <span>Reset Presets</span>
+                  </button>
+
+                  <button type="submit" className="btn btn-primary" disabled={cmsSaving || cmsLoading}>
+                    <Save size={16} />
+                    <span>{cmsSaving ? 'Saving Changes...' : 'Save All Website CMS Changes'}</span>
+                  </button>
+                </div>
               </div>
             </form>
+          </div>
+        )}
+
+        {/* Tab 4: Vendor Onboarding Inquiries & Leads Management */}
+        {activeTab === 'inquiries' && (
+          <div style={{ maxWidth: '1280px', margin: '0 auto', paddingBottom: '3rem' }}>
+            {/* Header / Summary Tiles */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: '1rem',
+                marginBottom: '1.25rem',
+              }}
+            >
+              <div style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '1rem 1.25rem', boxShadow: 'var(--shadow-sm)' }}>
+                <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>Total Inquiries Received</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f172a', marginTop: '2px' }}>{inquiries.length}</div>
+              </div>
+
+              <div style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '1rem 1.25rem', boxShadow: 'var(--shadow-sm)' }}>
+                <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>New & Unread Leads</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#10b981', marginTop: '2px' }}>
+                  {inquiries.filter((i) => i.status === 'New').length}
+                </div>
+              </div>
+
+              <div style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '1rem 1.25rem', boxShadow: 'var(--shadow-sm)' }}>
+                <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>In Discussion / Onboarding</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#2563eb', marginTop: '2px' }}>
+                  {inquiries.filter((i) => ['Contacted', 'In Discussion'].includes(i.status)).length}
+                </div>
+              </div>
+
+              <div style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '1rem 1.25rem', boxShadow: 'var(--shadow-sm)' }}>
+                <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>Closed / Handled</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#64748b', marginTop: '2px' }}>
+                  {inquiries.filter((i) => i.status === 'Closed').length}
+                </div>
+              </div>
+            </div>
+
+            {/* Filter & Action Bar */}
+            <div
+              style={{
+                backgroundColor: '#ffffff',
+                border: '1px solid #e2e8f0',
+                borderRadius: '8px',
+                padding: '0.85rem 1.25rem',
+                marginBottom: '1rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '0.75rem',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#475569' }}>Filter by Status:</span>
+                {['ALL', 'New', 'Contacted', 'In Discussion', 'Closed'].map((st) => (
+                  <button
+                    key={st}
+                    type="button"
+                    onClick={() => setInquiryStatusFilter(st)}
+                    style={{
+                      padding: '0.25rem 0.65rem',
+                      borderRadius: '4px',
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                      border: inquiryStatusFilter === st ? '1px solid #2563eb' : '1px solid #e2e8f0',
+                      backgroundColor: inquiryStatusFilter === st ? '#eff6ff' : '#f8fafc',
+                      color: inquiryStatusFilter === st ? '#1d4ed8' : '#64748b',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {st}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={fetchInquiries}
+                disabled={inquiriesLoading}
+              >
+                <RefreshCw size={13} className={inquiriesLoading ? 'spin' : ''} />
+                <span>Refresh Leads</span>
+              </button>
+            </div>
+
+            {/* Inquiries Data Table */}
+            <div
+              style={{
+                backgroundColor: '#ffffff',
+                border: '1px solid #e2e8f0',
+                borderRadius: '8px',
+                overflow: 'hidden',
+                boxShadow: 'var(--shadow-sm)',
+              }}
+            >
+              {inquiriesLoading ? (
+                <div style={{ padding: '3rem', textAlign: 'center', color: '#64748b' }}>
+                  <RefreshCw size={24} className="spin" style={{ margin: '0 auto 0.75rem auto' }} />
+                  <div>Loading inquiries & leads...</div>
+                </div>
+              ) : inquiries.length === 0 ? (
+                <div style={{ padding: '3rem', textAlign: 'center', color: '#64748b' }}>
+                  <MessageSquare size={32} color="#cbd5e1" style={{ margin: '0 auto 0.75rem auto' }} />
+                  <h4 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a', margin: '0 0 4px 0' }}>No Inquiries Yet</h4>
+                  <p style={{ fontSize: '0.8125rem', color: '#64748b', margin: 0 }}>When commercial vendors submit inquiries on the public home page, they will appear here instantly.</p>
+                </div>
+              ) : (
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="portal-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8125rem' }}>
+                    <thead>
+                      <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0', textAlign: 'left', color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase' }}>
+                        <th style={{ padding: '0.75rem 1rem' }}>Ref # / Date</th>
+                        <th style={{ padding: '0.75rem 1rem' }}>Vendor / Contact</th>
+                        <th style={{ padding: '0.75rem 1rem' }}>Phone & WhatsApp</th>
+                        <th style={{ padding: '0.75rem 1rem' }}>Inquiry Type</th>
+                        <th style={{ padding: '0.75rem 1rem' }}>City / Route</th>
+                        <th style={{ padding: '0.75rem 1rem' }}>Status</th>
+                        <th style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {inquiries
+                        .filter((i) => inquiryStatusFilter === 'ALL' || i.status === inquiryStatusFilter)
+                        .map((inq) => (
+                          <tr key={inq._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                            <td style={{ padding: '0.75rem 1rem' }}>
+                              <strong style={{ color: '#2563eb', display: 'block' }}>{inq.referenceNumber || 'INQ'}</strong>
+                              <span style={{ fontSize: '0.7rem', color: '#64748b' }}>
+                                {new Date(inq.createdAt).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}
+                              </span>
+                            </td>
+                            <td style={{ padding: '0.75rem 1rem' }}>
+                              <strong style={{ color: '#0f172a' }}>{inq.name}</strong>
+                              {inq.message && (
+                                <div style={{ fontSize: '0.725rem', color: '#64748b', maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  "{inq.message}"
+                                </div>
+                              )}
+                            </td>
+                            <td style={{ padding: '0.75rem 1rem' }}>
+                              <a href={`tel:${inq.phone}`} style={{ color: '#0f172a', fontWeight: 600, textDecoration: 'none' }}>
+                                {inq.phone}
+                              </a>
+                            </td>
+                            <td style={{ padding: '0.75rem 1rem' }}>
+                              <span style={{ fontSize: '0.725rem', backgroundColor: '#f1f5f9', color: '#334155', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: 600 }}>
+                                {inq.inquiryType}
+                              </span>
+                            </td>
+                            <td style={{ padding: '0.75rem 1rem', color: '#475569' }}>
+                              {inq.city || 'State-wide'}
+                            </td>
+                            <td style={{ padding: '0.75rem 1rem' }}>
+                              <select
+                                value={inq.status}
+                                onChange={(e) => handleUpdateInquiryStatus(inq._id, e.target.value)}
+                                style={{
+                                  fontSize: '0.75rem',
+                                  fontWeight: 600,
+                                  padding: '0.2rem 0.45rem',
+                                  borderRadius: '4px',
+                                  border: '1px solid #cbd5e1',
+                                  backgroundColor: inq.status === 'New' ? '#ecfdf5' : '#ffffff',
+                                  color: inq.status === 'New' ? '#047857' : '#0f172a',
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                <option value="New">New Lead</option>
+                                <option value="Contacted">Contacted</option>
+                                <option value="In Discussion">In Discussion</option>
+                                <option value="Closed">Closed</option>
+                              </select>
+                            </td>
+                            <td style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>
+                              <a
+                                href={`https://wa.me/${inq.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
+                                  `Hi ${inq.name}, regarding your inquiry (${inq.referenceNumber}) for ${inq.inquiryType} on our courier portal...`
+                                )}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="btn btn-secondary btn-sm"
+                                style={{
+                                  fontSize: '0.725rem',
+                                  padding: '0.25rem 0.6rem',
+                                  color: '#059669',
+                                  borderColor: '#a7f3d0',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.35rem',
+                                  textDecoration: 'none',
+                                }}
+                              >
+                                <MessageSquare size={13} color="#059669" />
+                                <span>WhatsApp</span>
+                              </a>
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </main>

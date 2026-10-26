@@ -1022,30 +1022,34 @@
   font-size: 9.5px;
 }
 
-/* 3 Copies (Equal Thirds: fills the whole A4 page, zero gap) */
+/* 3 Copies (Equal Thirds: fits strictly within 1 A4 sheet without spilling) */
 .bw-copies-3 .bw-bill-box {
-  min-height: 91mm;
-  font-size: 9.5px;
-  line-height: 1.22;
+  height: 86mm;
+  max-height: 86mm;
+  overflow: hidden;
+  font-size: 8.5px;
+  line-height: 1.15;
   color: #000000;
+  page-break-inside: avoid;
 }
 .bw-copies-3 .bw-company-title {
-  font-size: 15px;
+  font-size: 13.5px;
   letter-spacing: 0.02em;
   color: #000000;
 }
 .bw-copies-3 .bw-table th,
 .bw-copies-3 .bw-table td {
-  padding: 2.5px 4px;
-  font-size: 9.5px;
+  padding: 1.5px 3.5px;
+  font-size: 8.5px;
   color: #000000;
 }
 .bw-copies-3 .bw-cut-line {
-  margin: 2px 0;
-  font-size: 8px;
+  margin: 1px 0;
+  font-size: 7.5px;
+  height: 3.5mm;
 }
 .bw-copies-3 .bw-signature-area {
-  height: 18px;
+  height: 13px;
 }
 
 /* Tables inside B&W bill */

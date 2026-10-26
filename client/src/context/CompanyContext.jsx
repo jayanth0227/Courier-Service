@@ -177,7 +177,12 @@ export const CompanyProvider = ({ children }) => {
       let res = null;
 
       // Determine if active user context is tenant-specific or platform CMS
-      const isTenantContext = token && (user?.role === 'admin' || user?.role === 'staff' || isImpersonating);
+      const isTenantContext = Boolean(
+        token &&
+        user?.tenantId &&
+        (user?.role === 'admin' || user?.role === 'staff' || isImpersonating) &&
+        user?.role !== 'superadmin'
+      );
 
       if (isTenantContext) {
         try {

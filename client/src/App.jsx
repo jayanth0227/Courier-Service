@@ -174,6 +174,21 @@ const MainApp = () => {
     }
   }, [routeState]);
 
+  // Application-wide: prevent mouse wheel from incrementing/decrementing focused number inputs
+  useEffect(() => {
+    const handleWheelOnNumberInput = (e) => {
+      if (
+        document.activeElement &&
+        document.activeElement.tagName === 'INPUT' &&
+        document.activeElement.type === 'number'
+      ) {
+        document.activeElement.blur();
+      }
+    };
+    window.addEventListener('wheel', handleWheelOnNumberInput, { passive: true });
+    return () => window.removeEventListener('wheel', handleWheelOnNumberInput);
+  }, []);
+
   if (isLoading) {
     return (
       <div

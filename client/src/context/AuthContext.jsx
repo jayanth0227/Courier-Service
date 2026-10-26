@@ -57,12 +57,9 @@ export const AuthProvider = ({ children }) => {
   }, [user]);
 
   const logout = useCallback(async (notifyServer = true) => {
-    if (notifyServer) {
-      try {
-        await api.auth.logout();
-      } catch {}
-    }
+    const activeToken = localStorage.getItem('courier_token');
 
+    // Immediately and synchronously purge local session to prevent race-condition 401s
     localStorage.removeItem('courier_token');
     localStorage.removeItem('courier_user');
     localStorage.removeItem('courier_super_backup_token');
@@ -80,6 +77,18 @@ export const AuthProvider = ({ children }) => {
     const protectedRoutes = ['#portal', '#dashboard', '#create-booking', '#dispatch', '#bookings', '#reports', '#settings', '#staff', '#superadmin'];
     if (protectedRoutes.some((route) => hash.startsWith(route))) {
       window.location.hash = '#login';
+    }
+
+    if (notifyServer && activeToken) {
+      try {
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${activeToken}`,
+          },
+        }).catch(() => {});
+      } catch {}
     }
   }, []);
 

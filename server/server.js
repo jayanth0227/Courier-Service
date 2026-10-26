@@ -87,9 +87,14 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // 4. NoSQL Query Injection Sanitization
 app.use(mongoSanitizer);
 
-// 5. HTTP Logging
+// 5. HTTP Logging with sensitive parameter redaction (prevents JWT tokens/keys from printing in terminal)
+morgan.token('clean-url', (req) => {
+  const rawUrl = req.originalUrl || req.url || '';
+  return rawUrl.replace(/([?&](?:token|jwt|apiKey|key|password|secret)=)[^&]*/gi, '$1[REDACTED]');
+});
+
 if (process.env.NODE_ENV !== 'test') {
-  app.use(morgan('dev'));
+  app.use(morgan(':method :clean-url :status :response-time ms - :res[content-length]'));
 }
 
 // 6. Global API Rate Limiter

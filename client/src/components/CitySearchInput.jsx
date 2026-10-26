@@ -15,6 +15,7 @@ export const CitySearchInput = ({
   id,
   name,
   tabIndex,
+  error,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState(value || '');
@@ -41,13 +42,13 @@ export const CitySearchInput = ({
 
   const trimmedQuery = (query || '').trim().toLowerCase();
 
-  // Filter cities by name or any location/stop
+  // Filter cities strictly by city name (word-by-word prefix matching, excluding sub-stations/addresses)
   const filteredCities = cities.filter((c) => {
     if (!trimmedQuery) return true;
-    const nameMatch = c.name && c.name.toLowerCase().includes(trimmedQuery);
-    const locMatch = Array.isArray(c.locations) && c.locations.some((l) => (l || '').toLowerCase().includes(trimmedQuery));
-    const addrMatch = c.deliveryAddress && c.deliveryAddress.toLowerCase().includes(trimmedQuery);
-    return nameMatch || locMatch || addrMatch;
+    if (!c.name) return false;
+    const cityName = c.name.toLowerCase().trim();
+    const words = cityName.split(/[\s,.-]+/);
+    return cityName.startsWith(trimmedQuery) || words.some((w) => w.startsWith(trimmedQuery));
   });
 
   const exactMatch = cities.some((c) => (c.name || '').trim().toLowerCase() === trimmedQuery);
@@ -188,7 +189,7 @@ export const CitySearchInput = ({
           id={id}
           name={name || `search_dest_input_${id || 'city'}`}
           type="text"
-          className="form-control"
+          className={`form-control ${error ? 'input-error' : ''}`}
           style={{
             paddingLeft: '32px',
             paddingRight: query ? '30px' : '12px',
@@ -445,6 +446,7 @@ export const CitySearchInput = ({
           </div>
         </div>
       )}
+      {error && <div className="form-error-msg">{error}</div>}
     </div>
   );
 };

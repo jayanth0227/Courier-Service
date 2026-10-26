@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Package,
   Search,
@@ -169,11 +169,20 @@ export const BookingsPage = ({
     }
   };
 
+  const isFirstMount = useRef(true);
+
   // Debounced search to ensure silky-smooth typing without blocking the UI
   useEffect(() => {
+    if (isFirstMount.current) {
+      isFirstMount.current = false;
+      fetchBookings(1, search, true);
+      return;
+    }
+
+    const delay = search ? 280 : 0;
     const timer = setTimeout(() => {
       fetchBookings(1, search, false);
-    }, 350);
+    }, delay);
 
     return () => clearTimeout(timer);
   }, [search, status, destination, parcelType, bookedByRole, startDate, endDate]);
@@ -972,18 +981,18 @@ export const BookingsPage = ({
       </div>
 
       {/* Minimal Bookings Table */}
-      <div className="table-container" style={{ backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: 'var(--shadow-sm)' }}>
+      <div className="table-container">
         <table className="data-table">
           <thead>
             <tr>
-              <th style={{ width: '13%' }}>Order ID / LR</th>
-              <th style={{ width: '15%' }}>Booked By</th>
-              <th style={{ width: '16%' }}>Customer / Sender</th>
-              <th style={{ width: '16%' }}>Destination Route</th>
-              <th style={{ width: '14%' }}>Goods & Quantity</th>
-              <th style={{ width: '9%' }}>Freight</th>
-              <th style={{ width: '8%', textAlign: 'center' }}>Status</th>
-              <th style={{ width: '9%', textAlign: 'right' }}>Actions</th>
+              <th>Order ID / LR</th>
+              <th>Booked By</th>
+              <th>Customer / Sender</th>
+              <th>Destination Route</th>
+              <th>Goods & Qty</th>
+              <th>Freight</th>
+              <th style={{ textAlign: 'center' }}>Status</th>
+              <th style={{ textAlign: 'right' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -1009,213 +1018,141 @@ export const BookingsPage = ({
                     onClick={() => setSelectedBooking(booking)}
                     style={{
                       cursor: 'pointer',
-                      transition: 'background-color 0.25s ease, opacity 0.2s ease',
                       backgroundColor: isLiveUpdated ? '#ecfdf5' : undefined,
                       opacity: isFetching ? 0.75 : 1,
                     }}
                     title="Click to open full consignment details & operations in a fresh page"
                   >
                     <td>
-                      <div>
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                          <button
-                            type="button"
-                            onClick={(e) => handleCopyLR(booking.orderId, e)}
-                            className="order-id-badge"
-                            style={{
-                              fontSize: '0.875rem',
-                              cursor: 'pointer',
-                              border: copiedId === booking.orderId ? '1px solid #86efac' : '1px solid #bfdbfe',
-                              backgroundColor: copiedId === booking.orderId ? '#dcfce7' : '#eff6ff',
-                              color: copiedId === booking.orderId ? '#15803d' : '#1e40af',
-                              transition: 'all 0.15s ease',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '5px',
-                              padding: '3px 8px',
-                            }}
-                            title="Click to copy LR Number"
-                          >
-                            <span>#{booking.orderId}</span>
-                            {copiedId === booking.orderId ? (
-                              <Check size={13} color="#15803d" />
-                            ) : (
-                              <Copy size={13} color="#3b82f6" />
-                            )}
-                          </button>
-                          {copiedId === booking.orderId && (
-                            <span style={{ fontSize: '0.6875rem', color: '#15803d', fontWeight: 700 }}>
-                              Copied!
-                            </span>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
+                        <button
+                          type="button"
+                          onClick={(e) => handleCopyLR(booking.orderId, e)}
+                          className="order-id-badge"
+                          style={{
+                            cursor: 'pointer',
+                            border: copiedId === booking.orderId ? '1px solid #86efac' : '1px solid #bfdbfe',
+                            backgroundColor: copiedId === booking.orderId ? '#dcfce7' : '#eff6ff',
+                            color: copiedId === booking.orderId ? '#15803d' : '#1e40af',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                          }}
+                          title="Click to copy LR Number"
+                        >
+                          <span>#{booking.orderId}</span>
+                          {copiedId === booking.orderId ? (
+                            <Check size={12} color="#15803d" />
+                          ) : (
+                            <Copy size={12} color="#3b82f6" />
                           )}
-                        </div>
-                        <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '3px' }}>
+                        </button>
+                        <span style={{ fontSize: '0.72rem', color: '#64748b' }}>
                           {new Date(booking.createdAt).toLocaleDateString('en-IN', {
                             day: '2-digit',
                             month: 'short',
-                            year: 'numeric',
                           })}
-                        </div>
+                        </span>
                       </div>
                     </td>
 
-                    {/* Booked By Column (Column 2) */}
+                    {/* Booked By Column */}
                     <td>
                       {(() => {
                         const operator = getBookedByInfo(booking);
                         return (
-                          <div>
-                            <div
-                              style={{
-                                fontWeight: 600,
-                                color: '#0f172a',
-                                fontSize: '0.8125rem',
-                                whiteSpace: 'nowrap',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                maxWidth: '140px',
-                              }}
-                              title={`${operator.name} (${operator.roleLabel})`}
-                            >
+                          <div
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '5px',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            <span style={{ fontWeight: 600, color: '#0f172a' }}>
                               {operator.name}
-                            </div>
-                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
-                              <span
-                                style={{
-                                  fontSize: '0.65rem',
-                                  fontWeight: 700,
-                                  color: operator.isAdmin ? '#1e40af' : '#065f46',
-                                  backgroundColor: operator.isAdmin ? '#eff6ff' : '#ecfdf5',
-                                  border: operator.isAdmin ? '1px solid #bfdbfe' : '1px solid #a7f3d0',
-                                  padding: '1px 5px',
-                                  borderRadius: '3px',
-                                  textTransform: 'uppercase',
-                                  letterSpacing: '0.02em',
-                                  lineHeight: '1.2',
-                                }}
-                              >
-                                {operator.roleLabel}
-                              </span>
-                              {operator.branch && (
-                                <span style={{ fontSize: '0.6875rem', color: '#64748b' }}>
-                                  • {operator.branch}
-                                </span>
-                              )}
-                            </div>
+                            </span>
+                            <span
+                              style={{
+                                fontSize: '0.65rem',
+                                fontWeight: 700,
+                                color: operator.isAdmin ? '#1e40af' : '#065f46',
+                                backgroundColor: operator.isAdmin ? '#eff6ff' : '#ecfdf5',
+                                border: operator.isAdmin ? '1px solid #bfdbfe' : '1px solid #a7f3d0',
+                                padding: '1px 4px',
+                                borderRadius: '3px',
+                                textTransform: 'uppercase',
+                              }}
+                            >
+                              {operator.roleLabel}
+                            </span>
                           </div>
                         );
                       })()}
                     </td>
 
+                    {/* Customer / Sender */}
                     <td>
-                      <div>
-                        <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.875rem' }}>
-                          {booking.customerName}
-                        </div>
-                        <div style={{ fontSize: '0.75rem', color: '#2563eb', fontWeight: 600 }}>
-                          {booking.customerPhone}
-                        </div>
-                        {booking.receiverName && (
-                          <div style={{ fontSize: '0.6875rem', color: '#64748b', marginTop: '1px' }}>
-                            To: {booking.receiverName}
-                          </div>
-                        )}
-                      </div>
+                      <span style={{ fontWeight: 600, color: '#0f172a' }}>
+                        {booking.customerName}
+                      </span>
+                      <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                        {' '}• {booking.customerPhone}
+                      </span>
                     </td>
 
+                    {/* Route */}
                     <td>
                       {(() => {
                         const cleanTo = (booking.toCity || (booking.destination?.includes('→') ? booking.destination.split('→').slice(1).join('→').trim() : (booking.destination?.includes('->') ? booking.destination.split('->').slice(1).join('->').trim() : booking.destination)) || '').trim();
                         const cleanFrom = (booking.fromCity || (booking.destination?.includes('→') ? booking.destination.split('→')[0].trim() : (booking.destination?.includes('->') ? booking.destination.split('->')[0].trim() : '')) || 'Origin').trim();
                         const cleanRoute = cleanTo && cleanFrom ? `${cleanFrom} → ${cleanTo}` : (booking.destination || cleanTo);
-                        const stop = (booking.deliveryAddress || '').trim();
-                        const fullTo = stop && cleanTo && !stop.toLowerCase().includes(cleanTo.toLowerCase())
-                          ? `${cleanTo} - ${stop}`
-                          : (stop || cleanTo);
 
                         return (
-                          <div>
-                            <span style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.8125rem' }}>
-                              {cleanRoute}
-                            </span>
-                            {fullTo && (
-                              <div
-                                style={{
-                                  fontSize: '0.6875rem',
-                                  color: '#2563eb',
-                                  whiteSpace: 'nowrap',
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
-                                  maxWidth: '220px',
-                                  marginTop: '2px',
-                                  fontWeight: 500,
-                                }}
-                                title={fullTo}
-                              >
-                                📍 {fullTo}
-                              </div>
-                            )}
-                          </div>
+                          <span style={{ fontWeight: 500 }} title={cleanRoute}>
+                            {cleanRoute}
+                          </span>
                         );
                       })()}
                     </td>
 
+                    {/* Goods & Qty */}
                     <td>
-                      <div style={{ fontSize: '0.8125rem', color: '#0f172a', fontWeight: 600 }}>
-                        {booking.parcelType || 'General Goods'}
-                      </div>
-                      <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                        {booking.quantity} pcs {booking.weight ? `• ${booking.weight} kg` : ''}
-                      </div>
+                      {booking.quantity || 1} pcs
+                      {booking.weight ? ` (${booking.weight} kg)` : ''}
                     </td>
 
+                    {/* Freight */}
                     <td>
-                      <div style={{ fontWeight: 800, color: '#0d2137', fontSize: '0.9375rem' }}>
+                      <span style={{ fontWeight: 700, color: '#0d2137' }}>
                         ₹{booking.amount}
-                      </div>
+                      </span>
+                      {' '}
                       <span
                         style={{
-                          fontSize: '0.6875rem',
+                          fontSize: '0.65rem',
                           fontWeight: 700,
                           color: booking.paymentStatus === 'TO_PAY' ? '#b45309' : '#15803d',
                           backgroundColor: booking.paymentStatus === 'TO_PAY' ? '#fef3c7' : '#dcfce7',
                           padding: '1px 5px',
                           borderRadius: '3px',
-                          display: 'inline-block',
-                          marginTop: '2px',
                         }}
                       >
                         {booking.paymentStatus === 'TO_PAY' ? 'TO PAY' : 'PAID'}
                       </span>
                     </td>
 
-                    <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
-                      <span
-                        className={`status-badge status-${booking.status.toLowerCase()}`}
-                        style={{
-                          fontSize: '0.71875rem',
-                          fontWeight: 700,
-                          padding: '0.25rem 0.65rem',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          whiteSpace: 'nowrap',
-                          letterSpacing: '0.02em',
-                        }}
-                      >
+                    {/* Status */}
+                    <td style={{ textAlign: 'center' }}>
+                      <span className={`status-badge status-${booking.status.toLowerCase()}`}>
                         {booking.status.replace(/_/g, ' ')}
                       </span>
                     </td>
 
-                    <td style={{ textAlign: 'right', verticalAlign: 'middle' }}>
-                      <div
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'flex-end',
-                          gap: '6px',
-                        }}
-                      >
+                    {/* Actions */}
+                    <td style={{ textAlign: 'right' }}>
                         {booking.status === 'DISPATCHED' ? (
                           <button
                             type="button"
@@ -1223,19 +1160,10 @@ export const BookingsPage = ({
                               handleOpenDeliveryModal(booking, e);
                             }}
                             className="btn btn-primary btn-sm"
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                              fontSize: '0.71875rem',
-                              fontWeight: 700,
-                              padding: '4px 9px',
-                              backgroundColor: '#2563eb',
-                              whiteSpace: 'nowrap',
-                            }}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}
                             title="Confirm parcel delivery & customer collection at destination"
                           >
-                            <CheckCircle2 size={13} />
+                            <CheckCircle2 size={12} />
                             <span>Mark Delivered</span>
                           </button>
                         ) : ['BOOKED', 'WAITING_FOR_BUS'].includes(booking.status) ? (
@@ -1247,15 +1175,10 @@ export const BookingsPage = ({
                               display: 'inline-flex',
                               alignItems: 'center',
                               gap: '4px',
-                              fontSize: '0.71875rem',
-                              fontWeight: 600,
-                              padding: '4px 9px',
                               color: '#dc2626',
                               backgroundColor: '#fef2f2',
                               border: '1px solid #fecaca',
-                              borderRadius: '6px',
                               whiteSpace: 'nowrap',
-                              cursor: 'pointer',
                             }}
                             title="Cancel consignment booking before bus dispatch"
                           >
@@ -1263,9 +1186,8 @@ export const BookingsPage = ({
                             <span>Cancel</span>
                           </button>
                         ) : (
-                          <span style={{ color: '#cbd5e1', fontSize: '0.875rem', paddingRight: '6px' }}>—</span>
+                          <span style={{ color: '#cbd5e1' }}>—</span>
                         )}
-                      </div>
                     </td>
                   </tr>
                 );

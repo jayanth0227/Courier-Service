@@ -246,6 +246,42 @@ export const CustomersPage = ({ onOpenReceipt, onNavigateModule }) => {
         </table>
       </div>
 
+      {/* Pagination Footer */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginTop: '1rem',
+          padding: '0.75rem 1rem',
+          backgroundColor: '#ffffff',
+          borderRadius: '8px',
+          border: '1px solid #e2e8f0',
+          boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+        }}
+      >
+        <div style={{ fontSize: '0.8125rem', color: '#64748b' }}>
+          Showing {customers.length} of {pagination.total || 0} customers (Page {pagination.page} of {pagination.pages || 1})
+        </div>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={() => fetchCustomers(pagination.page - 1)}
+            disabled={pagination.page <= 1 || loading}
+          >
+            Previous
+          </button>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={() => fetchCustomers(pagination.page + 1)}
+            disabled={pagination.page >= pagination.pages || loading}
+          >
+            Next
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

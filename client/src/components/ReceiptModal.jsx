@@ -113,12 +113,17 @@ const ConsignmentBill = ({
   const totalWeight = items.reduce((acc, it) => acc + (Number(it.weight) || 0), 0);
 
   // Dynamic Terms & Conditions from Admin Settings
-  const dynamicTerms = company.termsAndConditions
+  const allTerms = company.termsAndConditions
     ? company.termsAndConditions
         .split('\n')
         .map((line) => line.trim())
         .filter((line) => line.length > 0)
     : DEFAULT_BUS_TERMS;
+
+  // When printing 3 slips on a single A4, limit to the top 2-3 essential terms so all copies strictly fit on 1 page
+  const dynamicTerms = copyCount === 3
+    ? (items.length > 2 ? allTerms.slice(0, 2) : allTerms.slice(0, 3))
+    : allTerms;
 
   const travelsOperator =
     booking.busDetails?.operator ||
@@ -147,16 +152,16 @@ const ConsignmentBill = ({
               src={company.logoUrl}
               alt="Logo"
               style={{
-                maxHeight: copyCount === 3 ? '30px' : '42px',
-                maxWidth: '65px',
+                maxHeight: copyCount === 3 ? '24px' : '42px',
+                maxWidth: '60px',
                 objectFit: 'contain',
               }}
             />
           ) : (
             <div
               style={{
-                width: copyCount === 3 ? '34px' : '42px',
-                height: copyCount === 3 ? '34px' : '42px',
+                width: copyCount === 3 ? '28px' : '42px',
+                height: copyCount === 3 ? '28px' : '42px',
                 border: '1.5px solid #000000',
                 borderRadius: '4px',
                 display: 'flex',
@@ -618,14 +623,14 @@ const ConsignmentBill = ({
               style={{
                 width: '45%',
                 borderBottom: '1px dotted #000000',
-                height: copyCount === 3 ? '18px' : '28px',
+                height: copyCount === 3 ? '13px' : '28px',
               }}
             />
             <div
               style={{
                 width: '45%',
                 borderBottom: '1px dotted #000000',
-                height: copyCount === 3 ? '18px' : '28px',
+                height: copyCount === 3 ? '13px' : '28px',
               }}
             />
           </div>

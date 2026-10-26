@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { X, Send, MessageSquare, Copy, Check, ExternalLink, ArrowLeft } from 'lucide-react';
 import { api } from '../services/api';
 import { useToast } from '../context/ToastContext';
+import { useCompanySettings } from '../context/CompanyContext';
 
 export const WhatsAppModal = ({ booking, onClose, onSuccess }) => {
   const { showToast } = useToast();
+  const { companySettings } = useCompanySettings();
   const [copied, setCopied] = useState(false);
   const [sending, setSending] = useState(false);
   const [activeTab, setActiveTab] = useState('SENDER'); // 'SENDER' or 'RECEIVER'
@@ -16,15 +18,15 @@ export const WhatsAppModal = ({ booking, onClose, onSuccess }) => {
   const receiverPhone = booking.receiverWhatsapp || booking.receiverPhone || '';
   const receiverName = booking.receiverName || 'Receiver';
 
-  const busNo = booking.busDetails?.busNumber || 'Assigned Bus';
+  const busNo = booking.busDetails?.busNumber || '';
   const busName = booking.busDetails?.busName || booking.busDetails?.operator || '';
+  const busDisplay = busNo ? `${busNo}${busName ? ` (${busName})` : ''}` : (busName || 'Assigned Bus');
   const route = booking.busDetails?.route || booking.destination || `${booking.fromCity || 'Origin'} → ${booking.toCity || 'Destination'}`;
-  const departure = booking.busDetails?.departureTime || 'Evening Dispatch';
-  const platform = booking.busDetails?.platformNumber ? ` (${booking.busDetails.platformNumber})` : '';
-  const arrival = booking.busDetails?.arrivalTime || '';
   const driverName = booking.busDetails?.driverName || '';
   const driverPhone = booking.busDetails?.driverPhone || '';
-  const altPhone = booking.busDetails?.alternatePhone || '';
+  const driverInfo = driverName || driverPhone
+    ? `${driverName ? `${driverName} ` : ''}${driverPhone ? `(${driverPhone})` : ''}`.trim()
+    : '';
 
   const cleanToCity = booking.toCity || (booking.destination?.includes('→') ? booking.destination.split('→').slice(1).join('→').trim() : '');
   const stopAddr = booking.deliveryAddress || booking.busDetails?.destinationAddress || '';
@@ -32,68 +34,44 @@ export const WhatsAppModal = ({ booking, onClose, onSuccess }) => {
     ? `${cleanToCity} - ${stopAddr}`
     : (stopAddr || cleanToCity || 'Destination Counter');
 
-  // Parcel breakdown
-  let itemsText = '';
-  if (Array.isArray(booking.items) && booking.items.length > 0) {
-    itemsText = booking.items
-      .map((it) => `  • ${it.parcelType || 'Parcel'} (Qty: ${it.quantity || 1}${it.weight ? `, ${it.weight}kg` : ''})`)
-      .join('\n');
-  } else {
-    itemsText = `  • ${booking.parcelType || 'Parcel'} (Qty: ${booking.quantity || 1}${booking.weight ? `, ${booking.weight}kg` : ''})`;
-  }
-
   const payStatus = (booking.paymentStatus || 'PAID').toUpperCase();
-  const payLine = payStatus === 'TO PAY'
-    ? `TO PAY ₹${Number(booking.amount || 0).toFixed(2)} (Collect at Destination)`
+  const payDisplay = payStatus === 'TO PAY'
+    ? `₹${Number(booking.amount || 0).toFixed(2)} (TO PAY)`
     : `PAID (₹${Number(booking.amount || 0).toFixed(2)})`;
 
   const isSenderTab = activeTab === 'SENDER';
   const currentRecipientName = isSenderTab ? senderName : receiverName;
   const currentPhone = isSenderTab ? senderPhone : receiverPhone;
 
-  const greeting = isSenderTab
-    ? `Hello *${senderName}*,`
-    : `Hello *${receiverName}*,`;
+  const cleanId = String(booking.orderId || '').replace(/^#/, '');
+  const brand = booking.companyName || companySettings?.companyName || 'Mr Cargo';
+  const companyPhone = companySettings?.companyPhone || '';
 
-  const intro = isSenderTab
-    ? `Your booked consignment has been assigned to a bus and is now *IN TRANSIT*!`
-    : `A parcel dispatched for you by *${senderName}* has been assigned to a bus and is now *IN TRANSIT*!`;
-
-  let busLines = [
-    `• *Bus / Vehicle:* ${busNo}${busName ? ` (${busName})` : ''}`,
-    `• *Route:* ${route}`,
-    `• *Departure Time:* ${departure}${platform}`,
-  ];
-  if (arrival) busLines.push(`• *Est. Arrival:* ${arrival}`);
-  if (driverName || driverPhone) busLines.push(`• *Driver:* ${driverName ? `${driverName} ` : ''}(${driverPhone || 'N/A'})`);
-  if (altPhone) busLines.push(`• *Conductor / Alt:* ${altPhone}`);
-
-  let parcelLines = [
-    `• *LR Docket No:* #${booking.orderId}`,
-    `• *Sender (Consignor):* ${senderName}${senderPhone ? ` (${senderPhone})` : ''}`,
-    `• *Receiver (Consignee):* ${receiverName}${receiverPhone ? ` (${receiverPhone})` : ''}`,
-    `• *Delivery Counter / Stop:* ${fullStop}`,
-    `• *Freight Payment:* ${payLine}`,
-    `• *Package Contents:*\n${itemsText}`,
+  const lines = [
+    `*${brand} - Parcel In Transit*`,
+    '',
+    `Dear ${currentRecipientName}, your parcel is on the way.`,
+    '',
+    `• LR Number: #${cleanId}`,
+    `• Bus / Vehicle: ${busDisplay}`,
   ];
 
-  const messageText = `🚍 *BUS DISPATCH & PARCEL IN-TRANSIT UPDATE*
-*JAYANTH CARGO*
+  if (driverInfo) {
+    lines.push(`• Driver: ${driverInfo}`);
+  }
+  lines.push(`• Delivery Counter: ${fullStop}`);
+  lines.push(`• Payment: ${payDisplay}`);
+  lines.push('');
+  lines.push('Track live:');
+  lines.push(`https://mrcargo.online/#track?id=${cleanId}`);
+  lines.push('');
+  lines.push(`*Show LR #${cleanId} at the counter to collect.*`);
 
-${greeting}
+  if (companyPhone) {
+    lines.push(`Help: ${companyPhone}`);
+  }
 
-${intro}
-
-📋 *PARCEL & CONSIGNMENT DETAILS:*
-${parcelLines.join('\n')}
-
-🚌 *BUS & TRANSPORT DETAILS:*
-${busLines.join('\n')}
-
-⚠️ *PICKUP INSTRUCTIONS:*
-Please present LR Docket No *#${booking.orderId}* at the destination delivery counter to collect your parcel.
-
-Thank you for choosing *JAYANTH CARGO*!`;
+  const messageText = lines.join('\n');
 
   const cleanPhone = (currentPhone || '').replace(/\D/g, '');
   const formattedPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
@@ -188,7 +166,7 @@ Thank you for choosing *JAYANTH CARGO*!`;
 
         <label className="form-label" style={{ fontSize: '0.75rem', color: '#64748b', display: 'flex', justifyContent: 'space-between' }}>
           <span>Notification Message Preview ({isSenderTab ? 'Sender Copy' : 'Receiver Copy'}):</span>
-          <span style={{ color: '#0284c7' }}>Includes Complete Bus & Parcel Details</span>
+          <span style={{ color: '#16a34a', fontWeight: 600 }}>Clean & Concise Format</span>
         </label>
         <div className="whatsapp-preview-box" style={{ marginBottom: '1.25rem', whiteSpace: 'pre-wrap', maxHeight: '280px', overflowY: 'auto' }}>
           {messageText}

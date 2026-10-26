@@ -56,100 +56,105 @@ class WhatsAppNotificationService {
     companyName,
     companyPhone,
   }) {
-    const brand = companyName || 'JAYANTH CARGO';
+    const brand = companyName || 'Mr Cargo';
+    const cleanId = String(orderId || '').replace(/^#/, '');
+    const recipient = (recipientName || (recipientRole === 'RECEIVER' ? receiverName : senderName) || 'Customer').trim();
     const travels = busName || operator || '';
-    const travelsStr = travels ? ` (${travels})` : '';
+    const busDisplay = busNumber ? `${busNumber}${travels ? ` (${travels})` : ''}` : (travels || 'Assigned Bus');
 
-    const cleanFrom = fromCity || 'Origin';
     const cleanTo = toCity || 'Destination';
-    const routeDisplay = route || `${cleanFrom} → ${cleanTo}`;
-
-    const fullDestAddr = destinationAddress
+    const fullDest = destinationAddress
       ? (toCity && !destinationAddress.toLowerCase().includes(toCity.toLowerCase())
           ? `${toCity} - ${destinationAddress}`
           : destinationAddress)
       : cleanTo;
 
-    // Build parcel items breakdown
-    let itemsText = '';
-    if (Array.isArray(items) && items.length > 0) {
-      itemsText = items
-        .map((it) => `  • ${it.parcelType || 'Parcel'} (Qty: ${it.quantity || 1}${it.weight ? `, ${it.weight}kg` : ''})`)
-        .join('\n');
-    } else {
-      itemsText = `  • ${parcelType || 'Parcel'} (Qty: ${quantity || 1}${weight ? `, ${weight}kg` : ''})`;
-    }
-
     const payStatusStr = (paymentStatus || 'PAID').toUpperCase();
-    const paymentLine = payStatusStr === 'TO PAY'
-      ? `TO PAY ₹${Number(amount || 0).toFixed(2)} (Collect at Destination)`
+    const payDisplay = payStatusStr === 'TO PAY'
+      ? `₹${Number(amount || 0).toFixed(2)} (TO PAY)`
       : `PAID (₹${Number(amount || 0).toFixed(2)})`;
 
-    // Role-tailored header and greeting
-    let greeting = '';
-    let intro = '';
-    if (recipientRole === 'RECEIVER') {
-      greeting = `Hello *${recipientName || receiverName || 'Consignee'}*,`;
-      intro = `A parcel dispatched for you by *${senderName || 'Consignor'}* has been assigned to a bus and is now *IN TRANSIT*!`;
-    } else if (recipientRole === 'SENDER') {
-      greeting = `Hello *${recipientName || senderName || 'Consignor'}*,`;
-      intro = `Your booked consignment has been assigned to a bus and is now *IN TRANSIT*!`;
-    } else {
-      greeting = `Hello *${recipientName || 'Customer'}*,`;
-      intro = `Your parcel with LR Docket No *#${orderId}* has been assigned to a bus and is now *IN TRANSIT*!`;
+    const driverInfo = driverName || driverPhone
+      ? `${driverName ? `${driverName} ` : ''}${driverPhone ? `(${driverPhone})` : ''}`.trim()
+      : '';
+
+    const lines = [
+      `*${brand} - Parcel In Transit*`,
+      '',
+      `Dear ${recipient}, your parcel is on the way.`,
+      '',
+      `• LR Number: #${cleanId}`,
+      `• Bus / Vehicle: ${busDisplay}`,
+    ];
+
+    if (driverInfo) {
+      lines.push(`• Driver: ${driverInfo}`);
+    }
+    lines.push(`• Delivery Counter: ${fullDest}`);
+    lines.push(`• Payment: ${payDisplay}`);
+    lines.push('');
+    lines.push('Track live:');
+    lines.push(`https://mrcargo.online/#track?id=${cleanId}`);
+    lines.push('');
+    lines.push(`*Show LR #${cleanId} at the counter to collect.*`);
+
+    if (companyPhone) {
+      lines.push(`Help: ${companyPhone}`);
     }
 
-    let busLines = [];
-    busLines.push(`• *Bus / Vehicle:* ${busNumber}${travelsStr}`);
-    busLines.push(`• *Route:* ${routeDisplay}`);
-    if (departureTime) busLines.push(`• *Departure Time:* ${departureTime}${platformNumber ? ` (${platformNumber})` : ''}`);
-    if (arrivalTime) busLines.push(`• *Est. Arrival:* ${arrivalTime}`);
-    if (driverName || driverPhone) busLines.push(`• *Driver:* ${driverName ? `${driverName} ` : ''}(${driverPhone || 'N/A'})`);
-    if (alternatePhone) busLines.push(`• *Conductor / Alt:* ${alternatePhone}`);
-    if (dispatchNotes) busLines.push(`• *Dispatch Note:* ${dispatchNotes}`);
-
-    let parcelLines = [];
-    parcelLines.push(`• *LR Docket No:* #${orderId}`);
-    parcelLines.push(`• *Sender (Consignor):* ${senderName || 'N/A'}${senderPhone ? ` (${senderPhone})` : ''}`);
-    parcelLines.push(`• *Receiver (Consignee):* ${receiverName || 'N/A'}${receiverPhone ? ` (${receiverPhone})` : ''}`);
-    parcelLines.push(`• *Delivery Counter / Stop:* ${fullDestAddr}`);
-    parcelLines.push(`• *Freight Payment:* ${paymentLine}`);
-    parcelLines.push(`• *Package Contents:*\n${itemsText}`);
-
-    return `🚍 *BUS DISPATCH & PARCEL IN-TRANSIT UPDATE*
-*${brand}*
-
-${greeting}
-
-${intro}
-
-📋 *PARCEL & CONSIGNMENT DETAILS:*
-${parcelLines.join('\n')}
-
-🚌 *BUS & TRANSPORT DETAILS:*
-${busLines.join('\n')}
-
-⚠️ *PICKUP INSTRUCTIONS:*
-Please present LR Docket No *#${orderId}* at the destination delivery counter to collect your parcel.
-
-Thank you for choosing *${brand}*!${companyPhone ? `\nHelpline: ${companyPhone}` : ''}`;
+    return lines.join('\n');
   }
 
   /**
    * Build WhatsApp booking confirmation message (sent immediately on booking)
    */
-  buildBookingConfirmationMessage({ customerName, orderId, fromCity, toCity, deliveryAddress, items, amount, paymentStatus, companyName }) {
-    const brand = companyName || 'our Courier & Bus Dispatch Service';
-    const fullDest = toCity && deliveryAddress ? `${toCity} - ${deliveryAddress}` : (deliveryAddress || toCity || '');
+  buildBookingConfirmationMessage({
+    customerName,
+    orderId,
+    fromCity,
+    toCity,
+    deliveryAddress,
+    items,
+    amount,
+    paymentStatus,
+    companyName,
+    companyPhone,
+  }) {
+    const brand = companyName || 'Mr Cargo';
+    const cleanId = String(orderId || '').replace(/^#/, '');
+    const recipient = (customerName || 'Customer').trim();
+    const route = `${fromCity || 'Origin'} → ${toCity || 'Destination'}`;
+    const fullDest = deliveryAddress
+      ? (toCity && !deliveryAddress.toLowerCase().includes(toCity.toLowerCase())
+          ? `${toCity} - ${deliveryAddress}`
+          : deliveryAddress)
+      : (toCity || 'Destination Counter');
 
-    let itemLines = '';
-    if (Array.isArray(items) && items.length > 0) {
-      itemLines = items.map((it, i) => `  ${i + 1}. ${it.parcelType} (Qty: ${it.quantity}) - ₹${it.charge}`).join('\n');
-    } else {
-      itemLines = `  1. Parcel - ₹${amount}`;
+    const payStatus = (paymentStatus || 'PAID').toUpperCase();
+    const payDisplay = payStatus === 'TO PAY'
+      ? `₹${Number(amount || 0).toFixed(2)} (TO PAY at Destination)`
+      : `₹${Number(amount || 0).toFixed(2)} (PAID)`;
+
+    const lines = [
+      `*${brand} - Booking Confirmation*`,
+      '',
+      `Dear ${recipient}, your parcel has been booked successfully.`,
+      '',
+      `• LR Number: #${cleanId}`,
+      `• Route: ${route}`,
+      `• Delivery Stop: ${fullDest}`,
+      `• Payment: ${payDisplay}`,
+      '',
+      'Track online:',
+      `https://mrcargo.online/#track?id=${cleanId}`,
+    ];
+
+    if (companyPhone) {
+      lines.push('');
+      lines.push(`Help: ${companyPhone}`);
     }
 
-    return `Hello ${customerName || 'Customer'},\n\nYour parcel has been booked successfully!\n\n📋 *LR Docket ID:* #${orderId}\n📍 *Route:* ${fromCity || 'Origin'} → ${toCity || 'Destination'}\n🏪 *Delivery Stop:* ${fullDest}\n📦 *Items:*\n${itemLines}\n💰 *Total Amount:* ₹${amount} [${paymentStatus || 'PAID'}]\n📊 *Status:* Waiting for Bus Dispatch\n\nPlease keep your LR ID #${orderId} for tracking.\n\nThank you for choosing ${brand}.`;
+    return lines.join('\n');
   }
 
   /**
@@ -258,12 +263,21 @@ Thank you for choosing *${brand}*!${companyPhone ? `\nHelpline: ${companyPhone}`
    */
   async sendBookingConfirmation(booking, tenantId = null) {
     let companyName = '';
+    let companyPhone = '';
     let settings = null;
     try {
-      const query = tenantId ? { tenantId } : {};
+      const activeTenantId = tenantId || booking?.tenantId;
+      const query = activeTenantId ? { tenantId: activeTenantId } : {};
       settings = await Setting.findOne(query);
-      if (settings && settings.companyName) {
-        companyName = settings.companyName;
+      if (!settings) {
+        settings = await Setting.findOne({ whatsappProvider: 'OPENWA' });
+      }
+      if (!settings) {
+        settings = await Setting.findOne();
+      }
+      if (settings) {
+        companyName = settings.companyName || '';
+        companyPhone = settings.companyPhone || '';
       }
     } catch {
       // Ignore
@@ -285,6 +299,7 @@ Thank you for choosing *${brand}*!${companyPhone ? `\nHelpline: ${companyPhone}`
       amount: booking.amount,
       paymentStatus: booking.paymentStatus,
       companyName,
+      companyPhone,
     });
 
     const result = await this.sendTextMessage(recipientPhone, message, settings);

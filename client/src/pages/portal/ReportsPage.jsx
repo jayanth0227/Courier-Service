@@ -929,11 +929,20 @@ export const ReportsPage = ({
 
           <button
             className="btn btn-primary btn-sm"
-            onClick={() => setShowExportModal(true)}
-            title="Export CSV and JSON data"
+            onClick={handleExportFilteredCSV}
+            title="Export Excel-compatible CSV data directly"
           >
             <Download size={14} />
             <span>Export Data</span>
+          </button>
+
+          <button
+            className="btn btn-secondary btn-sm"
+            onClick={() => setShowExportModal(true)}
+            title="More Export Options (Route summaries, Commission splits, JSON)"
+            style={{ padding: '4px 8px' }}
+          >
+            •••
           </button>
         </div>
       </div>
@@ -2608,7 +2617,7 @@ export const ReportsPage = ({
       )}
 
       {/* 8. PRINTABLE OFFICIAL AUDIT REPORT */}
-      <div className="printable-area" style={{ display: 'none' }}>
+      <div className="reports-printable-area">
         <div style={{ textAlign: 'center', marginBottom: '1.5rem', borderBottom: '2px solid #0f172a', paddingBottom: '0.75rem' }}>
           <h2 style={{ margin: '0 0 4px 0', fontSize: '1.35rem', fontWeight: 900 }}>
             {(company.companyName || 'Sri Vinayaka Logistics').toUpperCase()}

@@ -327,7 +327,7 @@ router.get('/', async (req, res, next) => {
 
     const [bookings, total] = await Promise.all([
       Booking.find(query)
-        .populate('createdBy', 'name username role branch')
+        .select('-timeline')
         .sort(sortOptions)
         .skip(skip)
         .limit(limitNum)

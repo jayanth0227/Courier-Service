@@ -324,6 +324,38 @@ p {
   color: #94a3b8;
 }
 
+/* Prevent unintentional mouse-wheel changes on number inputs & clean appearance */
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Zod Form Error State */
+.form-control.input-error {
+  border-color: #ef4444 !important;
+  background-color: #fffbfb;
+}
+
+.form-control.input-error:focus {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
+}
+
+.form-error-msg {
+  color: #ef4444;
+  font-size: 0.75rem;
+  font-weight: 500;
+  margin-top: 0.3rem;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .form-hint {
   font-size: 0.75rem;
   color: #64748b;
@@ -679,40 +711,57 @@ p {
   border-left: 4px solid #2563eb;
 }
 
+.reports-printable-area {
+  display: none;
+}
+
 /* Print Styling - Strict A4 Black & White (No Gaps, Full A4 Sheet Distribution) */
 @media print {
   @page {
     size: A4 portrait;
-    margin: 4mm 6mm;
+    margin: 3mm 4mm !important;
   }
   html, body {
     width: 100% !important;
-    height: 100% !important;
     background: #ffffff !important;
     color: #000000 !important;
     margin: 0 !important;
     padding: 0 !important;
-    overflow: hidden !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
   body * {
     visibility: hidden;
   }
-  .printable-area, .printable-area * {
-    visibility: visible;
+  .printable-area, .printable-area *,
+  .reports-printable-area, .reports-printable-area * {
+    visibility: visible !important;
   }
   .printable-area {
     position: absolute;
     left: 0;
     top: 0;
     width: 100% !important;
-    height: 289mm !important;
-    max-height: 289mm !important;
+    height: 282mm !important;
+    max-height: 282mm !important;
     margin: 0 !important;
     padding: 0 !important;
     background: #ffffff !important;
     box-sizing: border-box !important;
+    overflow: hidden !important;
+  }
+  .reports-printable-area {
+    display: block !important;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+    box-sizing: border-box !important;
+    padding: 5mm !important;
   }
   .no-print {
     display: none !important;
@@ -730,41 +779,46 @@ p {
     justify-content: space-between !important;
   }
 
-  /* 2 Copies in Print: Fills the entire 289mm page (2 x 139mm + 8mm cut line) */
+  /* 2 Copies in Print: Fills the 282mm area (2 x 136mm + 6mm cut line) */
   .bw-copies-2 {
-    height: 289mm !important;
+    height: 280mm !important;
     display: flex !important;
     flex-direction: column !important;
     justify-content: space-between !important;
   }
   .bw-copies-2 .bw-bill-box {
-    height: 139mm !important;
-    max-height: 139mm !important;
+    height: 136mm !important;
+    max-height: 136mm !important;
     display: flex !important;
     flex-direction: column !important;
     justify-content: space-between !important;
   }
   .bw-copies-2 .bw-cut-line {
-    height: 8mm !important;
+    height: 6mm !important;
     margin: 0 !important;
   }
 
-  /* 3 Copies in Print: Fills the entire 289mm page (3 x 92mm + 2 x 5mm cut lines) */
+  /* 3 Copies in Print: Strictly locks under 280mm (3 x 86mm + 2 x 3.5mm cut lines = 265mm <= 280mm) - Never spills to page 2 */
   .bw-copies-3 {
-    height: 289mm !important;
+    height: 280mm !important;
+    max-height: 280mm !important;
     display: flex !important;
     flex-direction: column !important;
     justify-content: space-between !important;
+    overflow: hidden !important;
+    page-break-inside: avoid !important;
   }
   .bw-copies-3 .bw-bill-box {
-    height: 92mm !important;
-    max-height: 92mm !important;
+    height: 86mm !important;
+    max-height: 86mm !important;
+    overflow: hidden !important;
     display: flex !important;
     flex-direction: column !important;
     justify-content: space-between !important;
+    page-break-inside: avoid !important;
   }
   .bw-copies-3 .bw-cut-line {
-    height: 5mm !important;
+    height: 3.5mm !important;
     margin: 0 !important;
   }
 

@@ -22,6 +22,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useCompanySettings } from '../../context/CompanyContext';
 import { useLiveData } from '../../context/LiveDataContext';
 import { CitySearchInput } from '../../components/CitySearchInput';
+import { bookingFormSchema } from '../../schemas/bookingSchema';
 
 export const CreateBookingPage = ({
   onOpenReceipt,
@@ -137,6 +138,18 @@ export const CreateBookingPage = ({
   const [customTotalAmount, setCustomTotalAmount] = useState('');
   const [isTotalCustom, setIsTotalCustom] = useState(false);
 
+  // Zod form validation field errors
+  const [fieldErrors, setFieldErrors] = useState({});
+
+  const clearFieldError = useCallback((field) => {
+    setFieldErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  }, []);
+
   // Keep first parcel type synced if list loads dynamically
   useEffect(() => {
     if (parcelTypesList.length > 0) {
@@ -231,6 +244,8 @@ export const CreateBookingPage = ({
 
   const handleSelectSuggestedCustomer = (cust) => {
     if (!cust) return;
+    clearFieldError('customerPhone');
+    clearFieldError('customerName');
     setFormData((prev) => ({
       ...prev,
       customerPhone: cust.phone || prev.customerPhone,
@@ -305,6 +320,9 @@ export const CreateBookingPage = ({
   };
 
   const handleItemChange = (index, field, value) => {
+    clearFieldError(`items.${index}.${field}`);
+    clearFieldError('items');
+
     setParcelItems((prev) => {
       const updated = [...prev];
       const current = { ...updated[index], [field]: value };
@@ -327,12 +345,14 @@ export const CreateBookingPage = ({
     });
 
     if (field === 'charge') {
+      clearFieldError('totalAmount');
       setIsTotalCustom(false);
       setCustomTotalAmount('');
     }
   };
 
   const handleGrandTotalChange = (val) => {
+    clearFieldError('totalAmount');
     setIsTotalCustom(true);
     setCustomTotalAmount(val);
     if (parcelItems.length === 1) {
@@ -485,64 +505,78 @@ export const CreateBookingPage = ({
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    const origin = (formData.fromCity || defaultOrigin || '').trim();
     const finalTo = (formData.toCity || '').trim();
-    if (!finalTo) {
-      showToast('Destination city is required', 'error');
-      document.getElementById('cb_to_city')?.focus();
-      return;
-    }
 
-    if (!formData.deliveryAddress.trim()) {
-      showToast('Delivery address / collection stop is required', 'error');
-      document.getElementById('cb_delivery_addr')?.focus();
-      return;
-    }
+    // Prepare candidate data for Zod validation
+    const candidateData = {
+      fromCity: origin,
+      toCity: finalTo,
+      deliveryAddress: (formData.deliveryAddress || '').trim(),
+      customerPhone: (formData.customerPhone || '').trim(),
+      customerName: (formData.customerName || '').trim(),
+      receiverPhone: (formData.receiverPhone || '').trim(),
+      receiverName: (formData.receiverName || '').trim(),
+      paymentStatus: formData.paymentStatus,
+      items: parcelItems.map((item) => ({
+        parcelType: (item.parcelType || '').trim(),
+        quantity: item.quantity,
+        weight: item.weight || 0,
+        charge: item.charge,
+        notes: item.notes ? item.notes.trim() : '',
+      })),
+      totalAmount: finalTotalAmount,
+    };
 
-    if (!formData.customerPhone.trim() || formData.customerPhone.trim().length < 10) {
-      showToast('Valid 10-digit sender mobile number is required', 'error');
-      document.getElementById('cb_sender_phone')?.focus();
-      return;
-    }
+    const validation = bookingFormSchema.safeParse(candidateData);
+    if (!validation.success) {
+      const errors = {};
+      let firstMsg = '';
+      let firstKey = '';
 
-    if (!formData.customerName.trim()) {
-      showToast('Sender name is required', 'error');
-      document.getElementById('cb_sender_name')?.focus();
-      return;
-    }
-
-    // Validate parcel items
-    if (parcelItems.length === 0) {
-      showToast('Please add at least one parcel item', 'error');
-      return;
-    }
-
-    for (let i = 0; i < parcelItems.length; i++) {
-      const it = parcelItems[i];
-      if (!it.parcelType) {
-        showToast(`Please select parcel type for item #${i + 1}`, 'error');
-        return;
+      for (const issue of validation.error.issues) {
+        const pathKey = issue.path.join('.');
+        if (!errors[pathKey]) {
+          errors[pathKey] = issue.message;
+        }
+        if (!firstMsg) {
+          firstMsg = issue.message;
+          firstKey = pathKey;
+        }
       }
-      if (Number(it.charge) < 0 || isNaN(Number(it.charge))) {
-        showToast(`Please enter a valid charge for item #${i + 1}`, 'error');
-        return;
-      }
-    }
 
-    if (finalTotalAmount <= 0) {
-      showToast('Total delivery charge amount must be greater than 0', 'error');
+      setFieldErrors(errors);
+      showToast(firstMsg || 'Please complete all required fields correctly', 'error');
+
+      // Auto-focus the first invalid field
+      if (firstKey === 'toCity') document.getElementById('cb_to_city')?.focus();
+      else if (firstKey === 'deliveryAddress') document.getElementById('cb_delivery_addr')?.focus();
+      else if (firstKey === 'customerPhone') document.getElementById('cb_sender_phone')?.focus();
+      else if (firstKey === 'customerName') document.getElementById('cb_sender_name')?.focus();
+      else if (firstKey === 'receiverPhone') document.getElementById('cb_receiver_phone')?.focus();
+      else if (firstKey.startsWith('items.')) {
+        const parts = firstKey.split('.');
+        const rowIdx = parts[1];
+        const fieldName = parts[2];
+        if (fieldName === 'parcelType') document.getElementById(`cb_item_pt_${rowIdx}`)?.focus();
+      } else if (firstKey === 'totalAmount') {
+        document.getElementById('cb_grand_total_charge')?.focus();
+      }
       return;
     }
+
+    setFieldErrors({});
 
     try {
       setLoading(true);
 
-      // Cleaned items payload
-      const cleanedItems = parcelItems.map((item) => ({
+      const validated = validation.data;
+      const cleanedItems = validated.items.map((item) => ({
         parcelType: item.parcelType,
-        quantity: Number(item.quantity) || 1,
-        weight: Number(item.weight) || 0,
-        charge: Number(item.charge) || 0,
-        notes: item.notes ? item.notes.trim() : '',
+        quantity: item.quantity,
+        weight: item.weight,
+        charge: item.charge,
+        notes: item.notes || '',
       }));
 
       // Consolidated summary
@@ -552,21 +586,21 @@ export const CreateBookingPage = ({
           : `${cleanedItems[0].parcelType} +${cleanedItems.length - 1} more items`;
 
       const payload = {
-        fromCity: (formData.fromCity || defaultOrigin || '').trim(),
-        toCity: finalTo,
-        deliveryAddress: formData.deliveryAddress.trim(),
-        customerName: formData.customerName.trim(),
-        customerPhone: formData.customerPhone.trim(),
-        customerWhatsapp: formData.customerPhone.trim(),
-        receiverPhone: (formData.receiverPhone || '').trim(),
-        receiverName: (formData.receiverName || '').trim(),
+        fromCity: validated.fromCity,
+        toCity: validated.toCity,
+        deliveryAddress: validated.deliveryAddress,
+        customerName: validated.customerName,
+        customerPhone: validated.customerPhone,
+        customerWhatsapp: validated.customerPhone,
+        receiverPhone: validated.receiverPhone || '',
+        receiverName: validated.receiverName || '',
         items: cleanedItems,
         quantity: totalQuantity,
         weight: totalWeight,
-        amount: finalTotalAmount,
+        amount: validated.totalAmount,
         parcelType: consolidatedParcelType,
         notes: cleanedItems.map((i) => i.notes).filter(Boolean).join('; ') || '',
-        paymentStatus: formData.paymentStatus,
+        paymentStatus: validated.paymentStatus,
       };
 
       const res = await api.bookings.create(payload);
@@ -609,6 +643,7 @@ export const CreateBookingPage = ({
       },
     ]);
     setCreatedBooking(null);
+    setFieldErrors({});
     setPhoneSuggestions([]);
     setPhoneDropdownOpen(false);
     setIsTotalCustom(false);
@@ -911,7 +946,9 @@ export const CreateBookingPage = ({
                 label="Destination City *"
                 placeholder="Type or select destination city..."
                 value={formData.toCity}
+                error={fieldErrors.toCity}
                 onChange={(cityName, cityObj) => {
+                  clearFieldError('toCity');
                   setFormData((prev) => {
                     const updated = { ...prev, toCity: cityName };
                     if (!cityName) {
@@ -944,14 +981,17 @@ export const CreateBookingPage = ({
                   type="text"
                   id="cb_delivery_addr"
                   name="cb_dest_stop_addr"
-                  className="form-control"
+                  className={`form-control ${fieldErrors.deliveryAddress ? 'input-error' : ''}`}
                   placeholder={
                     availableLocations.length > 0
                       ? 'Select a stop chip below or enter counter address...'
                       : 'e.g. Bus Stand Counter #4, Benz Circle / Station Road'
                   }
                   value={formData.deliveryAddress}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, deliveryAddress: e.target.value }))}
+                  onChange={(e) => {
+                    clearFieldError('deliveryAddress');
+                    setFormData((prev) => ({ ...prev, deliveryAddress: e.target.value }));
+                  }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault();
@@ -963,6 +1003,9 @@ export const CreateBookingPage = ({
                   data-lpignore="true"
                   style={{ padding: '0.45rem 0.65rem', fontSize: '0.8125rem' }}
                 />
+                {fieldErrors.deliveryAddress && (
+                  <div className="form-error-msg">{fieldErrors.deliveryAddress}</div>
+                )}
               </div>
             </div>
 
@@ -999,7 +1042,10 @@ export const CreateBookingPage = ({
                       <button
                         key={idx}
                         type="button"
-                        onClick={() => setFormData((prev) => ({ ...prev, deliveryAddress: loc }))}
+                        onClick={() => {
+                          clearFieldError('deliveryAddress');
+                          setFormData((prev) => ({ ...prev, deliveryAddress: loc }));
+                        }}
                         style={{
                           fontSize: '0.75rem',
                           fontFamily: 'var(--font-family)',
@@ -1088,10 +1134,13 @@ export const CreateBookingPage = ({
                       type="tel"
                       id="cb_sender_phone"
                       name="cb_sender_phone"
-                      className="form-control"
+                      className={`form-control ${fieldErrors.customerPhone ? 'input-error' : ''}`}
                       placeholder="10-digit mobile..."
                       value={formData.customerPhone}
-                      onChange={(e) => handlePhoneInputChange(e.target.value)}
+                      onChange={(e) => {
+                        clearFieldError('customerPhone');
+                        handlePhoneInputChange(e.target.value);
+                      }}
                       onFocus={() => {
                         if (formData.customerPhone.length >= 2 && phoneSuggestions.length > 0) {
                           setPhoneDropdownOpen(true);
@@ -1152,7 +1201,7 @@ export const CreateBookingPage = ({
                                 borderLeft: isHighlighted ? '3px solid #2563eb' : '3px solid transparent',
                                 display: 'flex',
                                 alignItems: 'center',
-                                justifyContent: 'space-between',
+                                justifyItems: 'space-between',
                                 transition: 'all 0.1s ease',
                               }}
                             >
@@ -1221,6 +1270,9 @@ export const CreateBookingPage = ({
                       </div>
                     </div>
                   )}
+                  {fieldErrors.customerPhone && (
+                    <div className="form-error-msg">{fieldErrors.customerPhone}</div>
+                  )}
                   <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '3px' }}>
                     Auto-suggests from database
                   </div>
@@ -1235,10 +1287,13 @@ export const CreateBookingPage = ({
                     type="text"
                     id="cb_sender_name"
                     name="cb_sender_name"
-                    className="form-control"
+                    className={`form-control ${fieldErrors.customerName ? 'input-error' : ''}`}
                     placeholder="e.g. Ramesh Kumar"
                     value={formData.customerName}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, customerName: e.target.value }))}
+                    onChange={(e) => {
+                      clearFieldError('customerName');
+                      setFormData((prev) => ({ ...prev, customerName: e.target.value }));
+                    }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
@@ -1250,6 +1305,9 @@ export const CreateBookingPage = ({
                     data-lpignore="true"
                     style={{ padding: '0.45rem 0.65rem', fontSize: '0.8125rem', backgroundColor: '#ffffff' }}
                   />
+                  {fieldErrors.customerName && (
+                    <div className="form-error-msg">{fieldErrors.customerName}</div>
+                  )}
                   <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '3px' }}>
                     Auto-fills on customer selection
                   </div>
@@ -1296,10 +1354,11 @@ export const CreateBookingPage = ({
                     type="tel"
                     id="cb_receiver_phone"
                     name="cb_receiver_phone"
-                    className="form-control"
+                    className={`form-control ${fieldErrors.receiverPhone ? 'input-error' : ''}`}
                     placeholder="10-digit mobile"
                     value={formData.receiverPhone}
                     onChange={(e) => {
+                      clearFieldError('receiverPhone');
                       const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
                       setFormData((prev) => ({ ...prev, receiverPhone: digits }));
                     }}
@@ -1314,6 +1373,9 @@ export const CreateBookingPage = ({
                     data-lpignore="true"
                     style={{ padding: '0.45rem 0.65rem', fontSize: '0.8125rem', backgroundColor: '#ffffff' }}
                   />
+                  {fieldErrors.receiverPhone && (
+                    <div className="form-error-msg">{fieldErrors.receiverPhone}</div>
+                  )}
                   <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '3px' }}>
                     For delivery SMS & OTP
                   </div>
@@ -1389,7 +1451,7 @@ export const CreateBookingPage = ({
                   title="Add multi-parcel item"
                 >
                   <Plus size={14} />
-                  + Add Parcel Item
+                  Add Parcel Item
                 </button>
               </div>
             </div>
@@ -1420,7 +1482,7 @@ export const CreateBookingPage = ({
                       <td>
                         <select
                           id={`cb_item_pt_${index}`}
-                          className="form-control"
+                          className={`form-control ${fieldErrors[`items.${index}.parcelType`] ? 'input-error' : ''}`}
                           value={item.parcelType}
                           onChange={(e) => handleItemChange(index, 'parcelType', e.target.value)}
                           required
@@ -1441,6 +1503,9 @@ export const CreateBookingPage = ({
                             </>
                           )}
                         </select>
+                        {fieldErrors[`items.${index}.parcelType`] && (
+                          <div className="form-error-msg">{fieldErrors[`items.${index}.parcelType`]}</div>
+                        )}
                       </td>
 
                       {/* Quantity */}
@@ -1449,9 +1514,10 @@ export const CreateBookingPage = ({
                           type="number"
                           min="1"
                           max="999"
-                          className="form-control"
+                          className={`form-control ${fieldErrors[`items.${index}.quantity`] ? 'input-error' : ''}`}
                           value={item.quantity}
                           onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
+                          onWheel={(e) => e.target.blur()}
                           required
                           style={{ textAlign: 'center', fontWeight: 600 }}
                         />
@@ -1467,6 +1533,7 @@ export const CreateBookingPage = ({
                           placeholder="e.g. 20"
                           value={item.weight}
                           onChange={(e) => handleItemChange(index, 'weight', e.target.value)}
+                          onWheel={(e) => e.target.blur()}
                           style={{ textAlign: 'center' }}
                         />
                       </td>
@@ -1489,10 +1556,11 @@ export const CreateBookingPage = ({
                           <input
                             type="number"
                             min="0"
-                            className="form-control charge-input-field"
+                            className={`form-control charge-input-field ${fieldErrors[`items.${index}.charge`] ? 'input-error' : ''}`}
                             placeholder="0"
                             value={item.charge}
                             onChange={(e) => handleItemChange(index, 'charge', e.target.value)}
+                            onWheel={(e) => e.target.blur()}
                             required
                             style={{
                               paddingLeft: '22px',
@@ -1503,6 +1571,11 @@ export const CreateBookingPage = ({
                             }}
                           />
                         </div>
+                        {fieldErrors[`items.${index}.charge`] && (
+                          <div className="form-error-msg" style={{ textAlign: 'right' }}>
+                            {fieldErrors[`items.${index}.charge`]}
+                          </div>
+                        )}
                       </td>
 
                       {/* Remarks / Content */}
@@ -1541,6 +1614,11 @@ export const CreateBookingPage = ({
                 </tbody>
               </table>
             </div>
+            {fieldErrors.items && (
+              <div className="form-error-msg" style={{ marginTop: '0.4rem', marginBottom: '0.4rem' }}>
+                {fieldErrors.items}
+              </div>
+            )}
 
             {/* Live Totals & Payment Summary Bar - Modern Executive Card */}
             <div
@@ -1633,9 +1711,10 @@ export const CreateBookingPage = ({
                     id="cb_grand_total_charge"
                     type="number"
                     min="0"
-                    className="form-control charge-input-field"
+                    className={`form-control charge-input-field ${fieldErrors.totalAmount ? 'input-error' : ''}`}
                     value={isTotalCustom ? customTotalAmount : (calculatedItemsTotal !== 0 ? calculatedItemsTotal : '')}
                     onChange={(e) => handleGrandTotalChange(e.target.value)}
+                    onWheel={(e) => e.target.blur()}
                     placeholder="0"
                     style={{
                       width: '150px',
@@ -1646,13 +1725,18 @@ export const CreateBookingPage = ({
                       fontWeight: 800,
                       color: '#2563eb',
                       backgroundColor: '#ffffff',
-                      border: '2px solid #93c5fd',
+                      border: fieldErrors.totalAmount ? '2px solid #ef4444' : '2px solid #93c5fd',
                       borderRadius: 'var(--radius-sm)',
                       boxShadow: '0 1px 3px rgba(37, 99, 235, 0.12)',
                     }}
                     required
                   />
                 </div>
+                {fieldErrors.totalAmount && (
+                  <div className="form-error-msg" style={{ textAlign: 'right', marginTop: '4px' }}>
+                    {fieldErrors.totalAmount}
+                  </div>
+                )}
                 {isTotalCustom && (
                   <div style={{ marginTop: '4px' }}>
                     <button
@@ -1842,6 +1926,7 @@ export const CreateBookingPage = ({
                   placeholder="e.g. 250"
                   value={quickParcelType.defaultCharge}
                   onChange={(e) => setQuickParcelType((prev) => ({ ...prev, defaultCharge: e.target.value }))}
+                  onWheel={(e) => e.target.blur()}
                   autoComplete="off"
                   data-lpignore="true"
                 />
@@ -1860,6 +1945,7 @@ export const CreateBookingPage = ({
                   placeholder="e.g. 25"
                   value={quickParcelType.defaultWeight}
                   onChange={(e) => setQuickParcelType((prev) => ({ ...prev, defaultWeight: e.target.value }))}
+                  onWheel={(e) => e.target.blur()}
                   autoComplete="off"
                   data-lpignore="true"
                 />

@@ -65,6 +65,12 @@ export const BusDispatchPage = ({
   const [dispatchNotes, setDispatchNotes] = useState('');
   const [submittingDispatch, setSubmittingDispatch] = useState(false);
 
+  // Manifest Archive Date Range & Search State
+  const [historyStartDate, setHistoryStartDate] = useState('');
+  const [historyEndDate, setHistoryEndDate] = useState('');
+  const [historyPreset, setHistoryPreset] = useState('all');
+  const [historyBusSearch, setHistoryBusSearch] = useState('');
+
   const fetchFleet = async () => {
     try {
       setLoadingFleet(true);
@@ -108,10 +114,15 @@ export const BusDispatchPage = ({
     }
   };
 
-  const fetchHistory = async () => {
+  const fetchHistory = async (customStart = historyStartDate, customEnd = historyEndDate, customBus = historyBusSearch) => {
     try {
       setLoadingHistory(true);
-      const res = await api.dispatch.getHistory();
+      const params = {};
+      if (customStart) params.startDate = customStart;
+      if (customEnd) params.endDate = customEnd;
+      if (customBus && customBus.trim()) params.busNumber = customBus.trim();
+
+      const res = await api.dispatch.getHistory(params);
       if (res.success) {
         setHistory(res.data || []);
       }
@@ -119,6 +130,38 @@ export const BusDispatchPage = ({
       showToast(error.message || 'Failed to fetch dispatch history', 'error');
     } finally {
       setLoadingHistory(false);
+    }
+  };
+
+  const handleApplyPreset = (preset) => {
+    setHistoryPreset(preset);
+    const today = new Date();
+    const fmt = (d) => d.toISOString().split('T')[0];
+
+    if (preset === 'today') {
+      const dStr = fmt(today);
+      setHistoryStartDate(dStr);
+      setHistoryEndDate(dStr);
+      fetchHistory(dStr, dStr);
+    } else if (preset === 'yesterday') {
+      const yest = new Date(today);
+      yest.setDate(yest.getDate() - 1);
+      const dStr = fmt(yest);
+      setHistoryStartDate(dStr);
+      setHistoryEndDate(dStr);
+      fetchHistory(dStr, dStr);
+    } else if (preset === '7days') {
+      const past = new Date(today);
+      past.setDate(past.getDate() - 7);
+      const start = fmt(past);
+      const end = fmt(today);
+      setHistoryStartDate(start);
+      setHistoryEndDate(end);
+      fetchHistory(start, end);
+    } else {
+      setHistoryStartDate('');
+      setHistoryEndDate('');
+      fetchHistory('', '');
     }
   };
 
@@ -816,8 +859,8 @@ export const BusDispatchPage = ({
                           <span className="order-id-badge">#{booking.orderId}</span>
                         </td>
                         <td>
-                          <div style={{ fontWeight: 600 }}>{booking.customerName}</div>
-                          <div style={{ fontSize: '0.6875rem', color: '#64748b' }}>{booking.customerPhone}</div>
+                          <strong style={{ color: '#0d2137' }}>{booking.customerName}</strong>
+                          <span style={{ fontSize: '0.75rem', color: '#64748b' }}> • {booking.customerPhone}</span>
                         </td>
                         <td>
                           {(() => {
@@ -830,36 +873,32 @@ export const BusDispatchPage = ({
                               : (stop || cleanTo);
 
                             return (
-                              <div>
-                                <span style={{ fontWeight: 600, color: '#0f172a', fontSize: '0.8125rem' }}>
-                                  {cleanRoute}
-                                </span>
-                                {fullTo && (
-                                  <div style={{ fontSize: '0.7rem', color: '#2563eb', marginTop: '2px', fontWeight: 500 }}>
-                                    📍 {fullTo}
-                                  </div>
-                                )}
-                              </div>
+                              <span style={{ fontWeight: 500 }} title={fullTo ? `${cleanRoute} (${fullTo})` : cleanRoute}>
+                                {cleanRoute}
+                              </span>
                             );
                           })()}
                         </td>
                         <td>
-                          <span style={{ fontSize: '0.75rem', backgroundColor: '#f1f5f9', padding: '0.15rem 0.35rem', borderRadius: '3px', border: '1px solid #e2e8f0' }}>
+                          <span style={{ fontSize: '0.8125rem' }} title={booking.parcelType}>
                             {booking.parcelType}
                           </span>
                         </td>
                         <td>
-                          {booking.quantity} pcs {booking.weight ? `(${booking.weight}kg)` : ''}
+                          <span style={{ fontWeight: 600, color: '#1b3d63' }}>
+                            {booking.quantity} pcs
+                          </span>
+                          {booking.weight ? <span style={{ fontSize: '0.75rem', color: '#64748b' }}> ({booking.weight}kg)</span> : ''}
                         </td>
-                        <td style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                        <td style={{ fontSize: '0.75rem', color: '#64748b', whiteSpace: 'nowrap' }}>
                           {new Date(booking.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </td>
-                        <td>
+                        <td style={{ textAlign: 'center' }}>
                           <span className="status-badge status-waiting_for_bus">
                             WAITING FOR BUS
                           </span>
                         </td>
-                        <td style={{ textAlign: 'right' }}>
+                        <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                           <button
                             className="btn btn-primary btn-sm"
                             onClick={() => startAssigning([booking])}
@@ -879,7 +918,116 @@ export const BusDispatchPage = ({
         </div>
       ) : (
         /* Manifest Archive History */
-        <div className="table-container">
+        <div>
+          {/* Manifest Archive Date Range & Filter Bar */}
+          <div
+            className="filter-bar"
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '0.75rem',
+              marginBottom: '1rem',
+              backgroundColor: '#ffffff',
+              padding: '0.75rem 1rem',
+              borderRadius: '8px',
+              border: '1px solid #e2e8f0',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                Date:
+              </span>
+              {[
+                { id: 'all', label: 'All' },
+                { id: 'today', label: 'Today' },
+                { id: 'yesterday', label: 'Yesterday' },
+                { id: '7days', label: 'Last 7 Days' },
+              ].map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => handleApplyPreset(p.id)}
+                  style={{
+                    border: '1px solid #cbd5e1',
+                    padding: '4px 10px',
+                    borderRadius: '4px',
+                    fontSize: '0.75rem',
+                    fontWeight: historyPreset === p.id ? 700 : 500,
+                    backgroundColor: historyPreset === p.id ? '#0f172a' : '#ffffff',
+                    color: historyPreset === p.id ? '#ffffff' : '#334155',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span style={{ fontSize: '0.75rem', color: '#64748b' }}>From:</span>
+                <input
+                  type="date"
+                  className="form-control"
+                  style={{ width: '135px', padding: '4px 8px', fontSize: '0.75rem' }}
+                  value={historyStartDate}
+                  onChange={(e) => {
+                    setHistoryStartDate(e.target.value);
+                    setHistoryPreset('custom');
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span style={{ fontSize: '0.75rem', color: '#64748b' }}>To:</span>
+                <input
+                  type="date"
+                  className="form-control"
+                  style={{ width: '135px', padding: '4px 8px', fontSize: '0.75rem' }}
+                  value={historyEndDate}
+                  onChange={(e) => {
+                    setHistoryEndDate(e.target.value);
+                    setHistoryPreset('custom');
+                  }}
+                />
+              </div>
+
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Bus Number..."
+                style={{ width: '130px', padding: '4px 8px', fontSize: '0.75rem' }}
+                value={historyBusSearch}
+                onChange={(e) => setHistoryBusSearch(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && fetchHistory()}
+              />
+
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => fetchHistory()}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem' }}
+              >
+                <Filter size={12} />
+                <span>Filter</span>
+              </button>
+
+              {(historyStartDate || historyEndDate || historyBusSearch) && (
+                <button
+                  type="button"
+                  className="btn btn-outline btn-sm"
+                  onClick={() => handleApplyPreset('all')}
+                  style={{ fontSize: '0.75rem' }}
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="table-container">
           <table className="data-table">
             <thead>
               <tr>
@@ -916,48 +1064,40 @@ export const BusDispatchPage = ({
                       </span>
                     </td>
                     <td>
-                      <div style={{ fontWeight: 700, color: '#0d2137', fontSize: '0.875rem' }}>
-                        {item.busNumber}
-                      </div>
-                      <div style={{ fontSize: '0.6875rem', color: '#64748b' }}>
-                        {item.busName || item.operator || 'Express Lines'}
-                      </div>
+                      <strong style={{ color: '#0d2137' }}>{item.busNumber}</strong>
+                      <span style={{ fontSize: '0.75rem', color: '#64748b' }}> • {item.busName || item.operator || 'Express Lines'}</span>
                     </td>
                     <td>
-                      <div style={{ fontWeight: 600, color: '#0f172a' }}>{item.route}</div>
-                      {item.destinationAddress && (
-                        <div style={{ fontSize: '0.6875rem', color: '#64748b', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={item.destinationAddress}>
-                          {item.destinationAddress}
-                        </div>
-                      )}
+                      <span style={{ fontWeight: 500 }} title={item.destinationAddress ? `${item.route} (${item.destinationAddress})` : item.route}>
+                        {item.route}
+                      </span>
                     </td>
                     <td>
                       {item.driverName || item.driverPhone ? (
-                        <div>
-                          <div style={{ fontWeight: 600, fontSize: '0.75rem' }}>{item.driverName || 'Driver'}</div>
-                          <div style={{ fontSize: '0.6875rem', color: '#0f172a', fontWeight: 600 }}>{item.driverPhone || '—'}</div>
-                        </div>
+                        <span>
+                          <strong style={{ color: '#0d2137', fontSize: '0.8125rem' }}>{item.driverName || 'Driver'}</strong>
+                          <span style={{ fontSize: '0.75rem', color: '#64748b' }}> • {item.driverPhone || '—'}</span>
+                        </span>
                       ) : (
                         <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>—</span>
                       )}
                     </td>
                     <td>
-                      <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#0f172a' }}>{item.departureTime}</div>
+                      <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#0f172a' }}>{item.departureTime}</span>
                       {item.platformNumber && (
-                        <div style={{ fontSize: '0.6875rem', color: '#64748b' }}>{item.platformNumber}</div>
+                        <span style={{ fontSize: '0.75rem', color: '#64748b' }}> (Plat {item.platformNumber})</span>
                       )}
                     </td>
                     <td>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem', maxWidth: '200px' }}>
-                        {(item.orderIds || []).map((oid, idx) => (
-                          <span key={idx} className="order-id-badge" style={{ fontSize: '0.6875rem' }}>
-                            #{oid}
-                          </span>
-                        ))}
-                      </div>
+                      <span style={{ fontWeight: 600, color: '#1b3d63' }}>
+                        {(item.orderIds || []).length} orders
+                      </span>
+                      <span style={{ fontSize: '0.75rem', color: '#64748b' }} title={(item.orderIds || []).map((id) => `#${id}`).join(', ')}>
+                        {' '}({(item.orderIds || []).slice(0, 2).map((id) => `#${id}`).join(', ')}{(item.orderIds || []).length > 2 ? ` +${item.orderIds.length - 2}` : ''})
+                      </span>
                     </td>
                     <td style={{ fontWeight: 600 }}>{item.totalParcels} pcs</td>
-                    <td style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                    <td style={{ fontSize: '0.75rem', color: '#64748b', whiteSpace: 'nowrap' }}>
                       {new Date(item.dispatchedAt).toLocaleString('en-IN', {
                         day: '2-digit',
                         month: 'short',
@@ -972,6 +1112,7 @@ export const BusDispatchPage = ({
             </tbody>
           </table>
         </div>
+      </div>
       )}
     </div>
   );

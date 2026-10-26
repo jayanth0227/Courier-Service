@@ -1,51 +1,47 @@
-# ==============================================
-# Courier Service + OpenWA WhatsApp Gateway
-# Single deployment with Docker Compose
-# ==============================================
-# Usage:
-#   docker compose up -d          (start both services)
-#   docker compose logs -f        (view logs)
-#   docker compose down           (stop everything)
-# ==============================================
-
-version: '3.8'
-
 services:
-  # Your Courier Service App (Express + React)
-  courier-app:
+  backend:
     build:
-      context: .
+      context: ./server
       dockerfile: Dockerfile
-    ports:
-      - "5000:5000"
+    env_file:
+      - ./server/.env
     environment:
-      - NODE_ENV=production
-      - PORT=5000
-      - MONGO_URI=${MONGO_URI}
-      - JWT_SECRET=${JWT_SECRET}
-    depends_on:
-      - openwa
+      NODE_ENV: production
+      PORT: 5000
+    ports:
+      - "127.0.0.1:5000:5000"
     restart: unless-stopped
     networks:
       - app-network
 
-  # OpenWA WhatsApp Gateway (free, self-hosted)
+  frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    ports:
+      - "127.0.0.1:8080:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - app-network
+
   openwa:
     image: rmyndharis/openwa:latest
     ports:
-      - "2785:2785"
+      - "127.0.0.1:2785:2785"
     environment:
-      - PORT=2785
-      - NODE_ENV=production
-      - DATABASE_TYPE=sqlite
-      - DATABASE_NAME=/data/openwa.sqlite
-      - DATABASE_SYNCHRONIZE=true
-      - ENGINE_TYPE=whatsapp-web.js
-      - SESSION_DATA_PATH=/data/sessions
-      - PUPPETEER_HEADLESS=true
-      - AUTO_START_SESSIONS=true
+      PORT: 2785
+      NODE_ENV: production
+      DATABASE_TYPE: sqlite
+      DATABASE_NAME: /app/data/openwa.sqlite
+      DATABASE_SYNCHRONIZE: "true"
+      ENGINE_TYPE: whatsapp-web.js
+      SESSION_DATA_PATH: /app/data/sessions
+      PUPPETEER_HEADLESS: "true"
+      AUTO_START_SESSIONS: "true"
     volumes:
-      - openwa-data:/data
+      - openwa-data:/app/data
     restart: unless-stopped
     networks:
       - app-network

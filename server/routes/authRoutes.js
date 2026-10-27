@@ -7,6 +7,7 @@ const Tenant = require('../models/Tenant');
 const { protect, authorize } = require('../middleware/auth');
 const { logSecurityEvent } = require('../services/auditService');
 const { passwordResetLimiter } = require('../middleware/security');
+const emailService = require('../services/emailService');
 
 // Precomputed dummy hash for constant-time comparison against timing-based user enumeration
 const DUMMY_HASH = '$2a$10$w8TfJ3j2vM85dZ/rT7k1s.D8k9H0a1B2c3D4e5F6G7H8I9J0K1L2M';
@@ -46,13 +47,27 @@ router.post('/login', async (req, res, next) => {
     }
 
     // Find user in database and populate tenant details
-    const user = await User.findOne({
+    let user = await User.findOne({
       $or: [
         { username: loginKey },
         { email: loginKey },
+        { secondaryEmail: loginKey },
         { phone: loginKey },
       ],
     }).populate('tenantId');
+
+    // Fallback: If not found directly, check if loginKey matches tenant contactEmail or contactPhone
+    if (!user) {
+      const tenant = await Tenant.findOne({
+        $or: [
+          { contactEmail: loginKey },
+          { contactPhone: loginKey },
+        ],
+      });
+      if (tenant && tenant.adminUser) {
+        user = await User.findById(tenant.adminUser).populate('tenantId');
+      }
+    }
 
     if (!user) {
       // Perform constant-time dummy comparison to prevent timing attacks
@@ -537,45 +552,43 @@ router.put('/users/:id/reset-password', protect, authorize('admin', 'superadmin'
   }
 });
 
-// @route   POST /api/auth/forgot-password
-// @desc    Reset password via username and registered email verification
+// Helper to securely mask an email address (e.g. "admin@example.com" -> "a***n@example.com")
+const maskEmail = (email) => {
+  if (!email || typeof email !== 'string') return '';
+  const parts = email.split('@');
+  if (parts.length !== 2) return email;
+  const [name, domain] = parts;
+  if (name.length <= 2) {
+    return `${name[0]}*@${domain}`;
+  }
+  return `${name[0]}${'*'.repeat(Math.max(name.length - 2, 2))}${name[name.length - 1]}@${domain}`;
+};
+
+// @route   POST /api/auth/forgot-password/send-otp
+// @desc    Generate and email 6-digit OTP for password reset
 // @access  Public (Rate Limited)
-router.post('/forgot-password', passwordResetLimiter, async (req, res, next) => {
+router.post('/forgot-password/send-otp', passwordResetLimiter, async (req, res, next) => {
   try {
-    const { identifier, email, newPassword } = req.body || {};
+    const { identifier } = req.body || {};
+    const rawKey = typeof identifier === 'string' ? identifier.trim().toLowerCase() : '';
 
-    if (!identifier || !email || !newPassword) {
+    if (!rawKey) {
       return res.status(400).json({
         success: false,
-        message: 'Username, registered email, and new password are required',
+        message: 'Please provide your account username or registered email',
       });
     }
-
-    if (newPassword.length < 6) {
-      return res.status(400).json({
-        success: false,
-        message: 'New password must be at least 6 characters long',
-      });
-    }
-
-    const cleanIdentifier = identifier.trim().toLowerCase();
-    const cleanEmail = email.trim().toLowerCase();
 
     const user = await User.findOne({
-      $or: [{ username: cleanIdentifier }, { email: cleanIdentifier }],
+      $or: [{ username: rawKey }, { email: rawKey }],
     });
 
-    if (!user || user.email.toLowerCase() !== cleanEmail) {
-      await bcrypt.compare(newPassword, DUMMY_HASH).catch(() => {});
-      await logSecurityEvent({
-        req,
-        action: 'FORGOT_PASSWORD_FAILED',
-        severity: 'WARN',
-        details: { identifier: cleanIdentifier, email: cleanEmail, reason: 'Credentials mismatch' },
-      });
-      return res.status(400).json({
+    if (!user) {
+      // Dummy timer to thwart enumeration
+      await bcrypt.compare('dummy', DUMMY_HASH).catch(() => {});
+      return res.status(404).json({
         success: false,
-        message: 'Invalid username or registered email address',
+        message: 'No account found matching the provided username or email',
       });
     }
 
@@ -586,13 +599,123 @@ router.post('/forgot-password', passwordResetLimiter, async (req, res, next) => 
       });
     }
 
-    user.password = newPassword;
-    user.tokenVersion = (user.tokenVersion || 0) + 1;
+    // Generate cryptographically secure 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiry
+
+    user.resetPasswordOTP = otp;
+    user.resetPasswordExpires = expiresAt;
+    await user.save();
+
+    // Dispatch OTP via Email Service
+    const emailResult = await emailService.sendPasswordResetOtpEmail({
+      to: user.email,
+      name: user.name,
+      otp,
+    });
+
+    await logSecurityEvent({
+      req,
+      action: 'PASSWORD_RESET_OTP_SENT',
+      severity: 'INFO',
+      customUser: user,
+      details: { identifier: rawKey, email: user.email, simulated: Boolean(emailResult.simulated) },
+    });
+
+    res.json({
+      success: true,
+      message: `A 6-digit verification code has been dispatched to ${maskEmail(user.email)}.`,
+      maskedEmail: maskEmail(user.email),
+      simulated: Boolean(emailResult.simulated),
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// @route   POST /api/auth/forgot-password/verify-reset
+// @desc    Verify 6-digit OTP and reset password
+// @access  Public (Rate Limited)
+router.post('/forgot-password/verify-reset', passwordResetLimiter, async (req, res, next) => {
+  try {
+    const { identifier, otp, newPassword } = req.body || {};
+
+    const cleanIdentifier = typeof identifier === 'string' ? identifier.trim().toLowerCase() : '';
+    const cleanOtp = typeof otp === 'string' ? otp.trim() : '';
+    const safePassword = typeof newPassword === 'string' ? newPassword : '';
+
+    if (!cleanIdentifier || !cleanOtp || !safePassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Username/email, 6-digit verification code, and new password are required',
+      });
+    }
+
+    if (safePassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password must be at least 6 characters long',
+      });
+    }
+
+    const user = await User.findOne({
+      $or: [{ username: cleanIdentifier }, { email: cleanIdentifier }],
+    });
+
+    if (!user) {
+      await bcrypt.compare(safePassword, DUMMY_HASH).catch(() => {});
+      return res.status(404).json({
+        success: false,
+        message: 'Account not found. Please verify your username or email.',
+      });
+    }
+
+    if (!user.active) {
+      return res.status(403).json({
+        success: false,
+        message: 'Account is deactivated. Please contact your manager or platform administrator.',
+      });
+    }
+
+    // Verify OTP and Expiration
+    if (!user.resetPasswordOTP || user.resetPasswordOTP !== cleanOtp) {
+      await logSecurityEvent({
+        req,
+        action: 'FORGOT_PASSWORD_INVALID_OTP',
+        severity: 'WARN',
+        customUser: user,
+        details: { identifier: cleanIdentifier },
+      });
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid verification code. Please check your email or request a new code.',
+      });
+    }
+
+    if (!user.resetPasswordExpires || new Date() > new Date(user.resetPasswordExpires)) {
+      await logSecurityEvent({
+        req,
+        action: 'FORGOT_PASSWORD_EXPIRED_OTP',
+        severity: 'WARN',
+        customUser: user,
+        details: { identifier: cleanIdentifier },
+      });
+      return res.status(400).json({
+        success: false,
+        message: 'Verification code has expired. Please request a new code.',
+      });
+    }
+
+    // Apply new password and clear OTP fields
+    user.password = safePassword;
+    user.resetPasswordOTP = null;
+    user.resetPasswordExpires = null;
+    user.tokenVersion = (user.tokenVersion || 0) + 1; // Invalidate all prior sessions
     await user.save();
 
     await logSecurityEvent({
       req,
-      action: 'FORGOT_PASSWORD_RESET',
+      action: 'FORGOT_PASSWORD_RESET_SUCCESS',
       severity: 'INFO',
       customUser: user,
       details: { role: user.role, username: user.username },
@@ -600,11 +723,23 @@ router.post('/forgot-password', passwordResetLimiter, async (req, res, next) => 
 
     res.json({
       success: true,
-      message: 'Password reset successfully. You can now log in with your new password.',
+      message: 'Password reset successfully! You can now sign in with your new password.',
     });
   } catch (error) {
     next(error);
   }
+});
+
+// Backward compatibility for standard endpoint
+router.post('/forgot-password', passwordResetLimiter, async (req, res, next) => {
+  if (req.body && req.body.otp) {
+    req.url = '/forgot-password/verify-reset';
+    return router.handle(req, res, next);
+  }
+  return res.status(400).json({
+    success: false,
+    message: 'Please use the 2-step OTP verification flow: request OTP via /api/auth/forgot-password/send-otp',
+  });
 });
 
 module.exports = router;

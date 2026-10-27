@@ -9,15 +9,65 @@ const { escapeRegex } = require('../middleware/security');
 router.use(protect, tenantScope);
 
 // @route   GET /api/cities
-// @desc    Get all dynamic cities stored in MongoDB for this tenant
+// @desc    Get all dynamic cities stored in AWS DynamoDB for this tenant
 // @access  Private
 router.get('/', async (req, res, next) => {
   try {
-    const cities = await City.find({ ...req.tenantFilter, active: true }).sort({ name: 1 });
+    const rawCities = await City.find({ ...req.tenantFilter, active: true }).sort({ name: 1 });
+
+    // Group cities by normalized name to consolidate any duplicates into a single city record
+    const cityMap = new Map();
+    const duplicatesToDelete = [];
+
+    for (const city of rawCities) {
+      const normName = (city.name || '').trim().toLowerCase();
+      if (!normName) continue;
+
+      if (!cityMap.has(normName)) {
+        cityMap.set(normName, city);
+      } else {
+        // Merge locations into the primary city record
+        const primary = cityMap.get(normName);
+        const existingLocs = primary.locations || [];
+        const newLocs = city.locations || [];
+        const mergedSet = new Set(existingLocs.map((l) => (l || '').trim()).filter(Boolean));
+        newLocs.forEach((l) => {
+          const clean = (l || '').trim();
+          if (clean) mergedSet.add(clean);
+        });
+        primary.locations = Array.from(mergedSet);
+        if (!primary.deliveryAddress && city.deliveryAddress) {
+          primary.deliveryAddress = city.deliveryAddress;
+        }
+        duplicatesToDelete.push(city._id || city.id);
+      }
+    }
+
+    // Clean up duplicates and persist merged stops in background
+    if (duplicatesToDelete.length > 0) {
+      (async () => {
+        for (const dupId of duplicatesToDelete) {
+          try {
+            await City.findByIdAndDelete(dupId);
+          } catch (e) {
+            console.error('Error cleaning duplicate city:', e.message);
+          }
+        }
+        for (const primary of cityMap.values()) {
+          try {
+            await primary.save();
+          } catch (e) {
+            console.error('Error saving merged city:', e.message);
+          }
+        }
+      })();
+    }
+
+    const consolidatedCities = Array.from(cityMap.values());
     res.json({
       success: true,
-      data: cities,
-      count: cities.length,
+      data: consolidatedCities,
+      count: consolidatedCities.length,
     });
   } catch (error) {
     next(error);
@@ -61,24 +111,26 @@ router.post('/', authorize('admin', 'superadmin'), async (req, res, next) => {
     const trimmedName = name.trim();
     const targetLocation = (deliveryAddress || location || '').trim();
 
-    let existing = await City.findOne({
-      tenantId: req.tenantId,
-      name: new RegExp(`^${trimmedName}$`, 'i'),
-    });
+    // Check all existing cities for this tenant (case-insensitive)
+    const allTenantCities = await City.find({ ...req.tenantFilter });
+    let existing = allTenantCities.find(
+      (c) => c.name && c.name.trim().toLowerCase() === trimmedName.toLowerCase()
+    );
 
     if (existing) {
-      if (targetLocation && !existing.locations.includes(targetLocation)) {
-        existing.locations.push(targetLocation);
+      const locSet = new Set((existing.locations || []).map((l) => (l || '').trim()).filter(Boolean));
+      if (targetLocation) {
+        locSet.add(targetLocation);
       }
       if (Array.isArray(locations)) {
         locations.forEach((l) => {
           const trimmedL = (l || '').trim();
-          if (trimmedL && !existing.locations.includes(trimmedL)) {
-            existing.locations.push(trimmedL);
-          }
+          if (trimmedL) locSet.add(trimmedL);
         });
       }
-      if (targetLocation) {
+
+      existing.locations = Array.from(locSet);
+      if (targetLocation && !existing.deliveryAddress) {
         existing.deliveryAddress = targetLocation;
       }
       existing.active = true;
@@ -114,7 +166,7 @@ router.post('/', authorize('admin', 'superadmin'), async (req, res, next) => {
 });
 
 // @route   PUT /api/cities/:id
-// @desc    Update city name and delivery addresses/locations in MongoDB (Tenant Scoped)
+// @desc    Update city name and delivery addresses/locations in AWS DynamoDB (Tenant Scoped)
 // @access  Private (Admin only)
 router.put('/:id', authorize('admin', 'superadmin'), async (req, res, next) => {
   try {
@@ -174,7 +226,7 @@ router.delete('/:id/locations', authorize('admin', 'superadmin'), async (req, re
 });
 
 // @route   DELETE /api/cities/:id
-// @desc    Delete entire city from MongoDB (Tenant Scoped)
+// @desc    Delete entire city from AWS DynamoDB (Tenant Scoped)
 // @access  Private (Admin)
 router.delete('/:id', authorize('admin', 'superadmin'), async (req, res, next) => {
   try {

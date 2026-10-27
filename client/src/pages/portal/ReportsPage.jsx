@@ -47,6 +47,16 @@ const CORPORATE_COLORS = [
   '#059669', // Emerald
 ];
 
+const formatLocalYMD = (date) => {
+  if (!date) return '';
+  const d = date instanceof Date ? date : new Date(date);
+  if (isNaN(d.getTime())) return '';
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
 export const ReportsPage = ({
   standardRoutes = [],
   parcelTypes = [],
@@ -112,31 +122,31 @@ export const ReportsPage = ({
   const [hoveredPieIndex, setHoveredPieIndex] = useState(null);
   const [showExportModal, setShowExportModal] = useState(false);
 
-  // Fetch Report & Analytics Data from MongoDB
+  // Fetch Report & Analytics Data
   const fetchReportData = useCallback(async () => {
     try {
       setLoading(true);
       const params = {};
 
       if (timeframe === 'today') {
-        const today = new Date().toISOString().split('T')[0];
+        const today = formatLocalYMD(new Date());
         params.startDate = today;
         params.endDate = today;
       } else if (timeframe === '7days') {
         const d = new Date();
         d.setDate(d.getDate() - 6);
-        params.startDate = d.toISOString().split('T')[0];
-        params.endDate = new Date().toISOString().split('T')[0];
+        params.startDate = formatLocalYMD(d);
+        params.endDate = formatLocalYMD(new Date());
       } else if (timeframe === '30days') {
         const d = new Date();
         d.setDate(d.getDate() - 29);
-        params.startDate = d.toISOString().split('T')[0];
-        params.endDate = new Date().toISOString().split('T')[0];
+        params.startDate = formatLocalYMD(d);
+        params.endDate = formatLocalYMD(new Date());
       } else if (timeframe === 'month') {
         const now = new Date();
         const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-        params.startDate = firstDay.toISOString().split('T')[0];
-        params.endDate = new Date().toISOString().split('T')[0];
+        params.startDate = formatLocalYMD(firstDay);
+        params.endDate = formatLocalYMD(new Date());
       } else if (timeframe === 'custom') {
         if (startDate) params.startDate = startDate;
         if (endDate) params.endDate = endDate;
@@ -146,17 +156,14 @@ export const ReportsPage = ({
       if (status !== 'ALL') params.status = status;
       if (parcelType !== 'ALL') params.parcelType = parcelType;
 
+      const analyticsParams = {
+        timeframe,
+        ...params,
+      };
+
       const [detailedRes, analyticsRes] = await Promise.allSettled([
         api.reports.getDetailed(params),
-        api.reports.getAnalytics(
-          timeframe === 'all'
-            ? 'all'
-            : timeframe === 'today'
-            ? 'today'
-            : timeframe === '30days'
-            ? '30days'
-            : '7days'
-        ),
+        api.reports.getAnalytics(analyticsParams),
       ]);
 
       if (detailedRes.status === 'fulfilled' && detailedRes.value?.success) {
@@ -180,6 +187,31 @@ export const ReportsPage = ({
   const handleTimeframeChange = (tf) => {
     setTimeframe(tf);
     setCurrentPage(1);
+    setCommissionCurrentPage(1);
+
+    const now = new Date();
+    if (tf === 'today') {
+      const today = formatLocalYMD(now);
+      setStartDate(today);
+      setEndDate(today);
+    } else if (tf === '7days') {
+      const d = new Date(now);
+      d.setDate(d.getDate() - 6);
+      setStartDate(formatLocalYMD(d));
+      setEndDate(formatLocalYMD(now));
+    } else if (tf === '30days') {
+      const d = new Date(now);
+      d.setDate(d.getDate() - 29);
+      setStartDate(formatLocalYMD(d));
+      setEndDate(formatLocalYMD(now));
+    } else if (tf === 'month') {
+      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+      setStartDate(formatLocalYMD(firstDay));
+      setEndDate(formatLocalYMD(now));
+    } else if (tf === 'all') {
+      setStartDate('');
+      setEndDate('');
+    }
   };
 
   // Filtered and Sorted Bookings for Audit Table
@@ -466,18 +498,24 @@ export const ReportsPage = ({
 
     if (!reportData?.data) return [];
     const map = {};
-    const days = timeframe === 'today' ? 1 : timeframe === '30days' ? 30 : 7;
+    const now = new Date();
+    let days = 7;
+    if (timeframe === 'today') days = 1;
+    else if (timeframe === '30days') days = 30;
+    else if (timeframe === 'month') days = now.getDate();
+    else if (timeframe === 'all') days = 14;
+
     for (let i = days - 1; i >= 0; i--) {
-      const d = new Date();
+      const d = new Date(now);
       d.setDate(d.getDate() - i);
-      const key = d.toISOString().split('T')[0];
+      const key = formatLocalYMD(d);
       const shortDay = d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' });
       const label = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
       map[key] = { date: key, shortDay, label, bookings: 0, revenue: 0, delivered: 0, dispatched: 0 };
     }
 
     reportData.data.forEach((b) => {
-      const dateKey = new Date(b.createdAt).toISOString().split('T')[0];
+      const dateKey = formatLocalYMD(b.createdAt);
       if (map[dateKey]) {
         map[dateKey].bookings += 1;
         if (b.status !== 'CANCELLED') map[dateKey].revenue += (b.amount || 0);
@@ -672,6 +710,42 @@ export const ReportsPage = ({
       fulfillmentRate,
     };
   }, [reportData]);
+
+  // Active Tenure label & human-readable date range
+  const tenureInfo = useMemo(() => {
+    const labels = {
+      today: 'Today',
+      '7days': 'Last 7 Days',
+      '30days': 'Last 30 Days',
+      month: 'This Month',
+      all: 'All Time',
+      custom: 'Custom Range',
+    };
+    const activeLabel = labels[timeframe] || 'Selected Tenure';
+
+    let rangeText = '';
+    const now = new Date();
+    if (timeframe === 'today') {
+      rangeText = now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    } else if (timeframe === '7days') {
+      const d = new Date(now);
+      d.setDate(d.getDate() - 6);
+      rangeText = `${d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })} – ${now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}`;
+    } else if (timeframe === '30days') {
+      const d = new Date(now);
+      d.setDate(d.getDate() - 29);
+      rangeText = `${d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })} – ${now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}`;
+    } else if (timeframe === 'month') {
+      const first = new Date(now.getFullYear(), now.getMonth(), 1);
+      rangeText = `${first.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })} – ${now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}`;
+    } else if (timeframe === 'all') {
+      rangeText = 'Complete Auditable History';
+    } else if (timeframe === 'custom') {
+      rangeText = startDate && endDate ? `${startDate} to ${endDate}` : 'Select dates';
+    }
+
+    return { activeLabel, rangeText };
+  }, [timeframe, startDate, endDate]);
 
   // EXPORT 1: Full Filtered Consignments CSV
   const handleExportFilteredCSV = () => {
@@ -1080,6 +1154,42 @@ export const ReportsPage = ({
               <MapPin size={13} />
               <span>Route Yields ({routeSummaries.length})</span>
             </button>
+          </div>
+        </div>
+
+        {/* Active Tenure Status Banner */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginTop: '0.65rem',
+            padding: '6px 12px',
+            backgroundColor: '#f8fafc',
+            borderRadius: '6px',
+            border: '1px solid #e2e8f0',
+            fontSize: '0.75rem',
+            flexWrap: 'wrap',
+            gap: '0.5rem',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#334155' }}>
+            <Calendar size={13} color="#2563eb" />
+            <span style={{ fontWeight: 600 }}>Active Period:</span>
+            <span style={{ color: '#0f172a', fontWeight: 700, backgroundColor: '#e2e8f0', padding: '1px 6px', borderRadius: '3px' }}>
+              {tenureInfo.activeLabel}
+            </span>
+            <span style={{ color: '#64748b' }}>({tenureInfo.rangeText})</span>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#475569', fontSize: '0.75rem' }}>
+            <span>
+              Orders in Period: <strong style={{ color: '#0f172a' }}>{filteredBookings.length}</strong>
+            </span>
+            <span>•</span>
+            <span>
+              Freight Total: <strong style={{ color: '#0f172a' }}>₹{(summaryMetrics.totalRevenue || 0).toLocaleString('en-IN')}</strong>
+            </span>
           </div>
         </div>
 

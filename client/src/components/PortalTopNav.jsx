@@ -12,8 +12,7 @@ import {
   Truck,
   MapPin,
   Clock,
-  Menu,
-  X,
+  UserCheck,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCompanySettings } from '../context/CompanyContext';
@@ -29,7 +28,6 @@ export const PortalTopNav = ({
   const { companySettings: contextCompanySettings } = useCompanySettings();
   const company = propCompanySettings || contextCompanySettings || {};
   const [timeStr, setTimeStr] = useState('');
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const updateTime = () => {
@@ -75,16 +73,20 @@ export const PortalTopNav = ({
         { id: 'customers', label: 'Customers', icon: Users },
         { id: 'reports', label: 'Reports & Revenue', icon: BarChart3 },
         ...(isAdmin ? [{ id: 'settings', label: 'System Settings', icon: Settings }] : []),
+        ...(isAdmin ? [{ id: 'staff', label: 'Staff Management', icon: UserCheck }] : []),
       ];
 
   const handleModuleClick = (modId) => {
+    if (modId === 'staff' && onOpenStaff) {
+      onOpenStaff();
+      return;
+    }
     onSelectModule(modId);
-    setMobileMenuOpen(false);
   };
 
   return (
     <header className="portal-topnav no-print">
-      {/* Top Line: Brand, Terminal, Clock & Logout */}
+      {/* Top Line: Brand on Left, Meta & Action Controls on Far Right */}
       <div className="portal-topnav-main">
         {/* Brand Area */}
         <div
@@ -92,21 +94,7 @@ export const PortalTopNav = ({
           onClick={() => handleModuleClick(isStaff ? 'create-booking' : 'dashboard')}
           style={{ cursor: 'pointer' }}
         >
-          <div
-            style={{
-              width: '38px',
-              height: '38px',
-              borderRadius: '8px',
-              backgroundColor: '#1e293b',
-              border: '1px solid #334155',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              overflow: 'hidden',
-              flexShrink: 0,
-              padding: '2px',
-            }}
-          >
+          <div className="portal-brand-logo-wrap">
             <img
               src={company.logoUrl || '/logo.png'}
               alt={company.companyName || 'Brand Logo'}
@@ -126,20 +114,23 @@ export const PortalTopNav = ({
                 color: '#ffffff',
               }}
             >
-              <Truck size={20} />
+              <Truck size={22} />
             </div>
           </div>
-          <div>
+          <div className="portal-brand-text-container">
             <div className="portal-brand-title">
               {company.companyName || 'Logistics Management'}
             </div>
-            <div className="portal-brand-sub">
-              {company.tagline || 'Parcel & Bus Dispatch Network'}
-            </div>
+            {company.tagline && (
+              <span className="portal-brand-tagline-badge">
+                <span className="portal-brand-tagline-dot" />
+                {company.tagline}
+              </span>
+            )}
           </div>
         </div>
 
-        {/* Status Indicators & Action Controls */}
+        {/* Status Indicators & Action Controls (Aligned to the last / far right) */}
         <div className="portal-meta-bar">
           {user?.branch && (
             <div className="portal-branch-pill" title="Operational Branch">
@@ -155,17 +146,11 @@ export const PortalTopNav = ({
 
           {user?.role === 'admin' && (
             <button
-              onClick={() => handleModuleClick('staff')}
-              className={`portal-globe-btn ${activeModule === 'staff' ? 'active' : ''}`}
-              style={{
-                borderColor: activeModule === 'staff' ? '#38bdf8' : '#38bdf8',
-                color: activeModule === 'staff' ? '#ffffff' : '#38bdf8',
-                backgroundColor: activeModule === 'staff' ? '#0284c7' : 'rgba(56, 189, 248, 0.08)',
-                boxShadow: activeModule === 'staff' ? '0 0 10px rgba(56, 189, 248, 0.4)' : 'none',
-              }}
+              onClick={() => (onOpenStaff ? onOpenStaff() : handleModuleClick('staff'))}
+              className={`portal-staff-btn ${activeModule === 'staff' ? 'active' : ''}`}
               title="Manage Branch Staff Accounts"
             >
-              <Users size={13} />
+              <Users size={14} />
               <span>Staff Team</span>
             </button>
           )}
@@ -179,19 +164,10 @@ export const PortalTopNav = ({
             <span>Logout</span>
           </button>
         </div>
+      </div>
 
-          {/* Mobile Hamburger Toggle Button */}
-          <button
-            className="portal-mobile-toggle"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label="Toggle Navigation Menu"
-          >
-            {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
-          </button>
-        </div>
-
-      {/* Navigation Tabs Bar (Desktop / Tablet Horizontal + Mobile Drawer) */}
-      <nav className={`portal-nav-bar ${mobileMenuOpen ? 'mobile-open' : ''}`}>
+      {/* Navigation Tabs Bar (Clean Horizontal Navigation) */}
+      <nav className="portal-nav-bar">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeModule === item.id;

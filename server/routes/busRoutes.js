@@ -81,7 +81,7 @@ router.get('/:id', async (req, res, next) => {
 });
 
 // @route   POST /api/buses
-// @desc    Create or update bus in MongoDB (Tenant Scoped)
+// @desc    Create or update bus in AWS DynamoDB (Tenant Scoped)
 // @access  Private (Admin only)
 router.post('/', authorize('admin', 'superadmin'), async (req, res, next) => {
   try {
@@ -163,7 +163,7 @@ router.post('/', authorize('admin', 'superadmin'), async (req, res, next) => {
 });
 
 // @route   PUT /api/buses/:id
-// @desc    Update bus details in MongoDB (Tenant Scoped)
+// @desc    Update bus details in AWS DynamoDB (Tenant Scoped)
 // @access  Private (Admin only)
 router.put('/:id', authorize('admin', 'superadmin'), async (req, res, next) => {
   try {
@@ -233,7 +233,7 @@ router.put('/:id', authorize('admin', 'superadmin'), async (req, res, next) => {
 });
 
 // @route   DELETE /api/buses/:id
-// @desc    Delete bus from MongoDB (Tenant Scoped)
+// @desc    Delete bus from AWS DynamoDB (Tenant Scoped)
 // @access  Private (Admin only)
 router.delete('/:id', authorize('admin', 'superadmin'), async (req, res, next) => {
   try {

@@ -664,10 +664,10 @@ export const CreateBookingPage = ({
         }}
       >
         <div>
-          <h1 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#0d2137', margin: 0 }}>
+          <h1 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#09090b', letterSpacing: '-0.02em', margin: 0 }}>
             Counter Booking & LR Dispatch
           </h1>
-          <p style={{ fontSize: '0.8125rem', color: '#64748b', margin: 0 }}>
+          <p style={{ fontSize: '0.8125rem', color: '#71717a', margin: 0 }}>
             Destination-first workflow with auto-customer phone suggestion & multi-parcel billing under single LR ID
           </p>
         </div>

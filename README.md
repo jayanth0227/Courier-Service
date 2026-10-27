@@ -30,7 +30,10 @@ For initial setup, configure administrative credentials in your local `.env` fil
 Create a `.env` file in the root directory (refer to `.env.example`):
 ```env
 PORT=5000
-MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/<database>?retryWrites=true&w=majority
+AWS_REGION=ap-south-2
+AWS_ACCESS_KEY_ID=your_aws_access_key
+AWS_SECRET_ACCESS_KEY=your_aws_secret_key
+DYNAMODB_TABLE_PREFIX=mrcargo_
 JWT_SECRET=your_jwt_secret_key_here
 NODE_ENV=development
 WHATSAPP_PROVIDER=MOCK

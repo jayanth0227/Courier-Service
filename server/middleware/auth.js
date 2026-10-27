@@ -3,7 +3,7 @@ const User = require('../models/User');
 
 /**
  * Protect middleware:
- * Validates the JWT Bearer token, fetches the user from MongoDB,
+ * Validates the JWT Bearer token, fetches the user from the database,
  * confirms the account is active, and attaches `req.user`.
  */
 const protect = async (req, res, next) => {

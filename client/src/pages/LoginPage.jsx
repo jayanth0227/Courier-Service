@@ -1,5 +1,21 @@
-import React, { useState } from 'react';
-import { Truck, LogIn, Lock, User, AlertCircle, ArrowLeft, Eye, EyeOff, KeyRound, X, CheckCircle2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import {
+  Truck,
+  LogIn,
+  Lock,
+  User,
+  AlertCircle,
+  ArrowLeft,
+  Eye,
+  EyeOff,
+  KeyRound,
+  X,
+  CheckCircle2,
+  Mail,
+  RefreshCw,
+  ShieldCheck,
+  Send,
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { api } from '../services/api';
@@ -19,20 +35,81 @@ export const LoginPage = ({ onNavigate, onLoginSuccess, companySettings: propCom
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Forgot / Reset Password state
+  // 2-Step Email OTP Forgot / Reset Password state
   const [showForgotModal, setShowForgotModal] = useState(false);
+  const [forgotStep, setForgotStep] = useState(1); // 1 = Request OTP, 2 = Verify OTP & Reset
   const [forgotIdentifier, setForgotIdentifier] = useState('');
-  const [forgotEmail, setForgotEmail] = useState('');
+  const [maskedEmail, setMaskedEmail] = useState('');
+  const [forgotOtp, setForgotOtp] = useState('');
   const [forgotNewPassword, setForgotNewPassword] = useState('');
   const [forgotConfirmPassword, setForgotConfirmPassword] = useState('');
   const [showForgotNew, setShowForgotNew] = useState(false);
   const [showForgotConfirm, setShowForgotConfirm] = useState(false);
   const [forgotLoading, setForgotLoading] = useState(false);
+  const [resendCountdown, setResendCountdown] = useState(0);
 
-  const handleForgotPasswordSubmit = async (e) => {
+  // Timer for OTP resend cooldown
+  useEffect(() => {
+    let timer = null;
+    if (resendCountdown > 0) {
+      timer = setTimeout(() => {
+        setResendCountdown((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [resendCountdown]);
+
+  const resetForgotState = () => {
+    setShowForgotModal(false);
+    setForgotStep(1);
+    setForgotIdentifier('');
+    setMaskedEmail('');
+    setForgotOtp('');
+    setForgotNewPassword('');
+    setForgotConfirmPassword('');
+    setForgotLoading(false);
+    setResendCountdown(0);
+  };
+
+  // Step 1: Send OTP to User's registered email
+  const handleSendOtp = async (e) => {
+    if (e) e.preventDefault();
+    const cleanKey = forgotIdentifier.trim();
+    if (!cleanKey) {
+      showToast('Please enter your account username or registered email', 'error');
+      return;
+    }
+
+    try {
+      setForgotLoading(true);
+      const res = await api.auth.sendResetOtp({ identifier: cleanKey });
+      if (res.success) {
+        setMaskedEmail(res.maskedEmail || 'your registered email');
+        setForgotStep(2);
+        setResendCountdown(60);
+        showToast(res.message || 'Verification code sent to your email!', 'success');
+      }
+    } catch (err) {
+      showToast(err.message || 'Failed to dispatch verification code', 'error');
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
+  // Step 2: Verify OTP and apply new password
+  const handleVerifyAndResetPassword = async (e) => {
     e.preventDefault();
-    if (!forgotIdentifier.trim() || !forgotEmail.trim() || !forgotNewPassword) {
+    const cleanKey = forgotIdentifier.trim();
+    const cleanCode = forgotOtp.trim();
+
+    if (!cleanKey || !cleanCode || !forgotNewPassword) {
       showToast('Please fill in all required fields', 'error');
+      return;
+    }
+    if (cleanCode.length !== 6) {
+      showToast('Please enter the complete 6-digit verification code', 'error');
       return;
     }
     if (forgotNewPassword.length < 6) {
@@ -46,24 +123,20 @@ export const LoginPage = ({ onNavigate, onLoginSuccess, companySettings: propCom
 
     try {
       setForgotLoading(true);
-      const res = await api.auth.forgotPassword({
-        identifier: forgotIdentifier,
-        email: forgotEmail,
+      const res = await api.auth.verifyAndResetPassword({
+        identifier: cleanKey,
+        otp: cleanCode,
         newPassword: forgotNewPassword,
       });
 
       if (res.success) {
-        showToast(res.message || 'Password reset successfully! You can now sign in.', 'success');
-        setIdentifier(forgotIdentifier);
+        showToast(res.message || 'Password updated successfully! You can now log in.', 'success');
+        setIdentifier(cleanKey);
         setPassword('');
-        setShowForgotModal(false);
-        setForgotIdentifier('');
-        setForgotEmail('');
-        setForgotNewPassword('');
-        setForgotConfirmPassword('');
+        resetForgotState();
       }
     } catch (err) {
-      showToast(err.message || 'Failed to reset password', 'error');
+      showToast(err.message || 'Verification failed. Please check the code.', 'error');
     } finally {
       setForgotLoading(false);
     }
@@ -94,12 +167,13 @@ export const LoginPage = ({ onNavigate, onLoginSuccess, companySettings: propCom
   return (
     <div
       style={{
-        minHeight: '80vh',
+        minHeight: '85vh',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '2rem 1rem',
+        padding: '2.5rem 1rem',
+        backgroundColor: '#ffffff',
       }}
     >
       <div style={{ width: '100%', maxWidth: '400px' }}>
@@ -115,10 +189,10 @@ export const LoginPage = ({ onNavigate, onLoginSuccess, companySettings: propCom
         <div
           style={{
             backgroundColor: '#ffffff',
-            border: '1px solid var(--border-subtle)',
-            borderRadius: 'var(--radius-lg)',
+            border: '1px solid #e4e4e7',
+            borderRadius: '12px',
             padding: '2.5rem 2rem',
-            boxShadow: 'var(--shadow-card)',
+            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.02)',
           }}
         >
           <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
@@ -127,7 +201,7 @@ export const LoginPage = ({ onNavigate, onLoginSuccess, companySettings: propCom
                 width: '56px',
                 height: '56px',
                 margin: '0 auto 0.85rem auto',
-                borderRadius: 'var(--radius-md)',
+                borderRadius: '10px',
                 backgroundColor: '#ffffff',
                 border: '1px solid #e2e8f0',
                 display: 'flex',
@@ -153,18 +227,18 @@ export const LoginPage = ({ onNavigate, onLoginSuccess, companySettings: propCom
                   height: '100%',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  backgroundColor: '#2563eb',
+                  backgroundColor: '#4f46e5',
                   color: '#ffffff',
-                  borderRadius: 'var(--radius-sm)',
+                  borderRadius: '6px',
                 }}
               >
                 <Truck size={24} />
               </div>
             </div>
-            <h2 style={{ fontSize: '1.35rem', color: '#0f172a', fontWeight: 700, fontFamily: 'var(--font-family)', margin: 0 }}>
+            <h2 style={{ fontSize: '1.35rem', color: '#09090b', fontWeight: 800, fontFamily: 'var(--font-heading)', margin: 0, letterSpacing: '-0.02em' }}>
               {companyName}
             </h2>
-            <p style={{ fontSize: '0.8125rem', color: '#64748b', marginTop: '0.35rem', fontWeight: 500, fontFamily: 'var(--font-family)' }}>
+            <p style={{ fontSize: '0.8125rem', color: '#71717a', marginTop: '0.35rem', fontWeight: 500, fontFamily: 'var(--font-family)' }}>
               Sign in to manage consignments & fleet operations
             </p>
           </div>
@@ -277,175 +351,305 @@ export const LoginPage = ({ onNavigate, onLoginSuccess, companySettings: propCom
         </div>
       </div>
 
-      {/* Forgot / Reset Password Modal */}
+      {/* 2-Step Email OTP Forgot / Reset Password Modal */}
       {showForgotModal && (
         <div
           style={{
             position: 'fixed',
             inset: 0,
             backgroundColor: 'rgba(15, 23, 42, 0.7)',
+            backdropFilter: 'blur(3px)',
             zIndex: 1000,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             padding: '1rem',
           }}
-          onClick={() => setShowForgotModal(false)}
+          onClick={resetForgotState}
         >
           <div
             style={{
               backgroundColor: '#ffffff',
-              borderRadius: '8px',
-              maxWidth: '440px',
+              borderRadius: '12px',
+              maxWidth: '460px',
               width: '100%',
-              boxShadow: 'var(--shadow-lg)',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
               border: '1px solid #e2e8f0',
               overflow: 'hidden',
             }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <div style={{ width: '32px', height: '32px', borderRadius: '6px', backgroundColor: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <KeyRound size={17} />
+            <div style={{ padding: '1.15rem 1.35rem', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                <div style={{ width: '36px', height: '36px', borderRadius: '8px', backgroundColor: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <KeyRound size={18} />
                 </div>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: '0.95rem', color: '#0f172a', fontWeight: 700 }}>Reset Account Password</h3>
-                  <p style={{ margin: 0, fontSize: '0.72rem', color: '#64748b' }}>For Admin or Counter Staff accounts</p>
+                  <h3 style={{ margin: 0, fontSize: '0.975rem', color: '#0f172a', fontWeight: 700 }}>
+                    {forgotStep === 1 ? 'Forgot Password' : 'Enter Verification Code'}
+                  </h3>
+                  <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748b' }}>
+                    {forgotStep === 1 ? 'Step 1 of 2: Request Email OTP' : 'Step 2 of 2: Verify & Reset Password'}
+                  </p>
                 </div>
               </div>
               <button
                 type="button"
-                onClick={() => setShowForgotModal(false)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}
+                onClick={resetForgotState}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '4px' }}
               >
                 <X size={18} />
               </button>
             </div>
 
-            {/* Modal Form */}
-            <form onSubmit={handleForgotPasswordSubmit}>
-              <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
-                <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label" style={{ fontSize: '0.8125rem', fontWeight: 600 }}>Username or Email <span style={{ color: '#ef4444' }}>*</span></label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="Enter account username or email..."
-                    value={forgotIdentifier}
-                    onChange={(e) => setForgotIdentifier(e.target.value)}
-                    required
-                    autoFocus
-                  />
-                </div>
-
-                <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label" style={{ fontSize: '0.8125rem', fontWeight: 600 }}>Registered Account Email <span style={{ color: '#ef4444' }}>*</span></label>
-                  <input
-                    type="email"
-                    className="form-control"
-                    placeholder="Enter registered official email for verification..."
-                    value={forgotEmail}
-                    onChange={(e) => setForgotEmail(e.target.value)}
-                    required
-                  />
-                  <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '3px' }}>
-                    Used to verify account ownership before updating credentials.
+            {/* Step 1: Request OTP */}
+            {forgotStep === 1 && (
+              <form onSubmit={handleSendOtp}>
+                <div style={{ padding: '1.35rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div
+                    style={{
+                      backgroundColor: '#f8fafc',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      padding: '0.85rem 1rem',
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: '0.65rem',
+                      fontSize: '0.785rem',
+                      color: '#475569',
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    <Mail size={16} color="#2563eb" style={{ flexShrink: 0, marginTop: '2px' }} />
+                    <div>
+                      Enter your account <strong>username</strong> or <strong>registered email</strong>. We will dispatch a 6-digit one-time verification code (OTP) to your inbox.
+                    </div>
                   </div>
-                </div>
 
-                <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label" style={{ fontSize: '0.8125rem', fontWeight: 600 }}>New Password <span style={{ color: '#ef4444' }}>*</span></label>
-                  <div style={{ position: 'relative' }}>
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label" style={{ fontSize: '0.8125rem', fontWeight: 600 }}>
+                      Username or Registered Email <span style={{ color: '#ef4444' }}>*</span>
+                    </label>
                     <input
-                      type={showForgotNew ? 'text' : 'password'}
+                      type="text"
                       className="form-control"
-                      placeholder="Minimum 6 characters..."
-                      value={forgotNewPassword}
-                      onChange={(e) => setForgotNewPassword(e.target.value)}
-                      style={{ paddingRight: '38px' }}
-                      minLength={6}
+                      placeholder="e.g. staff1 or admin@mrcargo.com"
+                      value={forgotIdentifier}
+                      onChange={(e) => setForgotIdentifier(e.target.value)}
                       required
+                      autoFocus
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowForgotNew(!showForgotNew)}
-                      style={{
-                        position: 'absolute',
-                        right: '8px',
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        color: '#94a3b8',
-                        padding: '4px',
-                        display: 'flex',
-                      }}
-                      tabIndex={-1}
-                    >
-                      {showForgotNew ? <EyeOff size={15} /> : <Eye size={15} />}
-                    </button>
                   </div>
                 </div>
 
-                <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label" style={{ fontSize: '0.8125rem', fontWeight: 600 }}>Confirm New Password <span style={{ color: '#ef4444' }}>*</span></label>
-                  <div style={{ position: 'relative' }}>
+                <div style={{ padding: '0.875rem 1.35rem', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', backgroundColor: '#f8fafc' }}>
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    onClick={resetForgotState}
+                    disabled={forgotLoading}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-primary btn-sm"
+                    disabled={forgotLoading}
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                  >
+                    {forgotLoading ? (
+                      <>
+                        <RefreshCw size={14} className="spin" />
+                        <span>Sending OTP...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Send size={14} />
+                        <span>Send Verification Code</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* Step 2: Enter OTP & New Password */}
+            {forgotStep === 2 && (
+              <form onSubmit={handleVerifyAndResetPassword}>
+                <div style={{ padding: '1.35rem', display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+                  <div
+                    style={{
+                      backgroundColor: '#eff6ff',
+                      border: '1px solid #bfdbfe',
+                      borderRadius: '8px',
+                      padding: '0.75rem 0.95rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.65rem',
+                      fontSize: '0.785rem',
+                      color: '#1e40af',
+                    }}
+                  >
+                    <ShieldCheck size={18} color="#2563eb" style={{ flexShrink: 0 }} />
+                    <div style={{ flex: 1 }}>
+                      Code sent to <strong>{maskedEmail}</strong>. Valid for 10 minutes.
+                    </div>
+                  </div>
+
+                  {/* 6-Digit OTP Input */}
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label" style={{ fontSize: '0.8125rem', fontWeight: 600 }}>
+                      6-Digit Verification Code (OTP) <span style={{ color: '#ef4444' }}>*</span>
+                    </label>
                     <input
-                      type={showForgotConfirm ? 'text' : 'password'}
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={6}
                       className="form-control"
-                      placeholder="Re-enter new password..."
-                      value={forgotConfirmPassword}
-                      onChange={(e) => setForgotConfirmPassword(e.target.value)}
-                      style={{ paddingRight: '38px' }}
-                      minLength={6}
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowForgotConfirm(!showForgotConfirm)}
+                      placeholder="• • • • • •"
+                      value={forgotOtp}
+                      onChange={(e) => setForgotOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
                       style={{
-                        position: 'absolute',
-                        right: '8px',
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        color: '#94a3b8',
-                        padding: '4px',
-                        display: 'flex',
+                        textAlign: 'center',
+                        fontSize: '1.25rem',
+                        fontWeight: 700,
+                        letterSpacing: '0.35em',
+                        fontFamily: 'monospace',
+                        height: '46px',
+                        backgroundColor: '#fbfcfe',
                       }}
-                      tabIndex={-1}
-                    >
-                      {showForgotConfirm ? <EyeOff size={15} /> : <Eye size={15} />}
-                    </button>
+                      required
+                      autoFocus
+                    />
+                  </div>
+
+                  {/* New Password */}
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label" style={{ fontSize: '0.8125rem', fontWeight: 600 }}>
+                      New Password <span style={{ color: '#ef4444' }}>*</span>
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type={showForgotNew ? 'text' : 'password'}
+                        className="form-control"
+                        placeholder="At least 6 characters..."
+                        value={forgotNewPassword}
+                        onChange={(e) => setForgotNewPassword(e.target.value)}
+                        style={{ paddingRight: '38px' }}
+                        minLength={6}
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowForgotNew(!showForgotNew)}
+                        style={{
+                          position: 'absolute',
+                          right: '8px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          color: '#94a3b8',
+                          padding: '4px',
+                          display: 'flex',
+                        }}
+                        tabIndex={-1}
+                      >
+                        {showForgotNew ? <EyeOff size={15} /> : <Eye size={15} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Confirm Password */}
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label" style={{ fontSize: '0.8125rem', fontWeight: 600 }}>
+                      Confirm New Password <span style={{ color: '#ef4444' }}>*</span>
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type={showForgotConfirm ? 'text' : 'password'}
+                        className="form-control"
+                        placeholder="Re-enter new password..."
+                        value={forgotConfirmPassword}
+                        onChange={(e) => setForgotConfirmPassword(e.target.value)}
+                        style={{ paddingRight: '38px' }}
+                        minLength={6}
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowForgotConfirm(!showForgotConfirm)}
+                        style={{
+                          position: 'absolute',
+                          right: '8px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          color: '#94a3b8',
+                          padding: '4px',
+                          display: 'flex',
+                        }}
+                        tabIndex={-1}
+                      >
+                        {showForgotConfirm ? <EyeOff size={15} /> : <Eye size={15} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Resend Code Section */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', marginTop: '2px' }}>
+                    <span style={{ color: '#64748b' }}>Didn't receive email?</span>
+                    {resendCountdown > 0 ? (
+                      <span style={{ color: '#94a3b8', fontWeight: 600 }}>
+                        Resend code in {resendCountdown}s
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleSendOtp}
+                        disabled={forgotLoading}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#2563eb',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          padding: 0,
+                          textDecoration: 'underline',
+                        }}
+                      >
+                        Resend Verification Code
+                      </button>
+                    )}
                   </div>
                 </div>
-              </div>
 
-              <div style={{ padding: '0.875rem 1.25rem', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', backgroundColor: '#f8fafc' }}>
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-sm"
-                  onClick={() => setShowForgotModal(false)}
-                  disabled={forgotLoading}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="btn btn-primary btn-sm"
-                  disabled={forgotLoading}
-                  style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}
-                >
-                  <CheckCircle2 size={14} />
-                  <span>{forgotLoading ? 'Updating...' : 'Reset & Save Password'}</span>
-                </button>
-              </div>
-            </form>
+                <div style={{ padding: '0.875rem 1.35rem', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#f8fafc' }}>
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => setForgotStep(1)}
+                    disabled={forgotLoading}
+                  >
+                    &larr; Back
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-primary btn-sm"
+                    disabled={forgotLoading || forgotOtp.length !== 6}
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                  >
+                    <CheckCircle2 size={14} />
+                    <span>{forgotLoading ? 'Verifying...' : 'Verify & Reset Password'}</span>
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

@@ -535,6 +535,203 @@ Need help? Contact platform support at ${fromEmail}.
       };
     }
   }
+
+  /**
+   * Send 6-Digit Password Reset OTP Verification Email
+   */
+  async sendPasswordResetOtpEmail({ to, name, otp }) {
+    const targetEmail = (to || '').trim();
+    if (!targetEmail) {
+      console.warn('[EmailService Warning] No recipient email specified for password reset OTP.');
+      return { success: false, error: 'Recipient email is required' };
+    }
+
+    const fromName = process.env.SMTP_FROM_NAME || 'MrCargo Security Desk';
+    const fromEmail = process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER || 'mrcargo59@gmail.com';
+    const subject = `Your Verification Code: ${otp} - MrCargo Password Reset`;
+
+    const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${subject}</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background-color: #f1f5f9;
+      color: #1e293b;
+      line-height: 1.5;
+    }
+    .wrapper {
+      width: 100%;
+      background-color: #f1f5f9;
+      padding: 24px 12px;
+    }
+    .container {
+      max-width: 540px;
+      margin: 0 auto;
+      background-color: #ffffff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+      border: 1px solid #e2e8f0;
+    }
+    .banner {
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 60%, #2563eb 100%);
+      padding: 28px 24px;
+      color: #ffffff;
+      text-align: center;
+    }
+    .banner-badge {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      color: #93c5fd;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 3px 10px;
+      border-radius: 999px;
+      margin-bottom: 8px;
+    }
+    .banner-title {
+      font-size: 22px;
+      font-weight: 800;
+      margin: 0;
+      color: #ffffff;
+    }
+    .content {
+      padding: 28px 24px;
+    }
+    .otp-card {
+      background: #f8fafc;
+      border: 2px dashed #93c5fd;
+      border-radius: 10px;
+      padding: 24px 16px;
+      text-align: center;
+      margin: 20px 0;
+    }
+    .otp-code {
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+      font-size: 36px;
+      font-weight: 800;
+      letter-spacing: 8px;
+      color: #1d4ed8;
+      display: inline-block;
+      background: #ffffff;
+      padding: 10px 24px;
+      border-radius: 8px;
+      border: 1px solid #bfdbfe;
+      box-shadow: 0 2px 4px rgba(37, 99, 235, 0.1);
+    }
+    .footer {
+      background-color: #0f172a;
+      color: #94a3b8;
+      padding: 20px;
+      text-align: center;
+      font-size: 11px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="container">
+      <div class="banner">
+        <div class="banner-badge">Security Authentication</div>
+        <h1 class="banner-title">Password Reset Code</h1>
+      </div>
+      <div class="content">
+        <p style="font-size: 15px; font-weight: 600; color: #0f172a; margin-top: 0;">
+          Hello ${name || 'User'},
+        </p>
+        <p style="font-size: 14px; color: #475569;">
+          We received a request to reset the password for your account associated with <strong>${targetEmail}</strong>. Use the 6-digit verification code below to verify your identity and set a new password.
+        </p>
+        
+        <div class="otp-card">
+          <div style="font-size: 12px; font-weight: 700; color: #2563eb; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">
+            Your One-Time Verification Code
+          </div>
+          <div class="otp-code">${otp}</div>
+          <div style="font-size: 12px; color: #64748b; margin-top: 12px;">
+            ⏱️ This code will expire in <strong>10 minutes</strong>.
+          </div>
+        </div>
+
+        <p style="font-size: 12px; color: #64748b; line-height: 1.6; margin-bottom: 0;">
+          ⚠️ <strong>Security Advisory:</strong> If you did not request this password reset, someone may be trying to access your account. Please ignore this email or contact your administrator immediately.
+        </p>
+      </div>
+      <div class="footer">
+        <div style="color: #ffffff; font-weight: 700; margin-bottom: 4px;">MrCargo Dispatch & Logistics Network</div>
+        <div>Automated system notification. Please do not reply directly to this email.</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+`;
+
+    const text = `
+===========================================================
+MRCARGO PASSWORD RESET VERIFICATION CODE
+===========================================================
+Hello ${name || 'User'},
+
+Your one-time password reset verification code is:
+
+     ${otp}
+
+This code is valid for 10 minutes.
+
+If you did not request a password reset, please ignore this email.
+===========================================================
+`;
+
+    if (!this.transporter) {
+      console.log(`\n================== [EMAIL SIMULATION: PASSWORD RESET OTP] ==================`);
+      console.log(`To: ${targetEmail}`);
+      console.log(`Subject: ${subject}`);
+      console.log(`Verification OTP: >>> ${otp} <<<`);
+      console.log(`Expires in: 10 minutes`);
+      console.log(`Note: Configure SMTP_USER and SMTP_PASS in .env to deliver real emails.`);
+      console.log(`============================================================================\n`);
+      return {
+        success: true,
+        simulated: true,
+        message: `OTP email simulated (SMTP pending in .env). Code generated for ${targetEmail}.`,
+      };
+    }
+
+    try {
+      const info = await this.transporter.sendMail({
+        from: `"${fromName}" <${fromEmail}>`,
+        to: targetEmail,
+        subject,
+        text,
+        html,
+      });
+      console.log(`[EmailService] ✅ Password reset OTP sent to ${targetEmail} (Message ID: ${info.messageId})`);
+      return {
+        success: true,
+        messageId: info.messageId,
+        message: `Password reset OTP delivered to ${targetEmail}`,
+      };
+    } catch (err) {
+      console.error(`[EmailService Error] Failed to send OTP to ${targetEmail}:`, err.message);
+      return {
+        success: false,
+        error: err.message,
+        message: `Failed to deliver email: ${err.message}`,
+      };
+    }
+  }
 }
 
 const emailService = new EmailService();

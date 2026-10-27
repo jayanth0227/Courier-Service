@@ -89,6 +89,10 @@ export const PortalLayout = ({
   const [whatsAppBooking, setWhatsAppBooking] = useState(null);
   const [showStaffModal, setShowStaffModal] = useState(false);
 
+  // Modern Sidebar state
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
   const refreshPendingCount = async () => {
     if (isStaff) return;
     try {
@@ -202,7 +206,7 @@ export const PortalLayout = ({
 
   return (
     <div className="portal-layout-topbar">
-      {/* Top Bar Navigation (Clean Top Navigation) */}
+      {/* Top Bar Navigation (Clean Horizontal Top Navigation) */}
       <PortalTopNav
         activeModule={activeModule}
         onSelectModule={handleSelectModule}
@@ -316,13 +320,10 @@ export const PortalLayout = ({
               <SettingsPage onRefreshGlobalDestinations={refreshAllGlobalState} />
             )}
 
-            {(activeModule === 'staff' || showStaffModal) && (
+            {activeModule === 'staff' && (
               <StaffManagementModal
                 isOpen={true}
-                onClose={() => {
-                  setShowStaffModal(false);
-                  handleSelectModule('dashboard');
-                }}
+                onClose={() => handleSelectModule('dashboard')}
               />
             )}
           </>

@@ -297,24 +297,24 @@ router.put('/', protect, tenantScope, authorize('admin', 'superadmin'), async (r
     } = req.body;
 
     // Both Tenant Admin and SuperAdmin can update tenant-scoped settings
-    if (companyName !== undefined) settings.companyName = companyName.trim();
-    if (logoUrl !== undefined) settings.logoUrl = logoUrl;
-    if (tagline !== undefined) settings.tagline = tagline.trim();
-    if (companyPhone !== undefined) settings.companyPhone = companyPhone.trim();
-    if (companyEmail !== undefined) settings.companyEmail = companyEmail.trim();
-    if (companyAddress !== undefined) settings.companyAddress = companyAddress.trim();
-    if (fromCity !== undefined) settings.fromCity = fromCity.trim();
-    if (gstin !== undefined) settings.gstin = gstin.trim();
-    if (receiptFooterNote !== undefined) settings.receiptFooterNote = receiptFooterNote.trim();
-    if (termsAndConditions !== undefined) settings.termsAndConditions = termsAndConditions.trim();
+    if (companyName !== undefined) settings.companyName = (companyName || '').trim();
+    if (logoUrl !== undefined) settings.logoUrl = logoUrl || '';
+    if (tagline !== undefined) settings.tagline = (tagline || '').trim();
+    if (companyPhone !== undefined) settings.companyPhone = (companyPhone || '').trim();
+    if (companyEmail !== undefined) settings.companyEmail = (companyEmail || '').trim();
+    if (companyAddress !== undefined) settings.companyAddress = (companyAddress || '').trim();
+    if (fromCity !== undefined) settings.fromCity = (fromCity || '').trim();
+    if (gstin !== undefined) settings.gstin = (gstin || '').trim();
+    if (receiptFooterNote !== undefined) settings.receiptFooterNote = (receiptFooterNote || '').trim();
+    if (termsAndConditions !== undefined) settings.termsAndConditions = (termsAndConditions || '').trim();
 
     // WhatsApp configuration is centrally managed by Super Admin per tenant
     if (req.user && req.user.role === 'superadmin') {
       if (whatsappProvider !== undefined) settings.whatsappProvider = whatsappProvider;
-      if (whatsappSenderNumber !== undefined) settings.whatsappSenderNumber = whatsappSenderNumber.trim();
-      if (whatsappApiKey !== undefined) settings.whatsappApiKey = whatsappApiKey.trim();
-      if (whatsappApiUrl !== undefined) settings.whatsappApiUrl = whatsappApiUrl.trim();
-      if (openwaSessionId !== undefined) settings.openwaSessionId = openwaSessionId.trim();
+      if (whatsappSenderNumber !== undefined) settings.whatsappSenderNumber = (whatsappSenderNumber || '').trim();
+      if (whatsappApiKey !== undefined) settings.whatsappApiKey = (whatsappApiKey || '').trim();
+      if (whatsappApiUrl !== undefined) settings.whatsappApiUrl = (whatsappApiUrl || '').trim();
+      if (openwaSessionId !== undefined) settings.openwaSessionId = (openwaSessionId || '').trim();
     }
     if (standardRoutes && Array.isArray(standardRoutes)) {
       settings.standardRoutes = standardRoutes;

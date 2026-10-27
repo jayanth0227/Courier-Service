@@ -1,6 +1,6 @@
 /**
  * Tenant Scoping Middleware
- * Ensures strict multi-tenant isolation across all MongoDB operations.
+ * Ensures strict multi-tenant isolation across all database operations.
  */
 const Tenant = require('../models/Tenant');
 

@@ -65,7 +65,7 @@ router.get('/pending', async (req, res, next) => {
 router.post('/assign', async (req, res, next) => {
   try {
     const {
-      bookingIds, // Array of MongoDB IDs or single ID
+      bookingIds, // Array of booking IDs or single ID
       busNumber,
       busName,
       operator,

@@ -16,6 +16,7 @@ import {
   Send,
   Smartphone,
   FileText,
+  LogIn,
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useCompanySettings } from '../context/CompanyContext';
@@ -320,138 +321,345 @@ export const HomePage = ({ onNavigate, onTrackOrder, companySettings: propCompan
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#f8fafc' }}>
-      {/* 1. PROFESSIONAL SAAS HERO SECTION */}
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#ffffff' }}>
+      {/* 1. PROFESSIONAL SAAS HERO & UNIFIED DISPATCH CONSOLE */}
       <section
         id="home"
         style={{
-          backgroundColor: '#0f172a',
-          color: '#ffffff',
+          backgroundColor: '#ffffff',
+          color: '#09090b',
           position: 'relative',
-          padding: '3rem 1.25rem 4rem 1.25rem',
-          borderBottom: '1px solid #1e293b',
+          padding: '3.75rem 1.25rem 3.5rem 1.25rem',
+          borderBottom: '1px solid #f1f5f9',
+          background: 'radial-gradient(ellipse 90% 70% at 50% -15%, rgba(79, 70, 229, 0.08), rgba(248, 250, 252, 0.5) 60%, #ffffff 100%)',
+          overflow: 'hidden',
         }}
       >
-        <div style={{ maxWidth: '1140px', margin: '0 auto' }}>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-              gap: '2.5rem',
-              alignItems: 'center',
-            }}
-          >
-            {/* Left Column: Value Proposition & Navigation */}
-            <div>
-              {/* Operational Badge */}
-              <div
+        <div style={{ maxWidth: '1180px', margin: '0 auto', position: 'relative', zIndex: 2 }}>
+          {/* Top Trust Micro-Pill */}
+          <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
+            <div
+              className="subtle-floating"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                padding: '0.35rem 0.95rem',
+                borderRadius: '9999px',
+                backgroundColor: '#ffffff',
+                border: '1px solid #c7d2fe',
+                color: '#4338ca',
+                fontSize: '0.785rem',
+                fontWeight: 600,
+                boxShadow: '0 2px 8px rgba(99, 102, 241, 0.12)',
+              }}
+            >
+              <span
+                style={{
+                  width: '7px',
+                  height: '7px',
+                  borderRadius: '50%',
+                  backgroundColor: '#4f46e5',
+                  boxShadow: '0 0 8px #4f46e5',
+                }}
+              />
+              <span>{heroBadge || 'Verified Counter-to-Counter Intercity Bus Cargo Network'}</span>
+            </div>
+          </div>
+
+          {/* Centered / Dynamic High-Impact Headline */}
+          <div style={{ textAlign: 'center', maxWidth: '840px', margin: '0 auto 1.5rem auto' }}>
+            <h1
+              style={{
+                fontSize: 'clamp(2.2rem, 4.5vw, 3.25rem)',
+                fontWeight: 850,
+                lineHeight: 1.15,
+                letterSpacing: '-0.035em',
+                color: '#0f172a',
+                marginBottom: '1rem',
+                fontFamily: 'var(--font-heading)',
+              }}
+            >
+              {heroTitle || 'Premier Bus Parcel & Logistics Network'}
+            </h1>
+            <p
+              style={{
+                fontSize: '1.025rem',
+                lineHeight: 1.6,
+                color: '#475569',
+                maxWidth: '680px',
+                margin: '0 auto 1.5rem auto',
+              }}
+            >
+              {heroSubtitle ||
+                'Ship commercial cartons, grain sacks, industrial parts, documents, and merchandise across state routes via daily scheduled passenger buses. Real-time 6-digit Order ID tracking and instant WhatsApp dispatch alerts.'}
+            </p>
+
+            {/* Quick Interactive Feature Pills */}
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: '0.65rem',
+                flexWrap: 'wrap',
+                marginBottom: '2.5rem',
+              }}
+            >
+              <span
+                className="hero-chip"
+                onClick={() => {
+                  document.getElementById('services')?.scrollIntoView({ behavior: 'smooth' });
+                }}
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '0.45rem',
-                  padding: '0.35rem 0.75rem',
-                  borderRadius: '9999px',
-                  backgroundColor: '#1e293b',
-                  border: '1px solid #334155',
-                  color: '#93c5fd',
+                  gap: '0.4rem',
                   fontSize: '0.75rem',
                   fontWeight: 600,
-                  marginBottom: '1.25rem',
-                  letterSpacing: '0.02em',
+                  color: '#334155',
+                  backgroundColor: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  padding: '0.3rem 0.75rem',
+                  borderRadius: '9999px',
                 }}
               >
-                <span
-                  style={{
-                    width: '6px',
-                    height: '6px',
-                    borderRadius: '50%',
-                    backgroundColor: '#3b82f6',
-                  }}
-                />
-                <span>{heroBadge}</span>
+                <MessageSquare size={13} color="#2563eb" />
+                <span>Instant WhatsApp Alerts</span>
+              </span>
+
+              <span
+                className="hero-chip"
+                onClick={() => {
+                  document.getElementById('services')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  color: '#334155',
+                  backgroundColor: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  padding: '0.3rem 0.75rem',
+                  borderRadius: '9999px',
+                }}
+              >
+                <Bus size={13} color="#4f46e5" />
+                <span>180+ Daily Passenger Buses</span>
+              </span>
+
+              <span
+                className="hero-chip"
+                onClick={() => {
+                  document.getElementById('services')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  color: '#334155',
+                  backgroundColor: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  padding: '0.3rem 0.75rem',
+                  borderRadius: '9999px',
+                }}
+              >
+                <ShieldCheck size={13} color="#059669" />
+                <span>Digital OTP Counter Handover</span>
+              </span>
+            </div>
+          </div>
+
+          {/* Unified Two-Column Command Deck: Left = Tracking Console, Right = Live Highway Telemetry */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+              gap: '1.75rem',
+              alignItems: 'stretch',
+              marginBottom: '2.5rem',
+            }}
+          >
+            {/* Left Console Card: Real-Time Consignment Tracker */}
+            <div
+              className="interactive-card hero-tracking-glass"
+              style={{
+                padding: '1.75rem',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+              }}
+            >
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
+                    <div
+                      style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '8px',
+                        backgroundColor: '#eff6ff',
+                        color: '#2563eb',
+                        border: '1px solid #bfdbfe',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Search size={16} />
+                    </div>
+                    <div>
+                      <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>
+                        Track Consignment Status
+                      </h2>
+                      <div style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                        Real-time status via 6-digit Order ID
+                      </div>
+                    </div>
+                  </div>
+                  <span
+                    style={{
+                      fontSize: '0.675rem',
+                      fontWeight: 700,
+                      backgroundColor: '#ecfdf5',
+                      color: '#047857',
+                      padding: '0.2rem 0.55rem',
+                      borderRadius: '4px',
+                      border: '1px solid #a7f3d0',
+                    }}
+                  >
+                    Live Telemetry
+                  </span>
+                </div>
+
+                <form onSubmit={handleTrackSubmit} style={{ marginTop: '0.85rem' }}>
+                  <div style={{ position: 'relative', marginBottom: '0.65rem' }}>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="Enter 6-digit Order ID (e.g. 482195 or LR4821)"
+                      value={orderIdInput}
+                      onChange={(e) => {
+                        setOrderIdInput(e.target.value);
+                        if (trackError) setTrackError('');
+                      }}
+                      style={{
+                        height: '48px',
+                        fontSize: '0.95rem',
+                        fontWeight: 600,
+                        letterSpacing: '0.02em',
+                        paddingRight: '120px',
+                        backgroundColor: '#f8fafc',
+                        borderColor: '#cbd5e1',
+                      }}
+                    />
+                    <button
+                      type="submit"
+                      className="btn btn-primary"
+                      style={{
+                        position: 'absolute',
+                        right: '4px',
+                        top: '4px',
+                        bottom: '4px',
+                        padding: '0 1.15rem',
+                        fontSize: '0.875rem',
+                        fontWeight: 600,
+                        borderRadius: '6px',
+                        boxShadow: '0 2px 4px rgba(79, 70, 229, 0.25)',
+                      }}
+                    >
+                      <Search size={14} />
+                      <span>Track</span>
+                    </button>
+                  </div>
+                  {trackError && (
+                    <div style={{ fontSize: '0.75rem', color: '#b91c1c', marginBottom: '0.5rem' }}>
+                      {trackError}
+                    </div>
+                  )}
+
+                  {/* Sample suggestions for rapid test */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.725rem', color: '#64748b', marginTop: '0.4rem' }}>
+                    <span>Quick lookup:</span>
+                    <button
+                      type="button"
+                      onClick={() => setOrderIdInput('482195')}
+                      style={{ background: 'none', border: 'none', color: '#2563eb', fontWeight: 600, cursor: 'pointer', padding: 0 }}
+                    >
+                      #482195
+                    </button>
+                    <span>•</span>
+                    <button
+                      type="button"
+                      onClick={() => setOrderIdInput('LR9941')}
+                      style={{ background: 'none', border: 'none', color: '#2563eb', fontWeight: 600, cursor: 'pointer', padding: 0 }}
+                    >
+                      #LR9941
+                    </button>
+                  </div>
+                </form>
               </div>
 
-              {/* Main Headline */}
-              <h1
+              {/* Direct Portal Actions Strip */}
+              <div
                 style={{
-                  fontSize: 'clamp(1.85rem, 3.8vw, 2.65rem)',
-                  fontWeight: 800,
-                  lineHeight: 1.15,
-                  letterSpacing: '-0.025em',
-                  color: '#ffffff',
-                  marginBottom: '1rem',
-                  fontFamily: 'var(--font-heading)',
+                  paddingTop: '1.25rem',
+                  marginTop: '1.25rem',
+                  borderTop: '1px solid #f1f5f9',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '0.65rem',
                 }}
               >
-                {heroTitle}
-              </h1>
-
-              {/* Sub-Headline */}
-              <p
-                style={{
-                  fontSize: '0.95rem',
-                  lineHeight: 1.6,
-                  color: '#94a3b8',
-                  maxWidth: '540px',
-                  marginBottom: '1.75rem',
-                }}
-              >
-                {heroSubtitle}
-              </p>
-
-              {/* Direct Action Buttons */}
-              <div className="hero-action-buttons" style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
                 <button
                   type="button"
-                  className="btn btn-primary"
-                  style={{
-                    padding: '0.7rem 1.35rem',
-                    fontSize: '0.9rem',
-                    fontWeight: 600,
-                  }}
+                  className="btn btn-outline btn-sm"
+                  style={{ fontSize: '0.8125rem', borderColor: '#cbd5e1', color: '#1e293b' }}
                   onClick={() => handleCtaClick(heroPrimaryCtaLink)}
                 >
-                  <span>{heroPrimaryCtaText}</span>
-                  <ArrowRight size={15} />
+                  <LogIn size={13} />
+                  <span>Operations Portal Login &rarr;</span>
                 </button>
 
                 <button
                   type="button"
-                  className="btn btn-secondary"
-                  style={{
-                    padding: '0.7rem 1.25rem',
-                    fontSize: '0.9rem',
-                    backgroundColor: '#1e293b',
-                    color: '#ffffff',
-                    borderColor: '#334155',
+                  className="btn btn-secondary btn-sm"
+                  style={{ fontSize: '0.8125rem', backgroundColor: '#f8fafc', color: '#475569' }}
+                  onClick={() => {
+                    document.getElementById('deliverable-locations')?.scrollIntoView({ behavior: 'smooth' });
                   }}
-                  onClick={() => handleCtaClick(heroSecondaryCtaLink)}
                 >
-                  <Search size={14} />
-                  <span>{heroSecondaryCtaText}</span>
+                  <MapPin size={13} />
+                  <span>Active Hubs</span>
                 </button>
               </div>
             </div>
 
-            {/* Right Column: Clean Telemetry Card */}
-            <div>
-              <div
-                style={{
-                  backgroundColor: '#1e293b',
-                  border: '1px solid #334155',
-                  borderRadius: '10px',
-                  padding: '1.35rem',
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.2)',
-                }}
-              >
+            {/* Right Telemetry Card: Dynamic Route Visualizer */}
+            <div
+              className="interactive-card hero-tracking-glass"
+              style={{
+                padding: '1.75rem',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+              }}
+            >
+              <div>
                 <div
                   style={{
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     marginBottom: '1rem',
-                    paddingBottom: '0.65rem',
-                    borderBottom: '1px solid #334155',
+                    paddingBottom: '0.75rem',
+                    borderBottom: '1px solid #f1f5f9',
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -461,76 +669,89 @@ export const HomePage = ({ onNavigate, onTrackOrder, companySettings: propCompan
                         height: '8px',
                         borderRadius: '50%',
                         backgroundColor: '#10b981',
-                        boxShadow: '0 0 8px #10b981',
+                        animation: 'live-ping-green 2s infinite',
                       }}
                     />
-                    <span style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.06em', color: '#cbd5e1' }}>
-                      SCHEDULED BUS TELEMETRY
+                    <span style={{ fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.07em', color: '#0f172a' }}>
+                      SCHEDULED HIGHWAY TELEMETRY
                     </span>
                   </div>
                   <span
                     style={{
                       fontSize: '0.6875rem',
                       fontWeight: 700,
-                      backgroundColor: 'rgba(16, 185, 129, 0.15)',
-                      color: '#34d399',
+                      backgroundColor: '#eff6ff',
+                      color: '#1d4ed8',
                       padding: '0.2rem 0.55rem',
                       borderRadius: '4px',
-                      border: '1px solid rgba(52, 211, 153, 0.3)',
+                      border: '1px solid #bfdbfe',
                     }}
                   >
-                    Active Highway Link
+                    State Corridor #1
                   </span>
                 </div>
 
-                {/* Modern Transit Route Waypoints */}
+                {/* Highway Transit Waypoints Visualizer */}
                 <div
                   style={{
-                    backgroundColor: '#0f172a',
-                    border: '1px solid #334155',
-                    borderRadius: '8px',
-                    padding: '1rem',
-                    marginBottom: '0.85rem',
+                    backgroundColor: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '10px',
+                    padding: '1.15rem',
+                    marginBottom: '1rem',
                   }}
                 >
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                     {/* Origin Terminal */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                       <div
                         style={{
-                          width: '32px',
-                          height: '32px',
-                          borderRadius: '6px',
-                          backgroundColor: '#1e293b',
-                          border: '1px solid #475569',
+                          width: '34px',
+                          height: '34px',
+                          borderRadius: '8px',
+                          backgroundColor: '#ffffff',
+                          border: '1px solid #c7d2fe',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                           flexShrink: 0,
-                          color: '#60a5fa',
+                          color: '#4f46e5',
                         }}
                       >
-                        <Building size={16} />
+                        <Building size={17} />
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                           Origin Terminal Hub
                         </div>
-                        <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#ffffff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <div style={{ fontSize: '0.875rem', fontWeight: 800, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           Central Station Counter
                         </div>
                       </div>
-                      <span style={{ fontSize: '0.675rem', fontWeight: 700, color: '#60a5fa', backgroundColor: 'rgba(37, 99, 235, 0.2)', padding: '0.15rem 0.45rem', borderRadius: '4px', border: '1px solid rgba(96, 165, 250, 0.3)' }}>
-                        Departing
+                      <span style={{ fontSize: '0.675rem', fontWeight: 700, color: '#4338ca', backgroundColor: '#eef2ff', padding: '0.15rem 0.5rem', borderRadius: '4px', border: '1px solid #c7d2fe' }}>
+                        Dispatched
                       </span>
                     </div>
 
-                    {/* Transit Connector Strip */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', paddingLeft: '1rem' }}>
-                      <div style={{ width: '2px', height: '18px', backgroundColor: '#3b82f6', borderRadius: '2px' }} />
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.7rem', color: '#93c5fd' }}>
-                        <Bus size={13} color="#60a5fa" />
-                        <span>Daily Scheduled Passenger Bus Cargo Run</span>
+                    {/* Animated Transit Connector Strip */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', paddingLeft: '1.05rem' }}>
+                      <div style={{ width: '2px', height: '22px', backgroundColor: '#4f46e5', borderRadius: '2px' }} />
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.45rem',
+                          fontSize: '0.725rem',
+                          color: '#3730a3',
+                          fontWeight: 600,
+                          backgroundColor: '#ffffff',
+                          padding: '0.2rem 0.65rem',
+                          borderRadius: '6px',
+                          border: '1px solid #e0e7ff',
+                        }}
+                      >
+                        <Bus size={13} color="#4f46e5" style={{ animation: 'subtle-float 2.5s infinite ease-in-out' }} />
+                        <span>Daily Scheduled Passenger Bus Bay #2</span>
                       </div>
                     </div>
 
@@ -538,195 +759,131 @@ export const HomePage = ({ onNavigate, onTrackOrder, companySettings: propCompan
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                       <div
                         style={{
-                          width: '32px',
-                          height: '32px',
-                          borderRadius: '6px',
-                          backgroundColor: '#1e293b',
-                          border: '1px solid #475569',
+                          width: '34px',
+                          height: '34px',
+                          borderRadius: '8px',
+                          backgroundColor: '#ffffff',
+                          border: '1px solid #a7f3d0',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                           flexShrink: 0,
-                          color: '#34d399',
+                          color: '#059669',
                         }}
                       >
-                        <MapPin size={16} />
+                        <MapPin size={17} />
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                           Destination Counter
                         </div>
-                        <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#ffffff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <div style={{ fontSize: '0.875rem', fontWeight: 800, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           Regional Terminal Counter
                         </div>
                       </div>
-                      <span style={{ fontSize: '0.675rem', fontWeight: 700, color: '#34d399', backgroundColor: 'rgba(16, 185, 129, 0.15)', padding: '0.15rem 0.45rem', borderRadius: '4px', border: '1px solid rgba(52, 211, 153, 0.3)' }}>
-                        Handover
+                      <span style={{ fontSize: '0.675rem', fontWeight: 700, color: '#047857', backgroundColor: '#ecfdf5', padding: '0.15rem 0.5rem', borderRadius: '4px', border: '1px solid #a7f3d0' }}>
+                        OTP Ready
                       </span>
                     </div>
                   </div>
                 </div>
-
-                {/* Key Dispatch Highlights Grid */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-                  <div
-                    style={{
-                      backgroundColor: '#0f172a',
-                      border: '1px solid #334155',
-                      borderRadius: '6px',
-                      padding: '0.55rem 0.75rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                    }}
-                  >
-                    <Bus size={14} color="#60a5fa" style={{ flexShrink: 0 }} />
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: '0.625rem', color: '#94a3b8', textTransform: 'uppercase' }}>Frequency</div>
-                      <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#f1f5f9', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>14+ Runs Daily</div>
-                    </div>
-                  </div>
-
-                  <div
-                    style={{
-                      backgroundColor: '#0f172a',
-                      border: '1px solid #334155',
-                      borderRadius: '6px',
-                      padding: '0.55rem 0.75rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                    }}
-                  >
-                    <ShieldCheck size={14} color="#34d399" style={{ flexShrink: 0 }} />
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: '0.625rem', color: '#94a3b8', textTransform: 'uppercase' }}>Security</div>
-                      <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#f1f5f9', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>OTP Handover</div>
-                    </div>
-                  </div>
-                </div>
               </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      {/* 2. PROMINENT ZERO-FRICTION TRACKING WIDGET */}
-      <section style={{ maxWidth: '1140px', margin: '-1.5rem auto 2.25rem auto', padding: '0 1.25rem', width: '100%', zIndex: 10 }}>
-        <div
-          style={{
-            backgroundColor: '#ffffff',
-            border: '1px solid #cbd5e1',
-            borderRadius: '10px',
-            padding: '1.15rem 1.35rem',
-            boxShadow: '0 4px 6px -1px rgba(15, 23, 42, 0.08), 0 2px 4px -2px rgba(15, 23, 42, 0.04)',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.65rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Search size={17} color="#2563eb" />
-              <h2 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>
-                Track Consignment / Parcel Status
-              </h2>
-            </div>
-            <span style={{ fontSize: '0.785rem', color: '#64748b' }}>
-              Enter 6-digit Order ID printed on your booking receipt or WhatsApp alert
-            </span>
-          </div>
-
-          <form onSubmit={handleTrackSubmit} style={{ display: 'flex', gap: '0.65rem', flexWrap: 'wrap' }}>
-            <div style={{ flex: 1, minWidth: '220px' }}>
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Enter 6-digit Order ID (e.g. 482195 or LR4821)"
-                value={orderIdInput}
-                onChange={(e) => {
-                  setOrderIdInput(e.target.value);
-                  if (trackError) setTrackError('');
-                }}
-                style={{
-                  height: '44px',
-                  fontSize: '0.9rem',
-                  fontWeight: 600,
-                  letterSpacing: '0.02em',
-                }}
-              />
-              {trackError && (
-                <div style={{ fontSize: '0.75rem', color: '#b91c1c', marginTop: '4px' }}>{trackError}</div>
-              )}
-            </div>
-
-            <button
-              type="submit"
-              className="btn btn-primary"
-              style={{
-                height: '44px',
-                padding: '0 1.35rem',
-                fontSize: '0.9rem',
-                fontWeight: 600,
-              }}
-            >
-              <Search size={15} />
-              <span>Track Status</span>
-            </button>
-          </form>
-        </div>
-      </section>
-
-      {/* 3. HERO KPI MILESTONE TILES (4 Structured Enterprise Boxes) */}
-      <section style={{ maxWidth: '1140px', margin: '0 auto 2.5rem auto', padding: '0 1.25rem', width: '100%' }}>
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: '0.85rem',
-          }}
-        >
-          {heroStats.map((stat, idx) => (
-            <div
-              key={idx}
-              style={{
-                backgroundColor: '#ffffff',
-                border: '1px solid #e2e8f0',
-                borderRadius: '8px',
-                padding: '1.1rem 1.15rem',
-                boxShadow: 'var(--shadow-sm)',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '0.4rem' }}>
+              {/* Key Highlights Metrics */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
                 <div
                   style={{
-                    width: '34px',
-                    height: '34px',
-                    borderRadius: '6px',
-                    backgroundColor: '#eff6ff',
-                    border: '1px solid #bfdbfe',
+                    backgroundColor: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '8px',
+                    padding: '0.65rem 0.85rem',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
+                    gap: '0.55rem',
                   }}
                 >
-                  {idx === 0 && <MapPin size={17} color="#2563eb" />}
-                  {idx === 1 && <Bus size={17} color="#2563eb" />}
-                  {idx === 2 && <Package size={17} color="#2563eb" />}
-                  {idx === 3 && <CheckCircle2 size={17} color="#2563eb" />}
-                </div>
-                <div>
-                  <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', lineHeight: 1.1 }}>
-                    {stat.value}
-                  </div>
-                  <div style={{ fontSize: '0.775rem', fontWeight: 600, color: '#334155' }}>
-                    {stat.label}
+                  <Bus size={15} color="#4f46e5" style={{ flexShrink: 0 }} />
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: '0.625rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 600 }}>Frequency</div>
+                    <div style={{ fontSize: '0.785rem', fontWeight: 800, color: '#0f172a' }}>14+ Runs Daily</div>
                   </div>
                 </div>
-              </div>
-              <div style={{ fontSize: '0.725rem', color: '#64748b' }}>
-                {stat.subtext}
+
+                <div
+                  style={{
+                    backgroundColor: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '8px',
+                    padding: '0.65rem 0.85rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.55rem',
+                  }}
+                >
+                  <ShieldCheck size={15} color="#059669" style={{ flexShrink: 0 }} />
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: '0.625rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 600 }}>Handover</div>
+                    <div style={{ fontSize: '0.785rem', fontWeight: 800, color: '#0f172a' }}>OTP Handover</div>
+                  </div>
+                </div>
               </div>
             </div>
-          ))}
+          </div>
+
+          {/* 4 Sleek Milestone KPI Tiles */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+              gap: '1rem',
+            }}
+          >
+            {heroStats.map((stat, idx) => (
+              <div
+                key={idx}
+                className="interactive-card"
+                style={{
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '10px',
+                  padding: '1.25rem',
+                  boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.03)',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.4rem' }}>
+                  <div
+                    style={{
+                      width: '38px',
+                      height: '38px',
+                      borderRadius: '8px',
+                      backgroundColor: '#eef2ff',
+                      border: '1px solid #c7d2fe',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    {idx === 0 && <MapPin size={18} color="#4f46e5" />}
+                    {idx === 1 && <Bus size={18} color="#4f46e5" />}
+                    {idx === 2 && <Package size={18} color="#4f46e5" />}
+                    {idx === 3 && <CheckCircle2 size={18} color="#059669" />}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '1.35rem', fontWeight: 850, color: '#0f172a', lineHeight: 1.1 }}>
+                      {stat.value}
+                    </div>
+                    <div style={{ fontSize: '0.785rem', fontWeight: 600, color: '#334155' }}>
+                      {stat.label}
+                    </div>
+                  </div>
+                </div>
+                <div style={{ fontSize: '0.725rem', color: '#64748b' }}>
+                  {stat.subtext}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -785,17 +942,16 @@ export const HomePage = ({ onNavigate, onTrackOrder, companySettings: propCompan
             {servicesList.map((svc) => (
               <div
                 key={svc.id}
-                className="saas-service-card"
+                className="saas-service-card interactive-card"
                 style={{
                   backgroundColor: svc.highlight ? '#fbfcfe' : '#ffffff',
                   border: svc.highlight ? '1px solid #93c5fd' : '1px solid #e2e8f0',
-                  borderRadius: '8px',
-                  padding: '1.25rem',
+                  borderRadius: '10px',
+                  padding: '1.35rem',
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between',
                   boxShadow: 'var(--shadow-sm)',
-                  transition: 'all 0.2s ease',
                 }}
               >
                 <div>
@@ -900,17 +1056,16 @@ export const HomePage = ({ onNavigate, onTrackOrder, companySettings: propCompan
             {howItWorksSteps.map((step, idx) => (
               <div
                 key={idx}
-                className="step-pipeline-card"
+                className="step-pipeline-card interactive-card"
                 style={{
                   backgroundColor: '#ffffff',
                   border: '1px solid #e2e8f0',
-                  borderRadius: '8px',
-                  padding: '1.1rem',
+                  borderRadius: '10px',
+                  padding: '1.25rem 1.1rem',
                   boxShadow: 'var(--shadow-sm)',
                   display: 'flex',
                   flexDirection: 'column',
                   position: 'relative',
-                  transition: 'all 0.2s ease',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.65rem' }}>

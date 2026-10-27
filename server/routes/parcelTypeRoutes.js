@@ -8,7 +8,7 @@ const tenantScope = require('../middleware/tenantScope');
 router.use(protect, tenantScope);
 
 // @route   GET /api/parcel-types
-// @desc    Get all parcel types stored in MongoDB for this tenant (Tenant Scoped)
+// @desc    Get all parcel types stored in AWS DynamoDB for this tenant (Tenant Scoped)
 // @access  Private
 router.get('/', async (req, res, next) => {
   try {
@@ -48,7 +48,7 @@ router.get('/:id', async (req, res, next) => {
 });
 
 // @route   POST /api/parcel-types
-// @desc    Create a new parcel type in MongoDB (Tenant Scoped)
+// @desc    Create a new parcel type in AWS DynamoDB (Tenant Scoped)
 // @access  Private (Admin only)
 router.post('/', authorize('admin', 'superadmin'), async (req, res, next) => {
   try {
@@ -99,7 +99,7 @@ router.post('/', authorize('admin', 'superadmin'), async (req, res, next) => {
 });
 
 // @route   PUT /api/parcel-types/:id
-// @desc    Update parcel type details in MongoDB (Tenant Scoped)
+// @desc    Update parcel type details in AWS DynamoDB (Tenant Scoped)
 // @access  Private (Admin)
 router.put('/:id', authorize('admin', 'superadmin'), async (req, res, next) => {
   try {
@@ -129,7 +129,7 @@ router.put('/:id', authorize('admin', 'superadmin'), async (req, res, next) => {
 });
 
 // @route   DELETE /api/parcel-types/:id
-// @desc    Delete parcel type from MongoDB (Tenant Scoped)
+// @desc    Delete parcel type from AWS DynamoDB (Tenant Scoped)
 // @access  Private (Admin)
 router.delete('/:id', authorize('admin', 'superadmin'), async (req, res, next) => {
   try {

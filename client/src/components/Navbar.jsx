@@ -24,71 +24,99 @@ export const Navbar = ({ activeTab, onNavigate, companySettings: propCompanySett
   };
 
   return (
-    <header className="public-header no-print">
-      {/* Dynamic Top Announcement Bar (Controlled by Super Admin) */}
+    <header className="public-header no-print" style={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e4e4e7', position: 'sticky', top: 0, zIndex: 900 }}>
+      {/* Dynamic Top Announcement Bar with Scrolling Marquee */}
       {company.showAnnouncement !== false && company.announcementText && (
         <div
           className="top-announcement-bar"
           style={{
-            backgroundColor: '#0f172a',
-            color: '#f8fafc',
-            borderBottom: '1px solid #1e293b',
-            padding: '0.35rem 1rem',
+            backgroundColor: '#f8fafc',
+            color: '#18181b',
+            borderBottom: '1px solid #e2e8f0',
+            padding: '0.3rem 1rem',
             fontSize: '0.75rem',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
-            gap: '0.5rem',
+            gap: '0.75rem',
             minHeight: '32px',
+            overflow: 'hidden',
           }}
         >
-          <span
+          <div
             style={{
-              backgroundColor: '#1e3a8a',
-              color: '#93c5fd',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              backgroundColor: '#eef2ff',
+              color: '#4338ca',
               fontSize: '0.625rem',
               fontWeight: 700,
               textTransform: 'uppercase',
-              letterSpacing: '0.04em',
-              padding: '0.1rem 0.4rem',
+              letterSpacing: '0.05em',
+              padding: '0.15rem 0.5rem',
               borderRadius: '4px',
+              border: '1px solid #c7d2fe',
               flexShrink: 0,
+              zIndex: 2,
             }}
           >
-            Announcement
-          </span>
-          <span
-            style={{
-              color: '#cbd5e1',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              maxWidth: '650px',
-            }}
-          >
-            {company.announcementText}
-          </span>
-          {company.announcementLink && (
-            <a
-              href={company.announcementLink}
+            <span
               style={{
-                color: '#60a5fa',
-                fontWeight: 600,
-                textDecoration: 'none',
-                marginLeft: '0.25rem',
-                flexShrink: 0,
+                width: '6px',
+                height: '6px',
+                borderRadius: '50%',
+                backgroundColor: '#4f46e5',
+                display: 'inline-block',
+                animation: 'pulse-glow 2s infinite',
               }}
-              onClick={(e) => {
-                if (company.announcementLink.startsWith('#')) {
-                  e.preventDefault();
-                  const targetId = company.announcementLink.replace('#', '');
-                  handleLinkClick('home', targetId);
-                }
+            />
+            <span>Announcement</span>
+          </div>
+
+          <div style={{ flex: 1, minWidth: 0, overflow: 'hidden', display: 'flex', alignItems: 'center' }}>
+            <marquee
+              behavior="scroll"
+              direction="left"
+              scrollamount="6"
+              onMouseOver={(e) => e.target.stop && e.target.stop()}
+              onMouseOut={(e) => e.target.start && e.target.start()}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                color: '#374151',
+                fontSize: '0.75rem',
+                fontWeight: 500,
+                cursor: 'pointer',
               }}
             >
-              Learn More &rarr;
-            </a>
-          )}
+              <span style={{ marginRight: '1.5rem' }}>
+                {company.announcementText}
+              </span>
+              {company.announcementLink && (
+                <a
+                  href={company.announcementLink}
+                  style={{
+                    color: '#4f46e5',
+                    fontWeight: 700,
+                    textDecoration: 'none',
+                    marginRight: '2.5rem',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.2rem',
+                  }}
+                  onClick={(e) => {
+                    if (company.announcementLink.startsWith('#')) {
+                      e.preventDefault();
+                      const targetId = company.announcementLink.replace('#', '');
+                      handleLinkClick('home', targetId);
+                    }
+                  }}
+                >
+                  Learn More &rarr;
+                </a>
+              )}
+            </marquee>
+          </div>
         </div>
       )}
 
@@ -141,7 +169,7 @@ export const Navbar = ({ activeTab, onNavigate, companySettings: propCompanySett
                 height: '100%',
                 alignItems: 'center',
                 justifyContent: 'center',
-                backgroundColor: '#0f172a',
+                backgroundColor: '#4f46e5',
                 color: '#ffffff',
                 borderRadius: '6px',
               }}
@@ -150,10 +178,10 @@ export const Navbar = ({ activeTab, onNavigate, companySettings: propCompanySett
             </div>
           </div>
           <div>
-            <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', lineHeight: 1.15, letterSpacing: '-0.01em' }}>
+            <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#09090b', lineHeight: 1.15, letterSpacing: '-0.01em' }}>
               {brandName}
             </div>
-            <div className="public-brand-sub" style={{ fontSize: '0.6875rem', color: '#64748b', fontWeight: 500 }}>
+            <div className="public-brand-sub" style={{ fontSize: '0.6875rem', color: '#71717a', fontWeight: 500 }}>
               {company.tagline || 'Parcel & Bus Dispatch Network'}
             </div>
           </div>
@@ -165,7 +193,7 @@ export const Navbar = ({ activeTab, onNavigate, companySettings: propCompanySett
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '0.5rem',
+              gap: '0.35rem',
               listStyle: 'none',
               margin: 0,
               padding: 0,
@@ -175,10 +203,10 @@ export const Navbar = ({ activeTab, onNavigate, companySettings: propCompanySett
               <a
                 href="#home"
                 style={{
-                  fontSize: '0.875rem',
+                  fontSize: '0.85rem',
                   fontWeight: 600,
-                  color: activeTab === 'home' ? '#2563eb' : '#475569',
-                  backgroundColor: activeTab === 'home' ? '#eff6ff' : 'transparent',
+                  color: activeTab === 'home' ? '#4338ca' : '#52525b',
+                  backgroundColor: activeTab === 'home' ? '#eef2ff' : 'transparent',
                   padding: '0.4rem 0.75rem',
                   borderRadius: '6px',
                   textDecoration: 'none',
@@ -196,9 +224,9 @@ export const Navbar = ({ activeTab, onNavigate, companySettings: propCompanySett
               <a
                 href="#services"
                 style={{
-                  fontSize: '0.875rem',
+                  fontSize: '0.85rem',
                   fontWeight: 500,
-                  color: '#475569',
+                  color: '#52525b',
                   padding: '0.4rem 0.75rem',
                   borderRadius: '6px',
                   textDecoration: 'none',
@@ -216,10 +244,10 @@ export const Navbar = ({ activeTab, onNavigate, companySettings: propCompanySett
               <a
                 href="#track"
                 style={{
-                  fontSize: '0.875rem',
-                  fontWeight: 500,
-                  color: activeTab === 'track' ? '#2563eb' : '#475569',
-                  backgroundColor: activeTab === 'track' ? '#eff6ff' : 'transparent',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  color: activeTab === 'track' ? '#4338ca' : '#52525b',
+                  backgroundColor: activeTab === 'track' ? '#eef2ff' : 'transparent',
                   padding: '0.4rem 0.75rem',
                   borderRadius: '6px',
                   textDecoration: 'none',

@@ -155,7 +155,7 @@ export const TrackingPage = ({ initialOrderId = '', onNavigate, companySettings:
   ];
 
   return (
-    <div style={{ width: '100%', minHeight: '80vh', backgroundColor: isPortal ? 'transparent' : '#f8fafc' }}>
+    <div style={{ width: '100%', minHeight: '80vh', backgroundColor: isPortal ? 'transparent' : '#ffffff' }}>
       {/* 1. PUBLIC HERO HEADER OR PORTAL HEADER */}
       {!isPortal ? (
         <section className="tracking-hero-section">
@@ -177,23 +177,23 @@ export const TrackingPage = ({ initialOrderId = '', onNavigate, companySettings:
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '6px',
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
-                  color: '#ffffff',
+                  background: '#ffffff',
+                  border: '1px solid #e4e4e7',
+                  color: '#18181b',
                   padding: '6px 14px',
                   borderRadius: '9999px',
                   fontSize: '0.8125rem',
                   fontWeight: 600,
                   cursor: 'pointer',
-                  backdropFilter: 'blur(8px)',
+                  boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
                   transition: 'all 0.2s ease',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+                  e.currentTarget.style.background = '#f8fafc';
                   e.currentTarget.style.transform = 'translateX(-2px)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                  e.currentTarget.style.background = '#ffffff';
                   e.currentTarget.style.transform = 'translateX(0)';
                 }}
               >
@@ -205,7 +205,7 @@ export const TrackingPage = ({ initialOrderId = '', onNavigate, companySettings:
                 style={{
                   fontSize: '0.8125rem',
                   fontWeight: 600,
-                  color: '#93c5fd',
+                  color: '#4338ca',
                   letterSpacing: '0.02em',
                 }}
               >

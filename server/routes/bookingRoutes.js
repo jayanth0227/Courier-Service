@@ -169,7 +169,7 @@ router.post('/', async (req, res, next) => {
         }
       }
     } catch (persistErr) {
-      console.error('Error auto-persisting city to MongoDB:', persistErr.message);
+      console.error('Error auto-persisting city to DynamoDB:', persistErr.message);
     }
 
     const booking = await Booking.create({

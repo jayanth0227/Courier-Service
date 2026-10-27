@@ -109,11 +109,29 @@ router.get('/detailed', async (req, res, next) => {
 
     if (startDate || endDate) {
       query.createdAt = {};
-      if (startDate) query.createdAt.$gte = new Date(startDate);
+      if (startDate) {
+        const cleanStart = String(startDate).split('T')[0].trim();
+        const parts = cleanStart.split('-');
+        if (parts.length === 3) {
+          query.createdAt.$gte = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]), 0, 0, 0, 0);
+        } else {
+          const s = new Date(startDate);
+          s.setHours(0, 0, 0, 0);
+          query.createdAt.$gte = s;
+        }
+      }
       if (endDate) {
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
-        query.createdAt.$lte = end;
+        const cleanEnd = String(endDate).split('T')[0].trim();
+        const parts = cleanEnd.split('-');
+        let endDt;
+        if (parts.length === 3) {
+          endDt = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]), 23, 59, 59, 999);
+        } else {
+          endDt = new Date(endDate);
+          endDt.setHours(23, 59, 59, 999);
+        }
+        // Protect against server/client clock skew by allowing up to Date.now() + 60s if querying current day
+        query.createdAt.$lte = new Date(Math.max(endDt.getTime(), Date.now() + 60000));
       }
     }
 
@@ -165,34 +183,99 @@ router.get('/detailed', async (req, res, next) => {
   }
 });
 
+// Helper for local YYYY-MM-DD
+function toLocalYMD(d) {
+  const dt = new Date(d);
+  const y = dt.getFullYear();
+  const m = String(dt.getMonth() + 1).padStart(2, '0');
+  const day = String(dt.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 // @route   GET /api/reports/analytics
 // @desc    Get visual data analytics, trends, category distributions, and route analytics (Tenant Scoped)
 // @access  Private
 router.get('/analytics', async (req, res, next) => {
   try {
-    const { timeframe = '7days' } = req.query; // 'today', '7days', '30days', 'all'
+    const {
+      timeframe = '7days',
+      startDate: qStart,
+      endDate: qEnd,
+      destination,
+      status,
+      parcelType,
+    } = req.query;
 
-    // Determine date range
-    let startDate = new Date();
     const now = new Date();
-    if (timeframe === 'today') {
-      startDate.setHours(0, 0, 0, 0);
+    let startDate = null;
+    let endDate = null;
+
+    if (qStart || qEnd) {
+      if (qStart) {
+        const parts = String(qStart).split('T')[0].trim().split('-');
+        if (parts.length === 3) {
+          startDate = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]), 0, 0, 0, 0);
+        } else {
+          startDate = new Date(qStart);
+          startDate.setHours(0, 0, 0, 0);
+        }
+      }
+      if (qEnd) {
+        const parts = String(qEnd).split('T')[0].trim().split('-');
+        let endDt;
+        if (parts.length === 3) {
+          endDt = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]), 23, 59, 59, 999);
+        } else {
+          endDt = new Date(qEnd);
+          endDt.setHours(23, 59, 59, 999);
+        }
+        endDate = new Date(Math.max(endDt.getTime(), Date.now() + 60000));
+      }
+    } else if (timeframe === 'today') {
+      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+      endDate = new Date(Math.max(new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999).getTime(), Date.now() + 60000));
     } else if (timeframe === '7days') {
-      startDate.setDate(now.getDate() - 6);
-      startDate.setHours(0, 0, 0, 0);
+      const d = new Date(now);
+      d.setDate(d.getDate() - 6);
+      startDate = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
+      endDate = new Date(Math.max(new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999).getTime(), Date.now() + 60000));
     } else if (timeframe === '30days') {
-      startDate.setDate(now.getDate() - 29);
-      startDate.setHours(0, 0, 0, 0);
-    } else {
-      startDate = new Date(0); // all time
+      const d = new Date(now);
+      d.setDate(d.getDate() - 29);
+      startDate = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
+      endDate = new Date(Math.max(new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999).getTime(), Date.now() + 60000));
+    } else if (timeframe === 'month') {
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+      endDate = new Date(Math.max(new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999).getTime(), Date.now() + 60000));
+    } else if (timeframe === 'all') {
+      startDate = null;
+      endDate = null;
     }
 
-    const matchQuery = timeframe === 'all'
-      ? { ...req.tenantFilter }
-      : { ...req.tenantFilter, createdAt: { $gte: startDate } };
+    const matchQuery = { ...req.tenantFilter };
+    if (startDate || endDate) {
+      matchQuery.createdAt = {};
+      if (startDate) matchQuery.createdAt.$gte = startDate;
+      if (endDate) matchQuery.createdAt.$lte = endDate;
+    }
+    if (status && status !== 'ALL') {
+      matchQuery.status = status;
+    }
+    if (destination && destination !== 'ALL') {
+      matchQuery.destination = new RegExp(destination, 'i');
+    }
+    if (parcelType && parcelType !== 'ALL') {
+      matchQuery.parcelType = parcelType;
+    }
 
-    const todayZero = new Date();
-    todayZero.setHours(0, 0, 0, 0);
+    const todayZero = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+
+    const dispatchQuery = { ...req.tenantFilter };
+    if (startDate || endDate) {
+      dispatchQuery.createdAt = {};
+      if (startDate) dispatchQuery.createdAt.$gte = startDate;
+      if (endDate) dispatchQuery.createdAt.$lte = endDate;
+    }
 
     const [
       allBookings,
@@ -201,7 +284,7 @@ router.get('/analytics', async (req, res, next) => {
       todayRevenueData,
     ] = await Promise.all([
       Booking.find(matchQuery).lean(),
-      BusDispatch.find(timeframe === 'all' ? { ...req.tenantFilter } : { ...req.tenantFilter, createdAt: { $gte: startDate } }).lean(),
+      BusDispatch.find(dispatchQuery).lean(),
       Booking.countDocuments({ ...req.tenantFilter, createdAt: { $gte: todayZero } }),
       Booking.aggregate([
         { $match: { ...req.tenantFilter, createdAt: { $gte: todayZero }, status: { $ne: 'CANCELLED' } } },
@@ -229,13 +312,25 @@ router.get('/analytics', async (req, res, next) => {
       'Night (21-06)': 0,
     };
 
-    // Daily trends map
+    // Determine daily trends range
+    let daysToGenerate = 7;
+    if (timeframe === 'today') {
+      daysToGenerate = 1;
+    } else if (timeframe === '30days') {
+      daysToGenerate = 30;
+    } else if (timeframe === 'month') {
+      daysToGenerate = now.getDate();
+    } else if (timeframe === 'custom' && startDate && endDate) {
+      daysToGenerate = Math.max(1, Math.min(60, Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24))));
+    } else if (timeframe === 'all') {
+      daysToGenerate = 14;
+    }
+
     const dailyMap = {};
-    const numDays = timeframe === 'today' ? 1 : timeframe === '30days' ? 30 : 7;
-    for (let i = numDays - 1; i >= 0; i--) {
-      const d = new Date();
+    for (let i = daysToGenerate - 1; i >= 0; i--) {
+      const d = new Date(now);
       d.setDate(d.getDate() - i);
-      const key = d.toISOString().split('T')[0];
+      const key = toLocalYMD(d);
       const label = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
       const shortDay = d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' });
       dailyMap[key] = { date: key, label, shortDay, bookings: 0, revenue: 0, delivered: 0, dispatched: 0 };
@@ -284,7 +379,7 @@ router.get('/analytics', async (req, res, next) => {
 
       // Daily
       if (b.createdAt) {
-        const dateKey = new Date(b.createdAt).toISOString().split('T')[0];
+        const dateKey = toLocalYMD(b.createdAt);
         if (dailyMap[dateKey]) {
           dailyMap[dateKey].bookings += 1;
           if (!isCancelled) dailyMap[dateKey].revenue += (b.amount || 0);

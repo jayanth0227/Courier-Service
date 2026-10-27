@@ -1,193 +1,570 @@
-/* =========================================
-   PORTAL TOP NAVIGATION (MODERN CLEAN ENTERPRISE)
-   ========================================= */
+/* ========================================================
+   MODERN EXECUTIVE WHITE SAAS APP SHELL & SIDEBAR NAVIGATION
+   ======================================================== */
+.portal-app-shell,
 .portal-layout-topbar {
   display: flex;
-  flex-direction: column;
   min-height: 100vh;
   width: 100%;
-  background-color: var(--bg-page);
+  background-color: #ffffff;
 }
 
-.portal-topnav {
-  width: 100%;
-  background-color: #0f172a;
-  color: #f8fafc;
+/* ========================================================
+   ENTERPRISE WHITE SIDEBAR
+   ======================================================== */
+.portal-sidebar {
+  width: 256px;
+  min-width: 256px;
+  background-color: #ffffff;
+  border-right: 1px solid #e4e4e7;
   display: flex;
   flex-direction: column;
-  border-bottom: 1px solid #1e293b;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  z-index: 950;
+  transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+}
+
+.portal-sidebar.collapsed {
+  width: 72px;
+  min-width: 72px;
+}
+
+/* Sidebar Brand Header */
+.portal-sidebar-brand {
+  height: 64px;
+  padding: 0 1.15rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-bottom: 1px solid #f1f5f9;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.portal-sidebar-logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+  padding: 3px;
+}
+
+.portal-sidebar-title-area {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.portal-sidebar-title {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #09090b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.01em;
+}
+
+.portal-sidebar-sub {
+  font-size: 0.7rem;
+  color: #71717a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Sidebar Nav Body */
+.portal-sidebar-nav {
+  flex: 1;
+  padding: 1rem 0.75rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.portal-sidebar-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.portal-sidebar-group-title {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #a1a1aa;
+  padding: 0 0.5rem 0.35rem 0.5rem;
+}
+
+.portal-sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #52525b;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  position: relative;
+}
+
+.portal-sidebar-link:hover {
+  background-color: #f4f4f5;
+  color: #09090b;
+}
+
+.portal-sidebar-link.active {
+  background-color: #eef2ff;
+  color: #4338ca;
+  font-weight: 600;
+}
+
+.portal-sidebar-link.active svg {
+  color: #4f46e5;
+}
+
+.portal-sidebar-badge {
+  margin-left: auto;
+  background-color: #fee2e2;
+  color: #b91c1c;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  padding: 0.1rem 0.45rem;
+  border-radius: 9999px;
+  border: 1px solid #fecaca;
+  line-height: 1.2;
+}
+
+/* Sidebar Footer (Operator, Branch & Actions) */
+.portal-sidebar-footer {
+  padding: 0.85rem;
+  border-top: 1px solid #f1f5f9;
+  background-color: #fafafa;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  flex-shrink: 0;
+}
+
+.portal-operator-card {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.5rem;
+  background: #ffffff;
+  border: 1px solid #e4e4e7;
+  border-radius: 8px;
+}
+
+.portal-operator-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background-color: #eef2ff;
+  color: #4f46e5;
+  font-weight: 700;
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.portal-operator-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.portal-operator-name {
+  font-size: 0.785rem;
+  font-weight: 600;
+  color: #09090b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.portal-operator-role {
+  font-size: 0.65rem;
+  color: #71717a;
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.portal-footer-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.portal-footer-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.5rem;
+  font-size: 0.725rem;
+  font-weight: 600;
+  border-radius: 6px;
+  border: 1px solid #e4e4e7;
+  background-color: #ffffff;
+  color: #52525b;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.portal-footer-btn:hover {
+  background-color: #f4f4f5;
+  color: #09090b;
+  border-color: #cbd5e1;
+}
+
+.portal-footer-btn.danger {
+  color: #dc2626;
+  border-color: #fee2e2;
+  background-color: #fffafb;
+}
+
+.portal-footer-btn.danger:hover {
+  background-color: #fee2e2;
+  color: #b91c1c;
+}
+
+/* ========================================================
+   PORTAL MAIN WORKSPACE & TOP HEADER BAR
+   ======================================================== */
+.portal-main-area {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background-color: #ffffff;
+  min-height: 100vh;
+}
+
+.portal-header-bar {
+  height: 64px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e4e4e7;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
   position: sticky;
   top: 0;
   z-index: 900;
 }
 
-/* Tier 1: Main Brand, Operational Status & Controls */
+.portal-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.portal-sidebar-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  border: 1px solid #e4e4e7;
+  background: #ffffff;
+  color: #52525b;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.portal-sidebar-toggle-btn:hover {
+  background: #f4f4f5;
+  color: #09090b;
+}
+
+.portal-header-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  color: #71717a;
+}
+
+.portal-header-breadcrumb .active-crumb {
+  color: #09090b;
+  font-weight: 700;
+  font-size: 0.9375rem;
+}
+
+.portal-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.portal-header-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.75rem;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #52525b;
+}
+
+/* ========================================================
+   ENTERPRISE HORIZONTAL TOP-BAR NAVIGATION (NO SIDEBAR)
+   ======================================================== */
+.portal-layout-topbar,
+.portal-app-shell {
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 100vh;
+  width: 100%;
+  background-color: #f8fafc;
+}
+
+.portal-topnav {
+  display: block !important;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  position: sticky;
+  top: 0;
+  z-index: 950;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
 .portal-topnav-main {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.75rem 1.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0.65rem 1.5rem;
+  border-bottom: 1px solid #f1f5f9;
   gap: 1rem;
-  flex-wrap: wrap;
-  background: #0f172a;
 }
 
 .portal-brand-area {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.85rem;
+  cursor: pointer;
   user-select: none;
 }
 
-.portal-brand-icon {
-  width: 36px;
-  height: 36px;
-  background: #2563eb;
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: var(--radius-md);
+.portal-brand-logo-wrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
   flex-shrink: 0;
+  padding: 3px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-.portal-brand-title {
-  font-size: 0.9375rem;
-  font-weight: 700;
-  color: #ffffff;
-  font-family: var(--font-family);
-  letter-spacing: -0.01em;
+.portal-brand-area:hover .portal-brand-logo-wrap {
+  transform: scale(1.03);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+}
+
+.portal-brand-text-container {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-}
-
-.portal-admin-tag {
-  background-color: #1e3a8a;
-  color: #bfdbfe;
-  font-family: var(--font-family);
-  font-size: 0.6875rem;
-  font-weight: 600;
-  padding: 0.15rem 0.5rem;
-  border-radius: 9999px;
-  border: 1px solid #2563eb;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.portal-brand-sub {
-  font-size: 0.75rem;
-  font-family: var(--font-family);
-  color: #94a3b8;
-  letter-spacing: 0.01em;
-}
-
-/* Center Operational Status: Branch & Live Time */
-.portal-meta-bar {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
+  gap: 0.75rem;
   flex-wrap: wrap;
 }
 
-.portal-branch-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  background-color: #1e293b;
-  border: 1px solid #334155;
-  padding: 0.3rem 0.7rem;
-  border-radius: var(--radius-sm);
-  font-family: var(--font-family);
-  font-size: 0.75rem;
-  color: #94a3b8;
-  font-weight: 500;
+.portal-brand-title {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 
+.portal-brand-tagline-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.725rem;
+  font-weight: 600;
+  color: #475569;
+  background-color: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  padding: 0.2rem 0.65rem;
+  border-radius: 9999px;
+  letter-spacing: 0.015em;
+  white-space: nowrap;
+  line-height: 1.3;
+}
+
+.portal-brand-tagline-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background-color: #10b981;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.portal-brand-sub {
+  font-size: 0.725rem;
+  font-weight: 500;
+  color: #64748b;
+  line-height: 1.2;
+}
+
+.portal-meta-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.portal-branch-pill,
 .portal-clock-pill {
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
-  font-family: var(--font-family);
+  gap: 0.4rem;
+  padding: 0.35rem 0.75rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 9999px;
   font-size: 0.75rem;
-  font-weight: 500;
-  color: #cbd5e1;
-  background-color: #1e293b;
-  padding: 0.3rem 0.7rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid #334155;
+  font-weight: 600;
+  color: #475569;
+  height: 32px;
+  white-space: nowrap;
+}
+
+.portal-staff-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.85rem;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  font-size: 0.775rem;
+  font-weight: 600;
+  color: #1d4ed8;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  height: 32px;
+  white-space: nowrap;
+}
+
+.portal-staff-btn:hover {
+  background: #dbeafe;
+  border-color: #93c5fd;
+  color: #1e40af;
+  box-shadow: 0 1px 3px rgba(37, 99, 235, 0.15);
+}
+
+.portal-staff-btn.active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
 }
 
 .portal-globe-btn {
-  background: #1e293b;
-  border: 1px solid #334155;
-  color: #cbd5e1;
-  border-radius: var(--radius-sm);
-  padding: 0.35rem 0.75rem;
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  cursor: pointer;
-  font-family: var(--font-family);
+  padding: 0.35rem 0.75rem;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
   font-size: 0.75rem;
   font-weight: 600;
+  color: #475569;
+  cursor: pointer;
   transition: all 0.15s ease;
-}
-.portal-globe-btn:hover {
-  background: #334155;
-  color: #ffffff;
-  border-color: #475569;
+  height: 32px;
 }
 
-.portal-mobile-toggle {
-  display: none;
-  background: #1e293b;
-  border: 1px solid #334155;
-  color: #ffffff;
-  cursor: pointer;
-  padding: 0.35rem;
-  border-radius: var(--radius-sm);
+.portal-globe-btn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+.portal-operator-pill {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.65rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.775rem;
+  font-weight: 600;
+  color: #1e293b;
+  height: 32px;
 }
 
 .portal-logout-btn {
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.25);
-  color: #f87171;
-  border-radius: var(--radius-sm);
-  padding: 0.35rem 0.75rem;
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  cursor: pointer;
-  font-family: var(--font-family);
+  padding: 0.35rem 0.75rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
   font-size: 0.75rem;
   font-weight: 600;
+  color: #dc2626;
+  cursor: pointer;
   transition: all 0.15s ease;
+  height: 32px;
+  white-space: nowrap;
 }
 
 .portal-logout-btn:hover {
-  background: #ef4444;
-  color: #ffffff;
-  border-color: #ef4444;
+  background: #fee2e2;
+  border-color: #f87171;
 }
 
-/* Tier 2: Module Navigation Tabs Bar */
 .portal-nav-bar {
   display: flex;
   align-items: center;
-  background-color: #ffffff;
-  padding: 0 1.5rem;
+  gap: 0.35rem;
+  padding: 0 1.25rem;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  border-bottom: 1px solid var(--border-subtle);
-  gap: 0.5rem;
+  background: #ffffff;
+  min-height: 46px;
 }
+
 .portal-nav-bar::-webkit-scrollbar {
   display: none;
 }
@@ -196,42 +573,71 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.75rem 0.95rem;
-  color: #64748b;
-  font-size: 0.8125rem;
+  padding: 0.65rem 0.85rem;
+  font-size: 0.825rem;
   font-weight: 600;
-  font-family: var(--font-family);
+  color: #64748b;
+  border-bottom: 2px solid transparent;
   cursor: pointer;
   white-space: nowrap;
-  border: none;
-  border-bottom: 2px solid transparent;
-  border-radius: 0;
   transition: all 0.15s ease;
   user-select: none;
+  text-decoration: none;
 }
 
 .portal-nav-item:hover {
   color: #0f172a;
   background-color: #f8fafc;
+  border-radius: 6px 6px 0 0;
 }
 
 .portal-nav-item.active {
   color: #2563eb;
+  border-bottom: 2px solid #2563eb;
   font-weight: 700;
   background-color: transparent;
-  border-bottom: 2px solid #2563eb;
 }
 
 .portal-nav-badge {
-  background-color: #eff6ff;
-  color: #1d4ed8;
-  font-family: var(--font-family);
-  font-size: 0.6875rem;
-  font-weight: 700;
-  padding: 0.1rem 0.45rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  font-size: 0.65rem;
+  font-weight: 800;
   border-radius: 9999px;
-  border: 1px solid #bfdbfe;
-  line-height: 1;
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+}
+
+.portal-content {
+  flex: 1;
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  background-color: #f8fafc;
+}
+
+@media (max-width: 900px) {
+  .portal-sidebar {
+    position: fixed;
+    left: -270px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  }
+  .portal-sidebar.mobile-open {
+    left: 0;
+  }
+  .portal-sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(9, 9, 11, 0.4);
+    z-index: 940;
+    backdrop-filter: blur(2px);
+  }
 }
 
 /* =========================================
@@ -1106,52 +1512,34 @@
 }
 
 @media (max-width: 860px) {
-  .portal-branch-pill,
-  .portal-clock-pill,
   .portal-brand-sub {
     display: none;
   }
 
-  .portal-mobile-toggle {
-    display: inline-flex;
+  .portal-brand-tagline-badge {
+    display: none;
+  }
+
+  .portal-brand-title {
+    font-size: 1.15rem;
+  }
+
+  .portal-clock-pill {
+    display: none;
+  }
+
+  .portal-meta-bar {
+    gap: 0.45rem;
   }
 
   .portal-nav-bar {
-    display: none;
-    flex-direction: column;
-    align-items: stretch;
-    padding: 0.5rem;
-    background-color: var(--primary-900);
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-  }
-
-  .portal-nav-bar.mobile-open {
-    display: flex;
-    animation: slideDown 0.2s ease-out forwards;
-  }
-
-  @keyframes slideDown {
-    from {
-      opacity: 0;
-      transform: translateY(-8px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  .portal-nav-item {
-    padding: 0.75rem 1rem;
-    border-radius: var(--radius-md);
-    border-bottom: none;
-    min-height: 44px;
-  }
-
-  .portal-nav-item.active {
-    background-color: rgba(255, 255, 255, 0.15);
-    color: #ffffff;
-    border-bottom: none;
+    display: flex !important;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    white-space: nowrap;
+    padding: 0 0.85rem;
+    border-bottom: 1px solid #f1f5f9;
   }
 }
 
@@ -1682,16 +2070,16 @@
 }
 
 /* ==========================================================================
-   ENTERPRISE CONSIGNMENT TRACKING PORTAL STYLES
+   ENTERPRISE CONSIGNMENT TRACKING PORTAL STYLES (PURE WHITE THEME)
    ========================================================================== */
 .tracking-hero-section {
   position: relative;
-  background: linear-gradient(135deg, #091426 0%, #0e2444 50%, #17386d 100%);
-  color: #ffffff;
-  padding: 3rem 1.5rem 3.5rem;
+  background: #ffffff;
+  color: #09090b;
+  padding: 3.5rem 1.5rem 4rem;
   text-align: center;
   overflow: hidden;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .tracking-hero-section::before {
@@ -1699,8 +2087,7 @@
   position: absolute;
   inset: 0;
   background-image: 
-    radial-gradient(circle at 50% 0%, rgba(37, 99, 235, 0.3) 0%, transparent 60%),
-    radial-gradient(circle at 90% 80%, rgba(14, 165, 233, 0.15) 0%, transparent 45%);
+    radial-gradient(ellipse 70% 50% at 50% 0%, rgba(79, 70, 229, 0.05) 0%, transparent 70%);
   pointer-events: none;
 }
 
@@ -1708,8 +2095,8 @@
   position: absolute;
   inset: 0;
   background-size: 32px 32px;
-  background-image: linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-                    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-image: linear-gradient(to right, rgba(0, 0, 0, 0.02) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(0, 0, 0, 0.02) 1px, transparent 1px);
   pointer-events: none;
 }
 
@@ -1725,45 +2112,44 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.35rem 0.9rem;
-  background: rgba(37, 99, 235, 0.18);
-  border: 1px solid rgba(96, 165, 250, 0.35);
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
   border-radius: 9999px;
   font-size: 0.75rem;
   font-weight: 700;
-  color: #93c5fd;
+  color: #4338ca;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   margin-bottom: 1rem;
-  backdrop-filter: blur(8px);
 }
 
 .tracking-pulse-dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background-color: #22c55e;
-  box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+  background-color: #10b981;
+  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
   animation: trackingPulse 1.8s infinite;
 }
 
 @keyframes trackingPulse {
-  0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
-  70% { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
 }
 
 .tracking-hero-title {
   font-size: clamp(1.85rem, 4vw, 2.75rem);
   font-weight: 800;
-  color: #ffffff;
-  letter-spacing: -0.025em;
+  color: #09090b;
+  letter-spacing: -0.03em;
   margin: 0 0 0.75rem 0;
   line-height: 1.2;
 }
 
 .tracking-hero-desc {
   font-size: clamp(0.9rem, 1.8vw, 1.05rem);
-  color: #cbd5e1;
+  color: #52525b;
   max-width: 640px;
   margin: 0 auto 2rem;
   line-height: 1.55;

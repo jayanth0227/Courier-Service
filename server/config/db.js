@@ -1,22 +1,17 @@
-const mongoose = require('mongoose');
-const dns = require('dns');
-
-// Configure reliable DNS servers for MongoDB SRV resolution
-try {
-  dns.setServers(['8.8.8.8', '1.1.1.1', '8.8.4.4']);
-} catch (e) {
-  // Ignore in environments where setServers is restricted
-}
+const { rawClient, initAllTables } = require('./dynamoClient');
+const { ListTablesCommand } = require('@aws-sdk/client-dynamodb');
 
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(process.env.MONGODB_URI, {
-      serverSelectionTimeoutMS: 10000,
-    });
-    console.log(`[Database] MongoDB Connected successfully: ${conn.connection.host}`);
-    return conn;
+    const res = await rawClient.send(new ListTablesCommand({}));
+    const region = process.env.AWS_REGION || 'ap-south-2';
+    console.log(`[Database] ✅ AWS DynamoDB Connected successfully in ${region} (${res.TableNames?.length || 0} tables active)`);
+
+    // Ensure all tables exist
+    await initAllTables();
+    return { connection: { host: `dynamodb.${region}.amazonaws.com` } };
   } catch (error) {
-    console.error(`[Database Error] MongoDB connection failed: ${error.message}`);
+    console.error(`[Database Error] AWS DynamoDB connection failed: ${error.message}`);
     return null;
   }
 };

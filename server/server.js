@@ -149,7 +149,7 @@ if (require.main === module) {
     console.log(`🚀 Parcel & Bus Dispatch Management API running on port ${PORT}`);
     console.log(`🛡️  Security Headers & Rate Limiting Enabled`);
     console.log(`📍 Mode: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`📦 MongoDB URI connected: ${process.env.MONGODB_URI ? 'Configured' : 'Missing'}`);
+    console.log(`⚡ Database: AWS DynamoDB (${process.env.AWS_REGION || 'ap-south-2'})`);
     console.log(`=======================================================`);
   });
 

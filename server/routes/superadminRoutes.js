@@ -466,13 +466,25 @@ router.post('/tenants/:id/reset-password', async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Tenant not found' });
     }
 
-    const adminUser = await User.findById(tenant.adminUser);
+    let adminUser = tenant.adminUser ? await User.findById(tenant.adminUser) : null;
+    if (!adminUser) {
+      adminUser = (await User.findOne({ tenantId: tenant._id, role: 'admin' })) ||
+                  (await User.findOne({ tenantId: tenant._id })) ||
+                  (await User.findOne({ username: 'admin' }));
+      if (adminUser) {
+        tenant.adminUser = adminUser._id;
+        adminUser.tenantId = tenant._id;
+        await Promise.all([tenant.save(), adminUser.save()]);
+      }
+    }
+
     if (!adminUser) {
       return res.status(404).json({ success: false, message: 'Tenant Admin user not found' });
     }
 
     adminUser.password = newPassword;
     adminUser.active = true;
+    adminUser.tenantId = tenant._id;
     await adminUser.save();
 
     res.json({
@@ -493,7 +505,18 @@ router.post(['/tenants/:id/impersonate', '/impersonate/:id'], async (req, res, n
       return res.status(404).json({ success: false, message: 'Tenant not found' });
     }
 
-    const adminUser = await User.findById(tenant.adminUser);
+    let adminUser = tenant.adminUser ? await User.findById(tenant.adminUser) : null;
+    if (!adminUser) {
+      adminUser = (await User.findOne({ tenantId: tenant._id, role: 'admin' })) ||
+                  (await User.findOne({ tenantId: tenant._id })) ||
+                  (await User.findOne({ username: 'admin' }));
+      if (adminUser) {
+        tenant.adminUser = adminUser._id;
+        adminUser.tenantId = tenant._id;
+        await Promise.all([tenant.save(), adminUser.save()]);
+      }
+    }
+
     if (!adminUser) {
       return res.status(404).json({ success: false, message: 'Tenant Admin user not found' });
     }
@@ -784,39 +807,39 @@ router.put('/settings', async (req, res, next) => {
       }
     }
 
-    if (companyName !== undefined) settings.companyName = companyName.trim();
-    if (logoUrl !== undefined) settings.logoUrl = logoUrl;
-    if (tagline !== undefined) settings.tagline = tagline.trim();
-    if (companyPhone !== undefined) settings.companyPhone = companyPhone.trim();
-    if (companyEmail !== undefined) settings.companyEmail = companyEmail.trim();
-    if (companyAddress !== undefined) settings.companyAddress = companyAddress.trim();
-    if (gstin !== undefined) settings.gstin = gstin.trim();
-    if (receiptFooterNote !== undefined) settings.receiptFooterNote = receiptFooterNote.trim();
+    if (companyName !== undefined) settings.companyName = (companyName || '').trim();
+    if (logoUrl !== undefined) settings.logoUrl = logoUrl || '';
+    if (tagline !== undefined) settings.tagline = (tagline || '').trim();
+    if (companyPhone !== undefined) settings.companyPhone = (companyPhone || '').trim();
+    if (companyEmail !== undefined) settings.companyEmail = (companyEmail || '').trim();
+    if (companyAddress !== undefined) settings.companyAddress = (companyAddress || '').trim();
+    if (gstin !== undefined) settings.gstin = (gstin || '').trim();
+    if (receiptFooterNote !== undefined) settings.receiptFooterNote = (receiptFooterNote || '').trim();
     if (whatsappProvider !== undefined) settings.whatsappProvider = whatsappProvider;
-    if (whatsappSenderNumber !== undefined) settings.whatsappSenderNumber = whatsappSenderNumber.trim();
-    if (whatsappApiKey !== undefined) settings.whatsappApiKey = whatsappApiKey.trim();
-    if (whatsappApiUrl !== undefined) settings.whatsappApiUrl = whatsappApiUrl.trim();
-    if (openwaSessionId !== undefined) settings.openwaSessionId = openwaSessionId.trim();
+    if (whatsappSenderNumber !== undefined) settings.whatsappSenderNumber = (whatsappSenderNumber || '').trim();
+    if (whatsappApiKey !== undefined) settings.whatsappApiKey = (whatsappApiKey || '').trim();
+    if (whatsappApiUrl !== undefined) settings.whatsappApiUrl = (whatsappApiUrl || '').trim();
+    if (openwaSessionId !== undefined) settings.openwaSessionId = (openwaSessionId || '').trim();
 
     // CMS Fields
-    if (announcementText !== undefined) settings.announcementText = announcementText.trim();
-    if (announcementLink !== undefined) settings.announcementLink = announcementLink.trim();
+    if (announcementText !== undefined) settings.announcementText = (announcementText || '').trim();
+    if (announcementLink !== undefined) settings.announcementLink = (announcementLink || '').trim();
     if (showAnnouncement !== undefined) settings.showAnnouncement = Boolean(showAnnouncement);
-    if (heroBadge !== undefined) settings.heroBadge = heroBadge.trim();
-    if (heroTitle !== undefined) settings.heroTitle = heroTitle.trim();
-    if (heroSubtitle !== undefined) settings.heroSubtitle = heroSubtitle.trim();
-    if (heroPrimaryCtaText !== undefined) settings.heroPrimaryCtaText = heroPrimaryCtaText.trim();
-    if (heroPrimaryCtaLink !== undefined) settings.heroPrimaryCtaLink = heroPrimaryCtaLink.trim();
-    if (heroSecondaryCtaText !== undefined) settings.heroSecondaryCtaText = heroSecondaryCtaText.trim();
-    if (heroSecondaryCtaLink !== undefined) settings.heroSecondaryCtaLink = heroSecondaryCtaLink.trim();
+    if (heroBadge !== undefined) settings.heroBadge = (heroBadge || '').trim();
+    if (heroTitle !== undefined) settings.heroTitle = (heroTitle || '').trim();
+    if (heroSubtitle !== undefined) settings.heroSubtitle = (heroSubtitle || '').trim();
+    if (heroPrimaryCtaText !== undefined) settings.heroPrimaryCtaText = (heroPrimaryCtaText || '').trim();
+    if (heroPrimaryCtaLink !== undefined) settings.heroPrimaryCtaLink = (heroPrimaryCtaLink || '').trim();
+    if (heroSecondaryCtaText !== undefined) settings.heroSecondaryCtaText = (heroSecondaryCtaText || '').trim();
+    if (heroSecondaryCtaLink !== undefined) settings.heroSecondaryCtaLink = (heroSecondaryCtaLink || '').trim();
     if (Array.isArray(heroStats)) settings.heroStats = heroStats;
-    if (servicesTitle !== undefined) settings.servicesTitle = servicesTitle.trim();
-    if (servicesSubtitle !== undefined) settings.servicesSubtitle = servicesSubtitle.trim();
+    if (servicesTitle !== undefined) settings.servicesTitle = (servicesTitle || '').trim();
+    if (servicesSubtitle !== undefined) settings.servicesSubtitle = (servicesSubtitle || '').trim();
     if (Array.isArray(services)) settings.services = services;
-    if (howItWorksTitle !== undefined) settings.howItWorksTitle = howItWorksTitle.trim();
-    if (howItWorksSubtitle !== undefined) settings.howItWorksSubtitle = howItWorksSubtitle.trim();
+    if (howItWorksTitle !== undefined) settings.howItWorksTitle = (howItWorksTitle || '').trim();
+    if (howItWorksSubtitle !== undefined) settings.howItWorksSubtitle = (howItWorksSubtitle || '').trim();
     if (Array.isArray(howItWorksSteps)) settings.howItWorksSteps = howItWorksSteps;
-    if (vendorBenefitsTitle !== undefined) settings.vendorBenefitsTitle = vendorBenefitsTitle.trim();
+    if (vendorBenefitsTitle !== undefined) settings.vendorBenefitsTitle = (vendorBenefitsTitle || '').trim();
     if (Array.isArray(vendorBenefits)) settings.vendorBenefits = vendorBenefits;
 
     await settings.save();
@@ -1004,7 +1027,10 @@ router.post('/tenants/:id/send-credentials', async (req, res, next) => {
     if (!tenant) {
       return res.status(404).json({ success: false, message: 'Tenant not found' });
     }
-    const adminUser = tenant.adminUser;
+    let adminUser = tenant.adminUser && typeof tenant.adminUser === 'object' ? tenant.adminUser : null;
+    if (!adminUser) {
+      adminUser = (await User.findById(tenant.adminUser)) || (await User.findOne({ tenantId: tenant._id, role: 'admin' }));
+    }
     if (!adminUser) {
       return res.status(404).json({ success: false, message: 'Tenant admin user not found' });
     }

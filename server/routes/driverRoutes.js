@@ -72,7 +72,7 @@ router.get('/:id', async (req, res, next) => {
 });
 
 // @route   POST /api/drivers
-// @desc    Create or update driver profile in MongoDB (Tenant Scoped)
+// @desc    Create or update driver profile in AWS DynamoDB (Tenant Scoped)
 // @access  Private (Admin only)
 router.post('/', authorize('admin', 'superadmin'), async (req, res, next) => {
   try {
@@ -131,7 +131,7 @@ router.post('/', authorize('admin', 'superadmin'), async (req, res, next) => {
 });
 
 // @route   PUT /api/drivers/:id
-// @desc    Update driver details in MongoDB (Tenant Scoped)
+// @desc    Update driver details in AWS DynamoDB (Tenant Scoped)
 // @access  Private (Admin only)
 router.put('/:id', authorize('admin', 'superadmin'), async (req, res, next) => {
   try {
@@ -178,7 +178,7 @@ router.put('/:id', authorize('admin', 'superadmin'), async (req, res, next) => {
 });
 
 // @route   DELETE /api/drivers/:id
-// @desc    Delete driver from MongoDB (Tenant Scoped)
+// @desc    Delete driver from AWS DynamoDB (Tenant Scoped)
 // @access  Private (Admin only)
 router.delete('/:id', authorize('admin', 'superadmin'), async (req, res, next) => {
   try {

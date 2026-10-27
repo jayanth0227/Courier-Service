@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const http = require('node:http');
 const path = require('node:path');
 require('dotenv').config({ path: path.join(__dirname, '../..', '.env') });
-const mongoose = require('mongoose');
+const { initAllTables } = require('../config/dynamoClient');
 const jwt = require('jsonwebtoken');
 const app = require('../server');
 const User = require('../models/User');
@@ -32,10 +32,8 @@ describe('Security & RBAC Test Suite', () => {
       });
     });
 
-    // 2. Ensure Database connection
-    if (mongoose.connection.readyState !== 1) {
-      await mongoose.connect(process.env.MONGODB_URI);
-    }
+    // 2. Ensure Database tables in DynamoDB
+    await initAllTables();
 
     // 3. Find or create an isolated test tenant
     testTenant = await Tenant.findOne({ slug: 'security-test-tenant' });

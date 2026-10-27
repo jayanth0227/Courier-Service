@@ -36,6 +36,8 @@ import {
   MessageSquare,
   ExternalLink,
   RotateCcw,
+  Menu,
+  Clock,
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -56,6 +58,7 @@ export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigat
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [planFilter, setPlanFilter] = useState('ALL');
+  const [adminSidebarCollapsed, setAdminSidebarCollapsed] = useState(false);
 
   // Organization Detailed Drilldown State
   const [selectedTenantId, setSelectedTenantId] = useState(null);
@@ -751,56 +754,81 @@ export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigat
 
   return (
     <div className="portal-layout-topbar">
-      {/* 1. Standard Application Top Navigation (Matching PortalTopNav) */}
+      {/* 1. Universal Top Navigation Bar */}
       <header className="portal-topnav no-print">
+        {/* Tier 1: Platform Brand, Environment Badge, Time & Logout */}
         <div className="portal-topnav-main">
-          {/* Brand Area */}
-          <div className="portal-brand-area" style={{ cursor: 'pointer' }} onClick={() => setActiveTab('tenants')}>
-            <div
-              style={{
-                width: '38px',
-                height: '38px',
-                borderRadius: '8px',
-                backgroundColor: '#1e293b',
-                border: '1px solid #334155',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                overflow: 'hidden',
-                flexShrink: 0,
-                padding: '2px',
-              }}
-            >
+          {/* Brand & Identity */}
+          <div
+            className="portal-brand-area"
+            onClick={() => {
+              setActiveTab('tenants');
+              setSelectedTenantId(null);
+            }}
+            style={{ cursor: 'pointer' }}
+          >
+            <div className="portal-brand-logo-wrap">
               <img
                 src={cmsSettings.logoUrl || '/logo.png'}
-                alt={cmsSettings.companyName || 'Brand Logo'}
+                alt={cmsSettings.companyName || 'Logo'}
                 style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                 onError={(e) => {
                   e.target.style.display = 'none';
                   if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex';
                 }}
               />
-              <div style={{ display: 'none', width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center', color: '#ffffff' }}>
-                <Shield size={20} />
+              <div
+                style={{
+                  display: 'none',
+                  width: '100%',
+                  height: '100%',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#4f46e5',
+                }}
+              >
+                <Shield size={22} />
               </div>
             </div>
-            <div>
+            <div className="portal-brand-text-container">
               <div className="portal-brand-title">
-                <span>{cmsSettings.companyName || 'Logistics Management SaaS'}</span>
-                <span className="portal-admin-tag">SUPER ADMIN</span>
+                {cmsSettings.companyName || 'Mr Cargo'}
+                <span
+                  style={{
+                    fontSize: '0.65rem',
+                    fontWeight: 800,
+                    color: '#4338ca',
+                    backgroundColor: '#eef2ff',
+                    padding: '3px 8px',
+                    borderRadius: '9999px',
+                    border: '1px solid #c7d2fe',
+                    marginLeft: '8px',
+                    letterSpacing: '0.04em',
+                    verticalAlign: 'middle',
+                  }}
+                >
+                  SUPER ADMIN
+                </span>
               </div>
-              <div className="portal-brand-sub">{cmsSettings.tagline || 'Multi-Tenant Management & Business Directory'}</div>
+              {cmsSettings.tagline && (
+                <span className="portal-brand-tagline-badge">
+                  <span className="portal-brand-tagline-dot" />
+                  {cmsSettings.tagline}
+                </span>
+              )}
             </div>
           </div>
 
           {/* Status Indicators & Action Controls */}
           <div className="portal-meta-bar">
             <div className="portal-clock-pill" title="System Live Time">
+              <Clock size={13} color="#71717a" />
               <span>{timeStr}</span>
             </div>
 
             {onNavigatePublic && (
               <button
+                type="button"
                 onClick={onNavigatePublic}
                 className="portal-globe-btn"
                 title="View Website & Tracking"
@@ -811,6 +839,7 @@ export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigat
             )}
 
             <button
+              type="button"
               onClick={fetchDashboardData}
               className="portal-globe-btn"
               title="Refresh Data"
@@ -820,7 +849,43 @@ export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigat
               <span>Refresh</span>
             </button>
 
+            {activeTab === 'tenants' && !selectedTenantId && (
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                onClick={() => {
+                  setFormData({
+                    companyName: '',
+                    uniqueId: generateUniqueTenantId(''),
+                    slug: '',
+                    contactEmail: '',
+                    contactPhone: '',
+                    address: '',
+                    plan: 'PROFESSIONAL',
+                    adminUsername: '',
+                    adminPassword: generateTempPassword(),
+                  });
+                  setIsAddModalOpen(true);
+                }}
+                title="Onboard New Organization"
+                style={{
+                  padding: '0.35rem 0.75rem',
+                  fontSize: '0.775rem',
+                  boxShadow: '0 1px 2px rgba(79, 70, 229, 0.25)',
+                }}
+              >
+                <Plus size={14} />
+                <span>+ Onboard Business</span>
+              </button>
+            )}
+
+            <div className="portal-operator-pill">
+              <Shield size={14} color="#4338ca" />
+              <span>Super Administrator</span>
+            </div>
+
             <button
+              type="button"
               onClick={logout}
               className="portal-logout-btn"
               title="Logout"
@@ -877,7 +942,10 @@ export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigat
             <MessageSquare size={16} />
             <span>Vendor Inquiries & Leads</span>
             {newInquiriesCount > 0 && (
-              <span className="portal-nav-badge" style={{ backgroundColor: '#10b981', color: '#ffffff', fontWeight: 800 }}>
+              <span
+                className="portal-nav-badge"
+                style={{ backgroundColor: '#10b981', color: '#ffffff', borderColor: '#059669', fontWeight: 800 }}
+              >
                 {newInquiriesCount}
               </span>
             )}
@@ -885,8 +953,8 @@ export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigat
         </nav>
       </header>
 
-      {/* 2. Main Workspace (Standard Light Background) */}
-      <main className="portal-content" style={{ padding: '1.5rem 1.75rem', maxWidth: '1440px', margin: '0 auto', width: '100%' }}>
+      {/* 2. Main Workspace */}
+      <main className="portal-content" style={{ padding: '1.5rem', maxWidth: '1440px', margin: '0 auto', width: '100%' }}>
         {/* Page Header (Hidden when viewing dedicated organization details) */}
         {!selectedTenantId && (
           <div className="page-header" style={{ marginBottom: '1.25rem' }}>

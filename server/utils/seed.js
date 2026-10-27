@@ -1,26 +1,20 @@
 const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 require('dotenv').config({ path: path.join(__dirname, '..', '..', '.env') });
-const mongoose = require('mongoose');
-const dns = require('dns');
-
-try {
-  dns.setServers(['8.8.8.8', '1.1.1.1', '8.8.4.4']);
-} catch (e) {}
 
 const User = require('../models/User');
 const Setting = require('../models/Setting');
+const { initAllTables } = require('../config/dynamoClient');
 
 const seedData = async (clearAllData = false) => {
   try {
-    if (mongoose.connection.readyState !== 1) {
-      await mongoose.connect(process.env.MONGODB_URI);
-      console.log('[Seed] Connected to MongoDB Atlas');
-    }
+    // Ensure DynamoDB tables are provisioned in AWS
+    await initAllTables();
 
-    // 1. Ensure Platform Super Admin User (Persisted & Synced in Database from .env)
-    const superUsername = (process.env.SUPERADMIN_USERNAME || 'superadmin').trim().toLowerCase();
-    const superPassword = process.env.SUPERADMIN_PASSWORD || 'superadmin123';
-    const superEmail = (process.env.SUPERADMIN_EMAIL || 'superadmin@couriersaas.com').trim().toLowerCase();
+    // 1. Ensure Platform Super Admin User (Persisted & Synced in AWS DynamoDB from .env)
+    const superUsername = (process.env.SUPERADMIN_USERNAME || 'mrcargo').trim().toLowerCase();
+    const superPassword = process.env.SUPERADMIN_PASSWORD || 'mrcargo@123';
+    const superEmail = (process.env.SUPERADMIN_EMAIL || 'mrcargo59@gmail.com').trim().toLowerCase();
     const superName = (process.env.SUPERADMIN_NAME || 'Platform Super Admin').trim();
 
     let superAdmin = (await User.findOne({ role: 'superadmin' })) || (await User.findOne({ username: superUsername }));
@@ -36,7 +30,7 @@ const seedData = async (clearAllData = false) => {
         branch: 'Global Operations Headquarters',
         active: true,
       });
-      console.log(`[Seed] 👑 Platform Super Admin created in database: ${superUsername}`);
+      console.log(`[Seed] 👑 Platform Super Admin created in AWS DynamoDB: ${superUsername}`);
     } else {
       superAdmin.name = superName;
       superAdmin.username = superUsername;
@@ -46,7 +40,7 @@ const seedData = async (clearAllData = false) => {
       superAdmin.password = superPassword;
       superAdmin.tenantId = null;
       await superAdmin.save();
-      console.log(`[Seed] 👑 Platform Super Admin synchronized with database: ${superUsername}`);
+      console.log(`[Seed] 👑 Platform Super Admin synchronized with AWS DynamoDB: ${superUsername}`);
     }
 
     // 2. Ensure clean platform-default settings exist for public site / Super Admin CMS
@@ -67,23 +61,22 @@ const seedData = async (clearAllData = false) => {
         standardRoutes: [],
         parcelTypes: [],
       });
-      console.log('[Seed] Clean platform default settings initialized');
+      console.log('[Seed] Clean platform default settings initialized in AWS DynamoDB');
     }
 
     if (clearAllData) {
-      console.log('[Seed] Database initialization complete.');
+      console.log('[Seed] AWS DynamoDB initialization complete.');
     }
   } catch (error) {
-    console.error('[Seed Error]:', error.message);
+    console.error('[Seed Error in DynamoDB]:', error.message);
   }
 };
 
 if (require.main === module) {
   seedData(true).then(() => {
-    console.log('[Seed] Clean Database Initialization Complete.');
+    console.log('[Seed] AWS DynamoDB Clean Initialization Complete.');
     process.exit(0);
   });
 }
 
 module.exports = seedData;
-

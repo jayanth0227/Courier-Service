@@ -881,7 +881,7 @@ export const SettingsPage = ({ onRefreshGlobalDestinations }) => {
                 </div>
 
                 <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0.35rem 0 1rem 0', lineHeight: 1.4 }}>
-                  Configure your booking dispatch counter address. It saves directly to MongoDB and dynamically prints on receipts and waybills.
+                  Configure your booking dispatch counter address. It saves directly to the database and dynamically prints on receipts and waybills.
                 </p>
 
                 <form onSubmit={handleSaveFromAddress}>

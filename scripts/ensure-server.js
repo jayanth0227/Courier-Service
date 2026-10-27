@@ -59,7 +59,7 @@ async function ensureBackendServer() {
   if (ready) {
     console.log('[backend] ✓ Backend API server successfully started on http://127.0.0.1:5000');
   } else {
-    console.warn('[backend] Note: Backend server launched in background; connecting to MongoDB Atlas.');
+    console.warn('[backend] Note: Backend server launched in background; connecting to AWS DynamoDB.');
   }
 }
 

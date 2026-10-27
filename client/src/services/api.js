@@ -104,8 +104,24 @@ export const api = {
       });
       return handleResponse(res);
     },
+    sendResetOtp: async ({ identifier }) => {
+      const res = await fetch(`${API_BASE}/auth/forgot-password/send-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier }),
+      });
+      return handleResponse(res);
+    },
+    verifyAndResetPassword: async ({ identifier, otp, newPassword }) => {
+      const res = await fetch(`${API_BASE}/auth/forgot-password/verify-reset`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier, otp, newPassword }),
+      });
+      return handleResponse(res);
+    },
     forgotPassword: async (payload) => {
-      const res = await fetch(`${API_BASE}/auth/forgot-password`, {
+      const res = await fetch(`${API_BASE}/auth/forgot-password/verify-reset`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -228,8 +244,10 @@ export const api = {
       });
       return handleResponse(res);
     },
-    getAnalytics: async (timeframe = '7days') => {
-      const res = await fetch(`${API_BASE}/reports/analytics?timeframe=${timeframe}`, {
+    getAnalytics: async (params = '7days') => {
+      const queryParams = typeof params === 'string' ? { timeframe: params } : params;
+      const queryString = new URLSearchParams(queryParams).toString();
+      const res = await fetch(`${API_BASE}/reports/analytics?${queryString}`, {
         headers: getHeaders(),
       });
       return handleResponse(res);

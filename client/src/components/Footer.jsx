@@ -48,7 +48,7 @@ export const Footer = ({ onNavigate, companySettings: propCompanySettings }) => 
                   height: '100%',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  backgroundColor: '#0f172a',
+                  backgroundColor: '#4f46e5',
                   color: '#ffffff',
                 }}
               >
@@ -56,45 +56,45 @@ export const Footer = ({ onNavigate, companySettings: propCompanySettings }) => 
               </div>
             </div>
             <div>
-              <strong style={{ color: '#0f172a', fontSize: '0.9375rem', display: 'block', fontWeight: 700 }}>{companyName}</strong>
-              <div style={{ fontSize: '0.6875rem', color: '#64748b' }}>{company.tagline || 'Parcel & Bus Dispatch Network'}</div>
+              <strong style={{ color: '#09090b', fontSize: '0.9375rem', display: 'block', fontWeight: 700 }}>{companyName}</strong>
+              <div style={{ fontSize: '0.6875rem', color: '#71717a' }}>{company.tagline || 'Parcel & Bus Dispatch Network'}</div>
             </div>
           </div>
-          <p style={{ fontSize: '0.8125rem', color: '#64748b', lineHeight: 1.5 }}>
+          <p style={{ fontSize: '0.8125rem', color: '#71717a', lineHeight: 1.5 }}>
             Daily scheduled bus parcel & freight dispatch across major city routes. Fast, reliable, counter-to-counter courier service.
           </p>
         </div>
 
         <div>
-          <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#0d2137', marginBottom: '0.75rem' }}>Direct Links</h4>
+          <h4 style={{ fontSize: '0.875rem', fontWeight: 700, color: '#09090b', marginBottom: '0.75rem' }}>Direct Links</h4>
           <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.45rem', fontSize: '0.8125rem' }}>
             <li>
-              <a href="#home" onClick={(e) => { e.preventDefault(); onNavigate('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} style={{ color: '#475569', textDecoration: 'none' }}>
+              <a href="#home" onClick={(e) => { e.preventDefault(); onNavigate('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} style={{ color: '#52525b', textDecoration: 'none' }}>
                 Home
               </a>
             </li>
             <li>
-              <a href="#track" onClick={(e) => { e.preventDefault(); onNavigate('track'); }} style={{ color: '#475569', textDecoration: 'none' }}>
+              <a href="#track" onClick={(e) => { e.preventDefault(); onNavigate('track'); }} style={{ color: '#52525b', textDecoration: 'none' }}>
                 Track Order ID
               </a>
             </li>
             <li>
-              <a href="#deliverable-locations" onClick={(e) => { e.preventDefault(); onNavigate('home'); setTimeout(() => document.getElementById('deliverable-locations')?.scrollIntoView({ behavior: 'smooth' }), 50); }} style={{ color: '#475569', textDecoration: 'none' }}>
+              <a href="#deliverable-locations" onClick={(e) => { e.preventDefault(); onNavigate('home'); setTimeout(() => document.getElementById('deliverable-locations')?.scrollIntoView({ behavior: 'smooth' }), 50); }} style={{ color: '#52525b', textDecoration: 'none' }}>
                 Hubs & Locations
               </a>
             </li>
             <li>
-              <a href="#how-it-works" onClick={(e) => { e.preventDefault(); onNavigate('home'); setTimeout(() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' }), 50); }} style={{ color: '#475569', textDecoration: 'none' }}>
+              <a href="#how-it-works" onClick={(e) => { e.preventDefault(); onNavigate('home'); setTimeout(() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' }), 50); }} style={{ color: '#52525b', textDecoration: 'none' }}>
                 How It Works
               </a>
             </li>
             <li>
-              <a href="#contact" onClick={(e) => { e.preventDefault(); onNavigate('home'); setTimeout(() => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' }), 50); }} style={{ color: '#475569', textDecoration: 'none' }}>
+              <a href="#contact" onClick={(e) => { e.preventDefault(); onNavigate('home'); setTimeout(() => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' }), 50); }} style={{ color: '#52525b', textDecoration: 'none' }}>
                 Customer Help Desk
               </a>
             </li>
             <li>
-              <a href="#login" onClick={(e) => { e.preventDefault(); onNavigate('login'); }} style={{ color: '#2563eb', fontWeight: 600, textDecoration: 'none' }}>
+              <a href="#login" onClick={(e) => { e.preventDefault(); onNavigate('login'); }} style={{ color: '#4f46e5', fontWeight: 600, textDecoration: 'none' }}>
                 Staff Portal Login →
               </a>
             </li>
@@ -102,10 +102,10 @@ export const Footer = ({ onNavigate, companySettings: propCompanySettings }) => 
         </div>
 
         <div>
-          <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#0d2137', marginBottom: '0.75rem' }}>Office & Contact</h4>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.8125rem', color: '#475569' }}>
+          <h4 style={{ fontSize: '0.875rem', fontWeight: 700, color: '#09090b', marginBottom: '0.75rem' }}>Office & Contact</h4>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.8125rem', color: '#52525b' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Phone size={14} color="#1b3d63" />
+              <Phone size={14} color="#4f46e5" />
               <span>{companyPhone}</span>
             </div>
             {companyEmail && (

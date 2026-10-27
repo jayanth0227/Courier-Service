@@ -1,7 +1,7 @@
 const rateLimit = require('express-rate-limit');
 
 /**
- * Recursive sanitizer to strip MongoDB operator keys ($ and .)
+ * Recursive sanitizer to strip NoSQL injection operator keys ($ and .)
  * from user-supplied request bodies, query params, and route params.
  */
 const sanitizeObject = (obj) => {
@@ -22,7 +22,7 @@ const sanitizeObject = (obj) => {
   return clean;
 };
 
-const mongoSanitizer = (req, res, next) => {
+const noSqlSanitizer = (req, res, next) => {
   if (req.body) {
     req.body = sanitizeObject(req.body);
   }
@@ -34,6 +34,8 @@ const mongoSanitizer = (req, res, next) => {
   }
   next();
 };
+
+const mongoSanitizer = noSqlSanitizer; // Backwards-compatible alias
 
 /**
  * General API Rate Limiter
@@ -120,6 +122,7 @@ const adminActionLimiter = rateLimit({
 });
 
 module.exports = {
+  noSqlSanitizer,
   mongoSanitizer,
   escapeRegex,
   apiLimiter,

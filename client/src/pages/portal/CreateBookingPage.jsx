@@ -652,59 +652,29 @@ export const CreateBookingPage = ({
 
   return (
     <div style={{ maxWidth: '1160px', margin: '0 auto', paddingBottom: '1.5rem' }}>
-      {/* Page Header */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '0.85rem',
-          flexWrap: 'wrap',
-          gap: '0.65rem',
-        }}
-      >
+      {/* Page Title & Actions */}
+      <div className="booking-page-header">
         <div>
-          <h1 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#09090b', letterSpacing: '-0.02em', margin: 0 }}>
-            Counter Booking & LR Dispatch
+          <h1 className="booking-page-title">
+            New Consignment Booking
           </h1>
-          <p style={{ fontSize: '0.8125rem', color: '#71717a', margin: 0 }}>
-            Destination-first workflow with auto-customer phone suggestion & multi-parcel billing under single LR ID
+          <p className="booking-page-subtitle">
+            Consignment waybill entry, route stop selection, and parcel manifest billing
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-          {canManageMasterData && (
-            <>
-              <button
-                type="button"
-                className="btn btn-outline btn-sm"
-                onClick={() => setShowAddCityModal(true)}
-                title="Add a new destination city or branch stop"
-              >
-                <MapPin size={14} />
-                + Add Destination Hub
-              </button>
-              <button
-                type="button"
-                className="btn btn-outline btn-sm"
-                onClick={() => setShowAddParcelTypeModal(true)}
-                title="Add a new parcel category"
-              >
-                <Package size={14} />
-                + Add Parcel Type
-              </button>
-            </>
-          )}
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           {!createdBooking && (
             <button
               type="button"
               className="btn btn-secondary btn-sm"
               onClick={handleReset}
               disabled={loading}
-              title="Clear form"
+              title="Clear all fields"
+              style={{ fontWeight: 600 }}
             >
               <RotateCcw size={13} />
-              Reset Form
+              <span>Clear Form</span>
             </button>
           )}
         </div>
@@ -875,64 +845,27 @@ export const CreateBookingPage = ({
       ) : (
         /* Booking Input Form */
         <form onSubmit={handleSubmit} autoComplete="off" data-lpignore="true">
-          {/* Card 1: Destination & Delivery Stop (FIRST per requirements) */}
-          <div
-            style={{
-              backgroundColor: '#ffffff',
-              border: '1px solid var(--border-subtle)',
-              borderRadius: 'var(--radius-md)',
-              padding: '1.25rem',
-              boxShadow: 'var(--shadow-card)',
-              marginBottom: '1rem',
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                marginBottom: '1rem',
-                borderBottom: '1px solid #e2e8f0',
-                paddingBottom: '0.65rem',
-              }}
-            >
-              <MapPin size={18} color="#2563eb" />
-              <h3 style={{ fontSize: '0.9375rem', fontWeight: 700, margin: 0, color: '#0f172a', fontFamily: 'var(--font-family)' }}>
-                1. Route Origin & Destination Stop
-              </h3>
-              <span style={{ fontSize: '0.75rem', color: '#64748b', marginLeft: 'auto', fontWeight: 500 }}>
-                Terminal / Counter Selection
-              </span>
+          {/* Section 1: Route & Destination */}
+          <div className="docket-card">
+            <div className="docket-card-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <MapPin size={16} color="#0f172a" />
+                <span className="docket-card-title">Route & Destination</span>
+              </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '0.75rem' }}>
-              {/* Admin Fixed From Origin Station */}
+            <div className="docket-route-grid">
+              {/* Origin Station */}
               <div className="form-group" style={{ marginBottom: 0 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
-                  <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: 0 }}>
-                    From Origin Station <span className="required">*</span>
-                  </label>
-                  <span
-                    style={{
-                      fontSize: '0.65rem',
-                      color: '#1d4ed8',
-                      fontWeight: 700,
-                      backgroundColor: '#eff6ff',
-                      padding: '1px 6px',
-                      borderRadius: '4px',
-                      border: '1px solid #bfdbfe',
-                    }}
-                    title="Pre-filled from Admin Settings. You can adjust or fix this origin address."
-                  >
-                    Admin Fixed
-                  </span>
-                </div>
+                <label className="docket-field-label">
+                  Origin Branch
+                </label>
                 <input
                   type="text"
                   id="cb_from_city"
                   name="cb_from_city"
-                  className="form-control"
-                  placeholder="Enter terminal origin from address..."
+                  className="form-control docket-input"
+                  placeholder="Enter origin branch..."
                   value={formData.fromCity || ''}
                   onChange={(e) => setFormData((prev) => ({ ...prev, fromCity: e.target.value }))}
                   required
@@ -974,17 +907,17 @@ export const CreateBookingPage = ({
 
               {/* Delivery Address / Collection Stop */}
               <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: '0.25rem' }}>
-                  Delivery Address / Collection Stop in {formData.toCity || 'Destination'} <span className="required">*</span>
+                <label className="docket-field-label">
+                  Delivery Stop / Counter <span className="required">*</span>
                 </label>
                 <input
                   type="text"
                   id="cb_delivery_addr"
                   name="cb_dest_stop_addr"
-                  className={`form-control ${fieldErrors.deliveryAddress ? 'input-error' : ''}`}
+                  className={`form-control docket-input ${fieldErrors.deliveryAddress ? 'input-error' : ''}`}
                   placeholder={
                     availableLocations.length > 0
-                      ? 'Select a stop chip below or enter counter address...'
+                      ? 'Select a stop below or enter counter address...'
                       : 'e.g. Bus Stand Counter #4, Benz Circle / Station Road'
                   }
                   value={formData.deliveryAddress}
@@ -1001,7 +934,6 @@ export const CreateBookingPage = ({
                   required
                   autoComplete="off"
                   data-lpignore="true"
-                  style={{ padding: '0.45rem 0.65rem', fontSize: '0.8125rem' }}
                 />
                 {fieldErrors.deliveryAddress && (
                   <div className="form-error-msg">{fieldErrors.deliveryAddress}</div>
@@ -1009,32 +941,11 @@ export const CreateBookingPage = ({
               </div>
             </div>
 
-            {/* Quick Stops Chips in Selected Destination City */}
+            {/* Branch Stops Chips */}
             {availableLocations.length > 1 && (
-              <div
-                style={{
-                  marginTop: '0.75rem',
-                  padding: '0.6rem 0.75rem',
-                  backgroundColor: '#f8fafc',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '6px',
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    color: '#475569',
-                    marginBottom: '0.45rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                  }}
-                >
-                  <MapPin size={12} color="#64748b" />
-                  <span>Configured Branch Stops in {formData.toCity}:</span>
-                </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.45rem' }}>
+              <div className="docket-stops-bar">
+                <span className="docket-stops-label">Configured Stops:</span>
+                <div className="docket-stops-chips">
                   {availableLocations.map((loc, idx) => {
                     const isSelected =
                       (formData.deliveryAddress || '').trim().toLowerCase() === loc.trim().toLowerCase();
@@ -1046,24 +957,9 @@ export const CreateBookingPage = ({
                           clearFieldError('deliveryAddress');
                           setFormData((prev) => ({ ...prev, deliveryAddress: loc }));
                         }}
-                        style={{
-                          fontSize: '0.75rem',
-                          fontFamily: 'var(--font-family)',
-                          padding: '0.3rem 0.75rem',
-                          borderRadius: '6px',
-                          border: isSelected ? '1px solid #2563eb' : '1px solid #cbd5e1',
-                          backgroundColor: isSelected ? '#eff6ff' : '#ffffff',
-                          color: isSelected ? '#1d4ed8' : '#334155',
-                          fontWeight: isSelected ? 600 : 500,
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '5px',
-                          transition: 'all 0.12s ease',
-                          boxShadow: isSelected ? '0 1px 2px rgba(37, 99, 235, 0.1)' : 'none',
-                        }}
+                        className={`docket-stop-chip ${isSelected ? 'active' : ''}`}
                       >
-                        {isSelected && <Check size={12} color="#1d4ed8" />}
+                        {isSelected && <Check size={12} />}
                         <span>{loc}</span>
                       </button>
                     );
@@ -1073,60 +969,21 @@ export const CreateBookingPage = ({
             )}
           </div>
 
-          {/* Cards 2 & 3: Sender Details (Phone First + Auto-Suggest) and Receiver Details */}
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-              gap: '1rem',
-              marginBottom: '1rem',
-            }}
-          >
+          {/* Section 2: Consignor & Consignee (Sender & Receiver) */}
+          <div className="docket-parties-grid">
             {/* Sender Information Card */}
-            <div
-              style={{
-                backgroundColor: '#ffffff',
-                border: '1px solid var(--border-subtle)',
-                borderRadius: 'var(--radius-md)',
-                padding: '1.25rem',
-                boxShadow: 'var(--shadow-card)',
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.45rem',
-                  marginBottom: '1rem',
-                  borderBottom: '1px solid #e2e8f0',
-                  paddingBottom: '0.65rem',
-                }}
-              >
-                <User size={17} color="#2563eb" />
-                <h3 style={{ fontSize: '0.9375rem', fontWeight: 700, margin: 0, color: '#0f172a', fontFamily: 'var(--font-family)' }}>
-                  2. Sender Information
-                </h3>
-                <span
-                  style={{
-                    marginLeft: 'auto',
-                    fontSize: '0.6875rem',
-                    fontWeight: 600,
-                    fontFamily: 'var(--font-family)',
-                    backgroundColor: '#eff6ff',
-                    color: '#1d4ed8',
-                    padding: '2px 8px',
-                    borderRadius: '9999px',
-                    border: '1px solid #bfdbfe',
-                  }}
-                >
-                  Phone First
-                </span>
+            <div className="docket-card" style={{ marginBottom: 0 }}>
+              <div className="docket-card-header">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                  <User size={16} color="#0f172a" />
+                  <span className="docket-card-title">Consignor (Sender)</span>
+                </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.1fr', gap: '0.75rem' }}>
-                {/* 1. Mobile Number Asked First with Live Auto-Suggestions */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                {/* Sender Mobile */}
                 <div className="form-group" style={{ marginBottom: 0, position: 'relative' }} ref={phoneContainerRef}>
-                  <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: '0.25rem', color: '#1e293b', fontWeight: 600 }}>
+                  <label className="docket-field-label">
                     Sender Mobile <span className="required">*</span>
                   </label>
                   <div style={{ position: 'relative' }}>
@@ -1134,8 +991,8 @@ export const CreateBookingPage = ({
                       type="tel"
                       id="cb_sender_phone"
                       name="cb_sender_phone"
-                      className={`form-control ${fieldErrors.customerPhone ? 'input-error' : ''}`}
-                      placeholder="10-digit mobile..."
+                      className={`form-control docket-input ${fieldErrors.customerPhone ? 'input-error' : ''}`}
+                      placeholder="10-digit mobile"
                       value={formData.customerPhone}
                       onChange={(e) => {
                         clearFieldError('customerPhone');
@@ -1151,16 +1008,10 @@ export const CreateBookingPage = ({
                       required
                       autoComplete="off"
                       data-lpignore="true"
-                      style={{
-                        padding: '0.45rem 0.65rem',
-                        fontSize: '0.8125rem',
-                        fontWeight: 600,
-                        backgroundColor: '#ffffff',
-                      }}
                     />
                   </div>
 
-                  {/* Suggestions Dropdown - Modern Executive Customer Card */}
+                  {/* Suggestions Dropdown */}
                   {phoneDropdownOpen && phoneSuggestions.length > 0 && (
                     <div className="phone-suggestions-dropdown">
                       <div
@@ -1181,7 +1032,7 @@ export const CreateBookingPage = ({
                           <span>Matching Customers ({phoneSuggestions.length})</span>
                         </div>
                         <span style={{ fontSize: '0.6875rem', fontWeight: 500, color: '#94a3b8' }}>
-                          Click or ↵ to auto-fill
+                          ↵ to select
                         </span>
                       </div>
 
@@ -1246,21 +1097,7 @@ export const CreateBookingPage = ({
                                       fontWeight: 600,
                                     }}
                                   >
-                                    {cust.totalBookings} {cust.totalBookings === 1 ? 'order' : 'orders'}
-                                  </span>
-                                )}
-                                {isHighlighted && (
-                                  <span
-                                    style={{
-                                      fontSize: '0.6875rem',
-                                      fontWeight: 600,
-                                      backgroundColor: '#2563eb',
-                                      color: '#ffffff',
-                                      padding: '2px 6px',
-                                      borderRadius: '4px',
-                                    }}
-                                  >
-                                    Auto-fill ↵
+                                    {cust.totalBookings} orders
                                   </span>
                                 )}
                               </div>
@@ -1273,22 +1110,19 @@ export const CreateBookingPage = ({
                   {fieldErrors.customerPhone && (
                     <div className="form-error-msg">{fieldErrors.customerPhone}</div>
                   )}
-                  <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '3px' }}>
-                    Auto-suggests from database
-                  </div>
                 </div>
 
-                {/* 2. Sender Name (Auto-fetched or manually entered) */}
+                {/* Sender Name */}
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: '0.25rem', color: '#1e293b' }}>
+                  <label className="docket-field-label">
                     Sender Name <span className="required">*</span>
                   </label>
                   <input
                     type="text"
                     id="cb_sender_name"
                     name="cb_sender_name"
-                    className={`form-control ${fieldErrors.customerName ? 'input-error' : ''}`}
-                    placeholder="e.g. Ramesh Kumar"
+                    className={`form-control docket-input ${fieldErrors.customerName ? 'input-error' : ''}`}
+                    placeholder="Full name or company"
                     value={formData.customerName}
                     onChange={(e) => {
                       clearFieldError('customerName');
@@ -1303,58 +1137,34 @@ export const CreateBookingPage = ({
                     required
                     autoComplete="off"
                     data-lpignore="true"
-                    style={{ padding: '0.45rem 0.65rem', fontSize: '0.8125rem', backgroundColor: '#ffffff' }}
                   />
                   {fieldErrors.customerName && (
                     <div className="form-error-msg">{fieldErrors.customerName}</div>
                   )}
-                  <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '3px' }}>
-                    Auto-fills on customer selection
-                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Receiver Information Card (Phone first, Name second) */}
-            <div
-              style={{
-                backgroundColor: '#ffffff',
-                border: '1px solid var(--border-subtle)',
-                borderRadius: 'var(--radius-md)',
-                padding: '1.25rem',
-                boxShadow: 'var(--shadow-card)',
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.45rem',
-                  marginBottom: '1rem',
-                  borderBottom: '1px solid #e2e8f0',
-                  paddingBottom: '0.65rem',
-                }}
-              >
-                <Phone size={17} color="#2563eb" />
-                <h3 style={{ fontSize: '0.9375rem', fontWeight: 700, margin: 0, color: '#0f172a', fontFamily: 'var(--font-family)' }}>
-                  3. Receiver Information
-                </h3>
-                <span style={{ fontSize: '0.75rem', color: '#64748b', marginLeft: 'auto', fontWeight: 500 }}>
-                  Consignee Contact
-                </span>
+            {/* Receiver Information Card */}
+            <div className="docket-card" style={{ marginBottom: 0 }}>
+              <div className="docket-card-header">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                  <Phone size={16} color="#0f172a" />
+                  <span className="docket-card-title">Consignee (Receiver)</span>
+                </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.1fr', gap: '0.75rem' }}>
-                {/* 1. Receiver Phone Asked First */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                {/* Receiver Mobile */}
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: '0.25rem', color: '#1e293b', fontWeight: 600 }}>
+                  <label className="docket-field-label">
                     Receiver Mobile
                   </label>
                   <input
                     type="tel"
                     id="cb_receiver_phone"
                     name="cb_receiver_phone"
-                    className={`form-control ${fieldErrors.receiverPhone ? 'input-error' : ''}`}
+                    className={`form-control docket-input ${fieldErrors.receiverPhone ? 'input-error' : ''}`}
                     placeholder="10-digit mobile"
                     value={formData.receiverPhone}
                     onChange={(e) => {
@@ -1371,26 +1181,22 @@ export const CreateBookingPage = ({
                     maxLength={10}
                     autoComplete="off"
                     data-lpignore="true"
-                    style={{ padding: '0.45rem 0.65rem', fontSize: '0.8125rem', backgroundColor: '#ffffff' }}
                   />
                   {fieldErrors.receiverPhone && (
                     <div className="form-error-msg">{fieldErrors.receiverPhone}</div>
                   )}
-                  <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '3px' }}>
-                    For delivery SMS & OTP
-                  </div>
                 </div>
 
-                {/* 2. Receiver Name Asked Second */}
+                {/* Receiver Name */}
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label" style={{ fontSize: '0.75rem', marginBottom: '0.25rem', color: '#1e293b' }}>
-                    Receiver Contact Name
+                  <label className="docket-field-label">
+                    Contact / Shop Name
                   </label>
                   <input
                     type="text"
                     id="cb_receiver_name"
                     name="cb_receiver_name"
-                    className="form-control"
+                    className="form-control docket-input"
                     placeholder="e.g. Annapurna Depot"
                     value={formData.receiverName}
                     onChange={(e) => setFormData((prev) => ({ ...prev, receiverName: e.target.value }))}
@@ -1402,56 +1208,30 @@ export const CreateBookingPage = ({
                     }}
                     autoComplete="off"
                     data-lpignore="true"
-                    style={{ padding: '0.45rem 0.65rem', fontSize: '0.8125rem', backgroundColor: '#ffffff' }}
                   />
-                  <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '3px' }}>
-                    Person / Shop collecting
-                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Card 4: Consignment Parcel Items (Multi-Parcel Tabular Representation under Same LR ID) */}
-          {/* Card 4: Consignment Parcel Items (Multi-Parcel Tabular Representation under Same LR ID) */}
-          <div
-            style={{
-              backgroundColor: '#ffffff',
-              border: '1px solid var(--border-subtle)',
-              borderRadius: 'var(--radius-md)',
-              padding: '1.25rem',
-              boxShadow: 'var(--shadow-card)',
-              marginBottom: '1rem',
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: '0.5rem',
-                marginBottom: '1rem',
-                borderBottom: '1px solid #e2e8f0',
-                paddingBottom: '0.65rem',
-                flexWrap: 'wrap',
-              }}
-            >
+          {/* Section 3: Consignment Articles & Manifest */}
+          <div className="docket-card" style={{ marginTop: '1rem' }}>
+            <div className="docket-card-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                <Package size={18} color="#2563eb" />
-                <h3 style={{ fontSize: '0.9375rem', fontWeight: 700, margin: 0, color: '#0f172a', fontFamily: 'var(--font-family)' }}>
-                  4. Consignment Parcel Items (Single LR ID)
-                </h3>
+                <Package size={16} color="#0f172a" />
+                <span className="docket-card-title">Consignment Articles (Parcels)</span>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <button
                   type="button"
-                  className="btn btn-outline btn-sm"
+                  className="btn btn-secondary btn-sm"
                   onClick={handleAddItem}
-                  title="Add multi-parcel item"
+                  title="Add another parcel item"
+                  style={{ fontWeight: 600, fontSize: '0.785rem' }}
                 >
-                  <Plus size={14} />
-                  Add Parcel Item
+                  <Plus size={13} />
+                  <span>Add Article</span>
                 </button>
               </div>
             </div>
@@ -1789,7 +1569,7 @@ export const CreateBookingPage = ({
                   style={{ padding: '0.55rem 1.4rem', fontWeight: 800 }}
                 >
                   <PackagePlus size={16} />
-                  {loading ? 'Processing Consignment...' : 'Confirm Booking & Issue LR Receipt'}
+                  {loading ? 'Processing Consignment...' : 'Issue Consignment Note (LR)'}
                 </button>
               </div>
             </div>

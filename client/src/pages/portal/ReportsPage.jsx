@@ -973,11 +973,11 @@ export const ReportsPage = ({
       <div className="page-header no-print" style={{ marginBottom: '1.25rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <BarChart3 size={22} color="#0f172a" />
-            <h1 className="page-title" style={{ margin: 0 }}>Operations & Revenue Intelligence Hub</h1>
+            <BarChart3 size={20} color="#0f172a" />
+            <h1 className="page-title" style={{ margin: 0 }}>Revenue & Performance Reports</h1>
           </div>
           <p className="page-subtitle" style={{ margin: '3px 0 0 0' }}>
-            Auditable consignment ledger, route yield distributions, freight collections, and export tools
+            Financial summaries, payment settlements, and exportable ledger manifests
           </p>
         </div>
 

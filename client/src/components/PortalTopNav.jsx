@@ -121,47 +121,44 @@ export const PortalTopNav = ({
             <div className="portal-brand-title">
               {company.companyName || 'Logistics Management'}
             </div>
-            {company.tagline && (
-              <span className="portal-brand-tagline-badge">
-                <span className="portal-brand-tagline-dot" />
-                {company.tagline}
-              </span>
-            )}
+            <span className="portal-brand-desk-badge">
+              {isStaff ? 'Counter Desk' : 'Operations Desk'}
+            </span>
           </div>
         </div>
 
-        {/* Status Indicators & Action Controls (Aligned to the last / far right) */}
+        {/* Status Indicators & Action Controls */}
         <div className="portal-meta-bar">
           {user?.branch && (
-            <div className="portal-branch-pill" title="Operational Branch">
-              <MapPin size={13} color="#94a3b8" />
+            <div className="portal-meta-item" title="Operational Branch">
+              <MapPin size={13} color="#64748b" />
               <span>{user.branch}</span>
             </div>
           )}
 
-          <div className="portal-clock-pill" title="System Live Time">
-            <Clock size={13} color="#94a3b8" />
+          <div className="portal-meta-item" title="System Live Time">
+            <Clock size={13} color="#64748b" />
             <span>{timeStr}</span>
           </div>
 
           {user?.role === 'admin' && (
             <button
               onClick={() => (onOpenStaff ? onOpenStaff() : handleModuleClick('staff'))}
-              className={`portal-staff-btn ${activeModule === 'staff' ? 'active' : ''}`}
-              title="Manage Branch Staff Accounts"
+              className={`portal-meta-action-btn ${activeModule === 'staff' ? 'active' : ''}`}
+              title="Manage Staff Accounts"
             >
-              <Users size={14} />
-              <span>Staff Team</span>
+              <Users size={13} />
+              <span>Staff</span>
             </button>
           )}
 
           <button
             onClick={logout}
-            className="portal-logout-btn"
-            title="Logout"
+            className="portal-meta-logout-btn"
+            title="Sign Out"
           >
-            <LogOut size={14} />
-            <span>Logout</span>
+            <LogOut size={13} />
+            <span>Sign Out</span>
           </button>
         </div>
       </div>

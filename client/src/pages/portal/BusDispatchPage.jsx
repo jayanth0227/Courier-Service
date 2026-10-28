@@ -725,9 +725,9 @@ export const BusDispatchPage = ({
     <div>
       <div className="page-header">
         <div>
-          <h1 className="page-title">Bus Dispatch & Manifest Operations</h1>
+          <h1 className="page-title">Bus Dispatch & Loading</h1>
           <p className="page-subtitle">
-            Assign waiting consignments to evening departure buses and trigger customer WhatsApp alerts
+            Allocate waiting parcels to scheduled departures and generate driver load manifests
           </p>
         </div>
 

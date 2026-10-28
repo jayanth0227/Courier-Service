@@ -354,11 +354,11 @@ export const DashboardPage = ({
       <div className="page-header" style={{ marginBottom: '1.25rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <BarChart3 size={22} color="#0f172a" />
-            <h1 className="page-title" style={{ margin: 0 }}>Operations & Analytics Intelligence</h1>
+            <BarChart3 size={20} color="#0f172a" />
+            <h1 className="page-title" style={{ margin: 0 }}>Operations Dashboard</h1>
           </div>
           <p className="page-subtitle" style={{ margin: '3px 0 0 0' }}>
-            Live graphical reports, shipment volume trajectory, freight distribution, and corridor analytics
+            Live overview of bookings, dispatch queue, transit corridors, and counter revenue
           </p>
         </div>
 

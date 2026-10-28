@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Package, Truck, Search, LogIn, LayoutDashboard, Menu, X, Globe } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCompanySettings } from '../context/CompanyContext';
@@ -8,24 +8,72 @@ export const Navbar = ({ activeTab, onNavigate, companySettings: propCompanySett
   const { companySettings: contextCompanySettings } = useCompanySettings();
   const company = propCompanySettings || contextCompanySettings || {};
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState(activeTab === 'track' ? 'track' : 'home');
 
   const brandName = company.companyName || 'Courier & Logistics';
 
+  // Dynamic Scroll Spy to highlight active section in Navbar as user scrolls
+  useEffect(() => {
+    if (activeTab === 'track') {
+      setActiveSection('track');
+      return;
+    }
+
+    const sectionIds = ['contact', 'network', 'how-it-works', 'services', 'home'];
+    const handleScroll = () => {
+      // Offset point: 130px below top
+      const scrollPos = window.scrollY + 130;
+      let matched = 'home';
+      for (const id of sectionIds) {
+        const el = document.getElementById(id);
+        if (el && el.offsetTop <= scrollPos) {
+          matched = id;
+          break;
+        }
+      }
+      setActiveSection(matched);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [activeTab]);
+
   const handleLinkClick = (tab, anchorId = null) => {
-    onNavigate(tab);
     setMobileMenuOpen(false);
+
+    if (tab === 'track') {
+      setActiveSection('track');
+      onNavigate('track');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    onNavigate('home');
     if (anchorId) {
+      setActiveSection(anchorId);
       setTimeout(() => {
-        document.getElementById(anchorId)?.scrollIntoView({ behavior: 'smooth' });
-      }, 80);
+        const element = document.getElementById(anchorId);
+        if (element) {
+          const headerOffset = 90; // Navbar height + breathing margin
+          const elementPosition = element.getBoundingClientRect().top;
+          const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: 'smooth',
+          });
+        }
+      }, 50);
     } else {
+      setActiveSection('home');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
   return (
-    <header className="public-header no-print" style={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e4e4e7', position: 'sticky', top: 0, zIndex: 900 }}>
-      {/* Dynamic Top Announcement Bar with Scrolling Marquee */}
+    <header className="public-header-modern no-print">
+      {/* Dynamic Top Announcement Bar (Hidden on Mobile) */}
       {company.showAnnouncement !== false && company.announcementText && (
         <div
           className="top-announcement-bar"
@@ -33,7 +81,7 @@ export const Navbar = ({ activeTab, onNavigate, companySettings: propCompanySett
             backgroundColor: '#f8fafc',
             color: '#18181b',
             borderBottom: '1px solid #e2e8f0',
-            padding: '0.3rem 1rem',
+            padding: '0.35rem 1rem',
             fontSize: '0.75rem',
             display: 'flex',
             alignItems: 'center',
@@ -54,7 +102,7 @@ export const Navbar = ({ activeTab, onNavigate, companySettings: propCompanySett
               textTransform: 'uppercase',
               letterSpacing: '0.05em',
               padding: '0.15rem 0.5rem',
-              borderRadius: '4px',
+              borderRadius: '9999px',
               border: '1px solid #c7d2fe',
               flexShrink: 0,
               zIndex: 2,
@@ -77,13 +125,13 @@ export const Navbar = ({ activeTab, onNavigate, companySettings: propCompanySett
             <marquee
               behavior="scroll"
               direction="left"
-              scrollamount="6"
+              scrollamount="5"
               onMouseOver={(e) => e.target.stop && e.target.stop()}
               onMouseOut={(e) => e.target.start && e.target.start()}
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                color: '#374151',
+                color: '#334155',
                 fontSize: '0.75rem',
                 fontWeight: 500,
                 cursor: 'pointer',
@@ -120,39 +168,13 @@ export const Navbar = ({ activeTab, onNavigate, companySettings: propCompanySett
         </div>
       )}
 
-      <div
-        className="public-navbar"
-        style={{
-          maxWidth: '1200px',
-          margin: '0 auto',
-          padding: '0.65rem 1.25rem',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '1rem',
-        }}
-      >
-        {/* Brand Logo & Title */}
+      <div className="public-navbar-container">
+        {/* Modern Brand Logo & Title */}
         <div
-          className="public-brand"
-          style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.625rem' }}
+          className="public-brand-modern"
           onClick={() => handleLinkClick('home')}
         >
-          <div
-            style={{
-              width: '36px',
-              height: '36px',
-              borderRadius: '8px',
-              backgroundColor: '#ffffff',
-              border: '1px solid #e2e8f0',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              overflow: 'hidden',
-              flexShrink: 0,
-              padding: '2px',
-            }}
-          >
+          <div className="public-brand-logo-frame">
             <img
               src={company.logoUrl || '/logo.png'}
               alt={brandName}
@@ -178,162 +200,86 @@ export const Navbar = ({ activeTab, onNavigate, companySettings: propCompanySett
             </div>
           </div>
           <div>
-            <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#09090b', lineHeight: 1.15, letterSpacing: '-0.01em' }}>
+            <div className="public-brand-name">
               {brandName}
             </div>
-            <div className="public-brand-sub" style={{ fontSize: '0.6875rem', color: '#71717a', fontWeight: 500 }}>
+            <div className="public-brand-tagline">
               {company.tagline || 'Parcel & Bus Dispatch Network'}
             </div>
           </div>
         </div>
 
-        {/* Desktop Navigation Links */}
+        {/* Desktop Segmented Pill Navigation Menu */}
         <nav className="public-nav-desktop">
-          <ul
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              listStyle: 'none',
-              margin: 0,
-              padding: 0,
-            }}
-          >
-            <li>
-              <a
-                href="#home"
-                style={{
-                  fontSize: '0.85rem',
-                  fontWeight: 600,
-                  color: activeTab === 'home' ? '#4338ca' : '#52525b',
-                  backgroundColor: activeTab === 'home' ? '#eef2ff' : 'transparent',
-                  padding: '0.4rem 0.75rem',
-                  borderRadius: '6px',
-                  textDecoration: 'none',
-                  transition: 'all 0.15s ease',
-                }}
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleLinkClick('home');
-                }}
-              >
-                Home
-              </a>
-            </li>
-            <li>
-              <a
-                href="#services"
-                style={{
-                  fontSize: '0.85rem',
-                  fontWeight: 500,
-                  color: '#52525b',
-                  padding: '0.4rem 0.75rem',
-                  borderRadius: '6px',
-                  textDecoration: 'none',
-                  transition: 'all 0.15s ease',
-                }}
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleLinkClick('home', 'services');
-                }}
-              >
-                Services
-              </a>
-            </li>
-            <li>
-              <a
-                href="#track"
-                style={{
-                  fontSize: '0.85rem',
-                  fontWeight: 600,
-                  color: activeTab === 'track' ? '#4338ca' : '#52525b',
-                  backgroundColor: activeTab === 'track' ? '#eef2ff' : 'transparent',
-                  padding: '0.4rem 0.75rem',
-                  borderRadius: '6px',
-                  textDecoration: 'none',
-                  transition: 'all 0.15s ease',
-                }}
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleLinkClick('track');
-                }}
-              >
-                Track Consignment
-              </a>
-            </li>
-            <li>
-              <a
-                href="#how-it-works"
-                style={{
-                  fontSize: '0.875rem',
-                  fontWeight: 500,
-                  color: '#475569',
-                  padding: '0.4rem 0.75rem',
-                  borderRadius: '6px',
-                  textDecoration: 'none',
-                  transition: 'all 0.15s ease',
-                }}
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleLinkClick('home', 'how-it-works');
-                }}
-              >
-                How It Works
-              </a>
-            </li>
-            <li>
-              <a
-                href="#network"
-                style={{
-                  fontSize: '0.875rem',
-                  fontWeight: 500,
-                  color: '#475569',
-                  padding: '0.4rem 0.75rem',
-                  borderRadius: '6px',
-                  textDecoration: 'none',
-                  transition: 'all 0.15s ease',
-                }}
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleLinkClick('home', 'network');
-                }}
-              >
-                About Us
-              </a>
-            </li>
-            <li>
-              <a
-                href="#contact"
-                style={{
-                  fontSize: '0.875rem',
-                  fontWeight: 500,
-                  color: '#475569',
-                  padding: '0.4rem 0.75rem',
-                  borderRadius: '6px',
-                  textDecoration: 'none',
-                  transition: 'all 0.15s ease',
-                }}
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleLinkClick('home', 'contact');
-                }}
-              >
-                Help Desk
-              </a>
-            </li>
-          </ul>
+          <div className="public-nav-pill-track">
+            <a
+              href="#home"
+              className={`public-nav-pill-btn ${activeSection === 'home' ? 'active' : ''}`}
+              onClick={(e) => {
+                e.preventDefault();
+                handleLinkClick('home');
+              }}
+            >
+              Home
+            </a>
+            <a
+              href="#services"
+              className={`public-nav-pill-btn ${activeSection === 'services' ? 'active' : ''}`}
+              onClick={(e) => {
+                e.preventDefault();
+                handleLinkClick('home', 'services');
+              }}
+            >
+              Services
+            </a>
+            <a
+              href="#track"
+              className={`public-nav-pill-btn ${activeSection === 'track' ? 'active' : ''}`}
+              onClick={(e) => {
+                e.preventDefault();
+                handleLinkClick('track');
+              }}
+            >
+              Track Consignment
+            </a>
+            <a
+              href="#how-it-works"
+              className={`public-nav-pill-btn ${activeSection === 'how-it-works' ? 'active' : ''}`}
+              onClick={(e) => {
+                e.preventDefault();
+                handleLinkClick('home', 'how-it-works');
+              }}
+            >
+              How It Works
+            </a>
+            <a
+              href="#network"
+              className={`public-nav-pill-btn ${activeSection === 'network' ? 'active' : ''}`}
+              onClick={(e) => {
+                e.preventDefault();
+                handleLinkClick('home', 'network');
+              }}
+            >
+              About Us
+            </a>
+            <a
+              href="#contact"
+              className={`public-nav-pill-btn ${activeSection === 'contact' ? 'active' : ''}`}
+              onClick={(e) => {
+                e.preventDefault();
+                handleLinkClick('home', 'contact');
+              }}
+            >
+              Help Desk
+            </a>
+          </div>
         </nav>
 
-        {/* Right Action / Auth Button */}
+        {/* Right Action / Mobile Hamburger Group */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           {isAuthenticated ? (
             <button
-              className="btn btn-primary btn-sm"
-              style={{
-                padding: '0.45rem 0.95rem',
-                fontSize: '0.8125rem',
-                fontWeight: 600,
-              }}
+              className="navbar-desktop-action btn-sm"
               onClick={() => onNavigate(user?.role === 'superadmin' ? 'superadmin' : 'portal')}
             >
               <LayoutDashboard size={14} />
@@ -341,12 +287,7 @@ export const Navbar = ({ activeTab, onNavigate, companySettings: propCompanySett
             </button>
           ) : (
             <button
-              className="btn btn-primary btn-sm"
-              style={{
-                padding: '0.45rem 1rem',
-                fontSize: '0.8125rem',
-                fontWeight: 600,
-              }}
+              className="navbar-desktop-action btn-sm"
               onClick={() => onNavigate('login')}
             >
               <LogIn size={14} />
@@ -356,15 +297,9 @@ export const Navbar = ({ activeTab, onNavigate, companySettings: propCompanySett
 
           {/* Mobile Hamburger Menu Toggle Button */}
           <button
-            className="public-mobile-toggle"
+            className="public-mobile-toggle-btn"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label="Toggle Navigation Menu"
-            style={{
-              padding: '6px 8px',
-              borderRadius: '6px',
-              backgroundColor: '#f8fafc',
-              border: '1px solid #cbd5e1',
-            }}
           >
             {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
@@ -373,73 +308,87 @@ export const Navbar = ({ activeTab, onNavigate, companySettings: propCompanySett
 
       {/* Mobile Collapsible Navigation Drawer */}
       {mobileMenuOpen && (
-        <div className="public-mobile-drawer">
+        <div className="public-mobile-drawer-modern">
           <a
             href="#home"
-            className={`public-mobile-link ${activeTab === 'home' ? 'active' : ''}`}
+            className={`public-mobile-drawer-link ${activeSection === 'home' ? 'active' : ''}`}
             onClick={(e) => {
               e.preventDefault();
               handleLinkClick('home');
             }}
           >
-            Home
+            <span>Home</span>
+            <span style={{ fontSize: '0.8rem', opacity: 0.5 }}>&rarr;</span>
           </a>
           <a
             href="#services"
-            className="public-mobile-link"
+            className={`public-mobile-drawer-link ${activeSection === 'services' ? 'active' : ''}`}
             onClick={(e) => {
               e.preventDefault();
               handleLinkClick('home', 'services');
             }}
           >
-            Vendor Services
+            <span>Services</span>
+            <span style={{ fontSize: '0.8rem', opacity: 0.5 }}>&rarr;</span>
           </a>
           <a
             href="#track"
-            className={`public-mobile-link ${activeTab === 'track' ? 'active' : ''}`}
+            className={`public-mobile-drawer-link ${activeSection === 'track' ? 'active' : ''}`}
             onClick={(e) => {
               e.preventDefault();
               handleLinkClick('track');
             }}
           >
-            Track Consignment
+            <span>Track Consignment</span>
+            <span style={{ fontSize: '0.8rem', opacity: 0.5 }}>&rarr;</span>
           </a>
           <a
             href="#how-it-works"
-            className="public-mobile-link"
+            className={`public-mobile-drawer-link ${activeSection === 'how-it-works' ? 'active' : ''}`}
             onClick={(e) => {
               e.preventDefault();
               handleLinkClick('home', 'how-it-works');
             }}
           >
-            How It Works
+            <span>How It Works</span>
+            <span style={{ fontSize: '0.8rem', opacity: 0.5 }}>&rarr;</span>
           </a>
           <a
             href="#network"
-            className="public-mobile-link"
+            className={`public-mobile-drawer-link ${activeSection === 'network' ? 'active' : ''}`}
             onClick={(e) => {
               e.preventDefault();
               handleLinkClick('home', 'network');
             }}
           >
-            About Us
+            <span>About Us</span>
+            <span style={{ fontSize: '0.8rem', opacity: 0.5 }}>&rarr;</span>
           </a>
           <a
             href="#contact"
-            className="public-mobile-link"
+            className={`public-mobile-drawer-link ${activeSection === 'contact' ? 'active' : ''}`}
             onClick={(e) => {
               e.preventDefault();
               handleLinkClick('home', 'contact');
             }}
           >
-            Contact Help Desk
+            <span>Help Desk</span>
+            <span style={{ fontSize: '0.8rem', opacity: 0.5 }}>&rarr;</span>
           </a>
 
-          <div style={{ paddingTop: '0.75rem', borderTop: '1px solid #e2e8f0', marginTop: '0.5rem' }}>
+          <div style={{ paddingTop: '0.85rem', borderTop: '1px solid #e2e8f0', marginTop: '0.35rem' }}>
             {isAuthenticated ? (
               <button
                 className="btn btn-primary"
-                style={{ width: '100%', justifyContent: 'center' }}
+                style={{
+                  width: '100%',
+                  justifyContent: 'center',
+                  background: 'linear-gradient(135deg, #4f46e5 0%, #4338ca 100%)',
+                  fontWeight: 650,
+                  padding: '0.65rem 1rem',
+                  borderRadius: '8px',
+                  boxShadow: '0 2px 6px rgba(79, 70, 229, 0.3)',
+                }}
                 onClick={() => {
                   setMobileMenuOpen(false);
                   onNavigate(user?.role === 'superadmin' ? 'superadmin' : 'portal');
@@ -451,7 +400,15 @@ export const Navbar = ({ activeTab, onNavigate, companySettings: propCompanySett
             ) : (
               <button
                 className="btn btn-primary"
-                style={{ width: '100%', justifyContent: 'center' }}
+                style={{
+                  width: '100%',
+                  justifyContent: 'center',
+                  background: 'linear-gradient(135deg, #4f46e5 0%, #4338ca 100%)',
+                  fontWeight: 650,
+                  padding: '0.65rem 1rem',
+                  borderRadius: '8px',
+                  boxShadow: '0 2px 6px rgba(79, 70, 229, 0.3)',
+                }}
                 onClick={() => {
                   setMobileMenuOpen(false);
                   onNavigate('login');

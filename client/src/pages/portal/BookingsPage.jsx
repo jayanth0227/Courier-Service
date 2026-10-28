@@ -848,9 +848,7 @@ export const BookingsPage = ({
         <div>
           <h1 className="page-title">Consignment Bookings</h1>
           <p className="page-subtitle">
-            {isStaff
-              ? 'Click on any consignment record to view full manifest and delivery status'
-              : 'Click on any consignment record to view full manifest, bus assignment, and operations'}
+            Track, filter, and manage issued consignment manifests and receipts
           </p>
         </div>
         <button

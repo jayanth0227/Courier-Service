@@ -235,6 +235,20 @@ export const HomePage = ({ onNavigate, onTrackOrder, companySettings: propCompan
     }
   };
 
+  // Smooth scroll with fixed navbar offset to prevent content going under navbar
+  const scrollToSection = (sectionId) => {
+    const el = document.getElementById(sectionId);
+    if (el) {
+      const navHeight = 90;
+      const elementPosition = el.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - navHeight;
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth',
+      });
+    }
+  };
+
   // CTA navigation handler
   const handleCtaClick = (link) => {
     if (!link) return;
@@ -243,7 +257,7 @@ export const HomePage = ({ onNavigate, onTrackOrder, companySettings: propCompan
       if (target === 'login' || target === 'track' || target === 'superadmin') {
         onNavigate(target);
       } else {
-        document.getElementById(target)?.scrollIntoView({ behavior: 'smooth' });
+        scrollToSection(target);
       }
     } else {
       window.location.href = link;
@@ -323,37 +337,11 @@ export const HomePage = ({ onNavigate, onTrackOrder, companySettings: propCompan
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#ffffff' }}>
       {/* 1. PROFESSIONAL SAAS HERO & UNIFIED DISPATCH CONSOLE */}
-      <section
-        id="home"
-        style={{
-          backgroundColor: '#ffffff',
-          color: '#09090b',
-          position: 'relative',
-          padding: '3.75rem 1.25rem 3.5rem 1.25rem',
-          borderBottom: '1px solid #f1f5f9',
-          background: 'radial-gradient(ellipse 90% 70% at 50% -15%, rgba(79, 70, 229, 0.08), rgba(248, 250, 252, 0.5) 60%, #ffffff 100%)',
-          overflow: 'hidden',
-        }}
-      >
-        <div style={{ maxWidth: '1180px', margin: '0 auto', position: 'relative', zIndex: 2 }}>
+      <section id="home" className="hero-main-section-modern">
+        <div style={{ maxWidth: '1200px', margin: '0 auto', position: 'relative', zIndex: 2, width: '100%', boxSizing: 'border-box' }}>
           {/* Top Trust Micro-Pill */}
-          <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
-            <div
-              className="subtle-floating"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                padding: '0.35rem 0.95rem',
-                borderRadius: '9999px',
-                backgroundColor: '#ffffff',
-                border: '1px solid #c7d2fe',
-                color: '#4338ca',
-                fontSize: '0.785rem',
-                fontWeight: 600,
-                boxShadow: '0 2px 8px rgba(99, 102, 241, 0.12)',
-              }}
-            >
+          <div style={{ textAlign: 'center' }}>
+            <div className="hero-trust-badge-pill">
               <span
                 style={{
                   width: '7px',
@@ -361,112 +349,44 @@ export const HomePage = ({ onNavigate, onTrackOrder, companySettings: propCompan
                   borderRadius: '50%',
                   backgroundColor: '#4f46e5',
                   boxShadow: '0 0 8px #4f46e5',
+                  display: 'inline-block',
                 }}
               />
-              <span>{heroBadge || 'Verified Counter-to-Counter Intercity Bus Cargo Network'}</span>
+              <span>{heroBadge || 'Verified Counter-to-Counter Parcel Network'}</span>
             </div>
           </div>
 
           {/* Centered / Dynamic High-Impact Headline */}
-          <div style={{ textAlign: 'center', maxWidth: '840px', margin: '0 auto 1.5rem auto' }}>
-            <h1
-              style={{
-                fontSize: 'clamp(2.2rem, 4.5vw, 3.25rem)',
-                fontWeight: 850,
-                lineHeight: 1.15,
-                letterSpacing: '-0.035em',
-                color: '#0f172a',
-                marginBottom: '1rem',
-                fontFamily: 'var(--font-heading)',
-              }}
-            >
+          <div style={{ textAlign: 'center' }}>
+            <h1 className="hero-headline-modern">
               {heroTitle || 'Premier Bus Parcel & Logistics Network'}
             </h1>
-            <p
-              style={{
-                fontSize: '1.025rem',
-                lineHeight: 1.6,
-                color: '#475569',
-                maxWidth: '680px',
-                margin: '0 auto 1.5rem auto',
-              }}
-            >
+            <p className="hero-subtext-modern">
               {heroSubtitle ||
                 'Ship commercial cartons, grain sacks, industrial parts, documents, and merchandise across state routes via daily scheduled passenger buses. Real-time 6-digit Order ID tracking and instant WhatsApp dispatch alerts.'}
             </p>
 
-            {/* Quick Interactive Feature Pills */}
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                gap: '0.65rem',
-                flexWrap: 'wrap',
-                marginBottom: '2.5rem',
-              }}
-            >
+            {/* Unified Feature Highlights Trust Ribbon */}
+            <div className="hero-trust-ribbon">
               <span
-                className="hero-chip"
-                onClick={() => {
-                  document.getElementById('services')?.scrollIntoView({ behavior: 'smooth' });
-                }}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.4rem',
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  color: '#334155',
-                  backgroundColor: '#f8fafc',
-                  border: '1px solid #e2e8f0',
-                  padding: '0.3rem 0.75rem',
-                  borderRadius: '9999px',
-                }}
+                className="hero-ribbon-chip"
+                onClick={() => scrollToSection('services')}
               >
                 <MessageSquare size={13} color="#2563eb" />
                 <span>Instant WhatsApp Alerts</span>
               </span>
 
               <span
-                className="hero-chip"
-                onClick={() => {
-                  document.getElementById('services')?.scrollIntoView({ behavior: 'smooth' });
-                }}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.4rem',
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  color: '#334155',
-                  backgroundColor: '#f8fafc',
-                  border: '1px solid #e2e8f0',
-                  padding: '0.3rem 0.75rem',
-                  borderRadius: '9999px',
-                }}
+                className="hero-ribbon-chip"
+                onClick={() => scrollToSection('services')}
               >
                 <Bus size={13} color="#4f46e5" />
                 <span>180+ Daily Passenger Buses</span>
               </span>
 
               <span
-                className="hero-chip"
-                onClick={() => {
-                  document.getElementById('services')?.scrollIntoView({ behavior: 'smooth' });
-                }}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.4rem',
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  color: '#334155',
-                  backgroundColor: '#f8fafc',
-                  border: '1px solid #e2e8f0',
-                  padding: '0.3rem 0.75rem',
-                  borderRadius: '9999px',
-                }}
+                className="hero-ribbon-chip"
+                onClick={() => scrollToSection('services')}
               >
                 <ShieldCheck size={13} color="#059669" />
                 <span>Digital OTP Counter Handover</span>
@@ -475,102 +395,51 @@ export const HomePage = ({ onNavigate, onTrackOrder, companySettings: propCompan
           </div>
 
           {/* Unified Two-Column Command Deck: Left = Tracking Console, Right = Live Highway Telemetry */}
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-              gap: '1.75rem',
-              alignItems: 'stretch',
-              marginBottom: '2.5rem',
-            }}
-          >
+          <div className="hero-command-deck-grid">
             {/* Left Console Card: Real-Time Consignment Tracker */}
-            <div
-              className="interactive-card hero-tracking-glass"
-              style={{
-                padding: '1.75rem',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-              }}
-            >
+            <div className="deck-card-modern">
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
-                    <div
-                      style={{
-                        width: '32px',
-                        height: '32px',
-                        borderRadius: '8px',
-                        backgroundColor: '#eff6ff',
-                        color: '#2563eb',
-                        border: '1px solid #bfdbfe',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <Search size={16} />
-                    </div>
-                    <div>
-                      <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>
-                        Track Consignment Status
-                      </h2>
-                      <div style={{ fontSize: '0.72rem', color: '#64748b' }}>
-                        Real-time status via 6-digit Order ID
-                      </div>
-                    </div>
+                <div className="track-header-row">
+                  <div className="track-header-icon">
+                    <Search size={16} />
                   </div>
-                  <span
-                    style={{
-                      fontSize: '0.675rem',
-                      fontWeight: 700,
-                      backgroundColor: '#ecfdf5',
-                      color: '#047857',
-                      padding: '0.2rem 0.55rem',
-                      borderRadius: '4px',
-                      border: '1px solid #a7f3d0',
-                    }}
-                  >
-                    Live Telemetry
+                  <div className="track-header-texts">
+                    <h2 className="track-card-heading">
+                      Track Consignment Status
+                    </h2>
+                    <p className="track-card-subtext">
+                      Real-time status via 6-digit Order ID
+                    </p>
+                  </div>
+                  <span className="track-live-pill">
+                    <span
+                      style={{
+                        width: '6px',
+                        height: '6px',
+                        borderRadius: '50%',
+                        backgroundColor: '#10b981',
+                        display: 'inline-block',
+                      }}
+                    />
+                    <span>Live Telemetry</span>
                   </span>
                 </div>
 
-                <form onSubmit={handleTrackSubmit} style={{ marginTop: '0.85rem' }}>
-                  <div style={{ position: 'relative', marginBottom: '0.65rem' }}>
+                <form onSubmit={handleTrackSubmit}>
+                  <div className="track-form-group">
                     <input
                       type="text"
-                      className="form-control"
-                      placeholder="Enter 6-digit Order ID (e.g. 482195 or LR4821)"
+                      className="track-input-element"
+                      placeholder="Enter 6-digit Order ID"
                       value={orderIdInput}
                       onChange={(e) => {
                         setOrderIdInput(e.target.value);
                         if (trackError) setTrackError('');
                       }}
-                      style={{
-                        height: '48px',
-                        fontSize: '0.95rem',
-                        fontWeight: 600,
-                        letterSpacing: '0.02em',
-                        paddingRight: '120px',
-                        backgroundColor: '#f8fafc',
-                        borderColor: '#cbd5e1',
-                      }}
                     />
                     <button
                       type="submit"
-                      className="btn btn-primary"
-                      style={{
-                        position: 'absolute',
-                        right: '4px',
-                        top: '4px',
-                        bottom: '4px',
-                        padding: '0 1.15rem',
-                        fontSize: '0.875rem',
-                        fontWeight: 600,
-                        borderRadius: '6px',
-                        boxShadow: '0 2px 4px rgba(79, 70, 229, 0.25)',
-                      }}
+                      className="track-submit-action-btn"
                     >
                       <Search size={14} />
                       <span>Track</span>
@@ -583,20 +452,20 @@ export const HomePage = ({ onNavigate, onTrackOrder, companySettings: propCompan
                   )}
 
                   {/* Sample suggestions for rapid test */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.725rem', color: '#64748b', marginTop: '0.4rem' }}>
+                  <div className="quick-lookup-row">
                     <span>Quick lookup:</span>
                     <button
                       type="button"
+                      className="quick-lookup-btn"
                       onClick={() => setOrderIdInput('482195')}
-                      style={{ background: 'none', border: 'none', color: '#2563eb', fontWeight: 600, cursor: 'pointer', padding: 0 }}
                     >
                       #482195
                     </button>
                     <span>•</span>
                     <button
                       type="button"
+                      className="quick-lookup-btn"
                       onClick={() => setOrderIdInput('LR9941')}
-                      style={{ background: 'none', border: 'none', color: '#2563eb', fontWeight: 600, cursor: 'pointer', padding: 0 }}
                     >
                       #LR9941
                     </button>
@@ -604,184 +473,138 @@ export const HomePage = ({ onNavigate, onTrackOrder, companySettings: propCompan
                 </form>
               </div>
 
-              {/* Direct Portal Actions Strip */}
-              <div
-                style={{
-                  paddingTop: '1.25rem',
-                  marginTop: '1.25rem',
-                  borderTop: '1px solid #f1f5f9',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  flexWrap: 'wrap',
-                  gap: '0.65rem',
-                }}
-              >
+              {/* Direct Portal Actions Strip - 100% Identical White Minimal Style */}
+              <div className="deck-bottom-actions-row">
                 <button
                   type="button"
-                  className="btn btn-outline btn-sm"
-                  style={{ fontSize: '0.8125rem', borderColor: '#cbd5e1', color: '#1e293b' }}
+                  className="deck-bottom-btn"
                   onClick={() => handleCtaClick(heroPrimaryCtaLink)}
                 >
-                  <LogIn size={13} />
-                  <span>Operations Portal Login &rarr;</span>
+                  <LogIn size={14} color="#4f46e5" />
+                  <span>Operations Login</span>
                 </button>
 
                 <button
                   type="button"
-                  className="btn btn-secondary btn-sm"
-                  style={{ fontSize: '0.8125rem', backgroundColor: '#f8fafc', color: '#475569' }}
-                  onClick={() => {
-                    document.getElementById('deliverable-locations')?.scrollIntoView({ behavior: 'smooth' });
-                  }}
+                  className="deck-bottom-btn"
+                  onClick={() => scrollToSection('network')}
                 >
-                  <MapPin size={13} />
+                  <MapPin size={14} color="#2563eb" />
                   <span>Active Hubs</span>
                 </button>
               </div>
             </div>
 
             {/* Right Telemetry Card: Dynamic Route Visualizer */}
-            <div
-              className="interactive-card hero-tracking-glass"
-              style={{
-                padding: '1.75rem',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-              }}
-            >
+            <div className="deck-card-modern">
               <div>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    marginBottom: '1rem',
-                    paddingBottom: '0.75rem',
-                    borderBottom: '1px solid #f1f5f9',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <div className="track-header-row">
+                  <div
+                    className="track-header-icon"
+                    style={{ backgroundColor: '#eef2ff', color: '#4f46e5', borderColor: '#c7d2fe' }}
+                  >
+                    <Bus size={17} />
+                  </div>
+                  <div className="track-header-texts">
+                    <h2 className="track-card-heading">
+                      Live Highway Telemetry
+                    </h2>
+                    <p className="track-card-subtext">
+                      Express passenger bus corridor dispatch
+                    </p>
+                  </div>
+                  <span
+                    className="track-live-pill"
+                    style={{ backgroundColor: '#eff6ff', color: '#1d4ed8', borderColor: '#bfdbfe' }}
+                  >
                     <span
                       style={{
-                        width: '8px',
-                        height: '8px',
+                        width: '6px',
+                        height: '6px',
                         borderRadius: '50%',
-                        backgroundColor: '#10b981',
+                        backgroundColor: '#2563eb',
+                        display: 'inline-block',
                         animation: 'live-ping-green 2s infinite',
                       }}
                     />
-                    <span style={{ fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.07em', color: '#0f172a' }}>
-                      SCHEDULED HIGHWAY TELEMETRY
-                    </span>
-                  </div>
-                  <span
-                    style={{
-                      fontSize: '0.6875rem',
-                      fontWeight: 700,
-                      backgroundColor: '#eff6ff',
-                      color: '#1d4ed8',
-                      padding: '0.2rem 0.55rem',
-                      borderRadius: '4px',
-                      border: '1px solid #bfdbfe',
-                    }}
-                  >
-                    State Corridor #1
+                    <span>State Corridor #1</span>
                   </span>
                 </div>
 
                 {/* Highway Transit Waypoints Visualizer */}
-                <div
-                  style={{
-                    backgroundColor: '#f8fafc',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '10px',
-                    padding: '1.15rem',
-                    marginBottom: '1rem',
-                  }}
-                >
+                <div className="telemetry-waypoints-card">
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                     {/* Origin Terminal */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div className="telemetry-hub-item">
                       <div
-                        style={{
-                          width: '34px',
-                          height: '34px',
-                          borderRadius: '8px',
-                          backgroundColor: '#ffffff',
-                          border: '1px solid #c7d2fe',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          flexShrink: 0,
-                          color: '#4f46e5',
-                        }}
+                        className="telemetry-hub-icon-frame"
+                        style={{ border: '1px solid #c7d2fe', color: '#4f46e5' }}
                       >
-                        <Building size={17} />
+                        <Building size={16} />
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                          Origin Terminal Hub
+                        <div className="telemetry-hub-label">
+                          Origin Hub
                         </div>
-                        <div style={{ fontSize: '0.875rem', fontWeight: 800, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <div className="telemetry-hub-name">
                           Central Station Counter
                         </div>
                       </div>
-                      <span style={{ fontSize: '0.675rem', fontWeight: 700, color: '#4338ca', backgroundColor: '#eef2ff', padding: '0.15rem 0.5rem', borderRadius: '4px', border: '1px solid #c7d2fe' }}>
+                      <span
+                        style={{
+                          fontSize: '0.675rem',
+                          fontWeight: 700,
+                          color: '#4338ca',
+                          backgroundColor: '#eef2ff',
+                          padding: '0.15rem 0.5rem',
+                          borderRadius: '4px',
+                          border: '1px solid #c7d2fe',
+                          whiteSpace: 'nowrap',
+                          flexShrink: 0,
+                        }}
+                      >
                         Dispatched
                       </span>
                     </div>
 
                     {/* Animated Transit Connector Strip */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', paddingLeft: '1.05rem' }}>
+                    <div className="telemetry-bus-connector">
                       <div style={{ width: '2px', height: '22px', backgroundColor: '#4f46e5', borderRadius: '2px' }} />
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.45rem',
-                          fontSize: '0.725rem',
-                          color: '#3730a3',
-                          fontWeight: 600,
-                          backgroundColor: '#ffffff',
-                          padding: '0.2rem 0.65rem',
-                          borderRadius: '6px',
-                          border: '1px solid #e0e7ff',
-                        }}
-                      >
+                      <div className="telemetry-transit-pill">
                         <Bus size={13} color="#4f46e5" style={{ animation: 'subtle-float 2.5s infinite ease-in-out' }} />
-                        <span>Daily Scheduled Passenger Bus Bay #2</span>
+                        <span>Daily Scheduled Bus Bay #2</span>
                       </div>
                     </div>
 
                     {/* Destination Terminal */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div className="telemetry-hub-item">
                       <div
-                        style={{
-                          width: '34px',
-                          height: '34px',
-                          borderRadius: '8px',
-                          backgroundColor: '#ffffff',
-                          border: '1px solid #a7f3d0',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          flexShrink: 0,
-                          color: '#059669',
-                        }}
+                        className="telemetry-hub-icon-frame"
+                        style={{ border: '1px solid #a7f3d0', color: '#059669' }}
                       >
-                        <MapPin size={17} />
+                        <MapPin size={16} />
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        <div className="telemetry-hub-label">
                           Destination Counter
                         </div>
-                        <div style={{ fontSize: '0.875rem', fontWeight: 800, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <div className="telemetry-hub-name">
                           Regional Terminal Counter
                         </div>
                       </div>
-                      <span style={{ fontSize: '0.675rem', fontWeight: 700, color: '#047857', backgroundColor: '#ecfdf5', padding: '0.15rem 0.5rem', borderRadius: '4px', border: '1px solid #a7f3d0' }}>
+                      <span
+                        style={{
+                          fontSize: '0.675rem',
+                          fontWeight: 700,
+                          color: '#047857',
+                          backgroundColor: '#ecfdf5',
+                          padding: '0.15rem 0.5rem',
+                          borderRadius: '4px',
+                          border: '1px solid #a7f3d0',
+                          whiteSpace: 'nowrap',
+                          flexShrink: 0,
+                        }}
+                      >
                         OTP Ready
                       </span>
                     </div>
@@ -790,96 +613,49 @@ export const HomePage = ({ onNavigate, onTrackOrder, companySettings: propCompan
               </div>
 
               {/* Key Highlights Metrics */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
-                <div
-                  style={{
-                    backgroundColor: '#f8fafc',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '8px',
-                    padding: '0.65rem 0.85rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.55rem',
-                  }}
-                >
+              <div className="telemetry-metrics-row">
+                <div className="telemetry-metric-box">
                   <Bus size={15} color="#4f46e5" style={{ flexShrink: 0 }} />
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: '0.625rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 600 }}>Frequency</div>
-                    <div style={{ fontSize: '0.785rem', fontWeight: 800, color: '#0f172a' }}>14+ Runs Daily</div>
+                    <div className="telemetry-metric-title">Frequency</div>
+                    <div className="telemetry-metric-val">14+ Runs Daily</div>
                   </div>
                 </div>
 
-                <div
-                  style={{
-                    backgroundColor: '#f8fafc',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '8px',
-                    padding: '0.65rem 0.85rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.55rem',
-                  }}
-                >
+                <div className="telemetry-metric-box">
                   <ShieldCheck size={15} color="#059669" style={{ flexShrink: 0 }} />
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: '0.625rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 600 }}>Handover</div>
-                    <div style={{ fontSize: '0.785rem', fontWeight: 800, color: '#0f172a' }}>OTP Handover</div>
+                    <div className="telemetry-metric-title">Handover</div>
+                    <div className="telemetry-metric-val">OTP Handover</div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* 4 Sleek Milestone KPI Tiles */}
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-              gap: '1rem',
-            }}
-          >
+          {/* 4 Sleek Milestone KPI Tiles (Responsive Desktop Row / Mobile List View) */}
+          <div className="hero-milestones-grid">
             {heroStats.map((stat, idx) => (
               <div
                 key={idx}
-                className="interactive-card"
-                style={{
-                  backgroundColor: '#ffffff',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '10px',
-                  padding: '1.25rem',
-                  boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.03)',
-                }}
+                className="hero-milestone-card"
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.4rem' }}>
-                  <div
-                    style={{
-                      width: '38px',
-                      height: '38px',
-                      borderRadius: '8px',
-                      backgroundColor: '#eef2ff',
-                      border: '1px solid #c7d2fe',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                    }}
-                  >
-                    {idx === 0 && <MapPin size={18} color="#4f46e5" />}
-                    {idx === 1 && <Bus size={18} color="#4f46e5" />}
-                    {idx === 2 && <Package size={18} color="#4f46e5" />}
-                    {idx === 3 && <CheckCircle2 size={18} color="#059669" />}
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '1.35rem', fontWeight: 850, color: '#0f172a', lineHeight: 1.1 }}>
-                      {stat.value}
+                <div className="hero-milestone-card-inner">
+                  <div className="hero-milestone-top-row">
+                    <div className="hero-milestone-icon-frame">
+                      {idx === 0 && <MapPin size={18} color="#4f46e5" />}
+                      {idx === 1 && <Bus size={18} color="#4f46e5" />}
+                      {idx === 2 && <Package size={18} color="#4f46e5" />}
+                      {idx === 3 && <CheckCircle2 size={18} color="#059669" />}
                     </div>
-                    <div style={{ fontSize: '0.785rem', fontWeight: 600, color: '#334155' }}>
-                      {stat.label}
+                    <div className="hero-milestone-val-row">
+                      <span className="hero-milestone-val">{stat.value}</span>
+                      <span className="hero-milestone-lbl">{stat.label}</span>
                     </div>
                   </div>
-                </div>
-                <div style={{ fontSize: '0.725rem', color: '#64748b' }}>
-                  {stat.subtext}
+                  <div className="hero-milestone-sub">
+                    {stat.subtext}
+                  </div>
                 </div>
               </div>
             ))}

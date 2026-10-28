@@ -120,6 +120,22 @@ input::-webkit-scrollbar {
   padding: 0;
 }
 
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 90px;
+}
+
+#home,
+#services,
+#how-it-works,
+#network,
+#contact,
+#vendor-benefits,
+#simulator,
+section[id] {
+  scroll-margin-top: 90px;
+}
+
 body {
   font-family: var(--font-family);
   background-color: var(--bg-page);
@@ -897,11 +913,14 @@ input[type="number"]::-webkit-inner-spin-button {
 
 /* Mobile responsive fixes */
 @media (max-width: 768px) {
-  /* Display announcement bar with marquee cleanly on mobile */
+  /* Hide announcement marquee completely on mobile responsive as requested */
   .top-announcement-bar {
-    display: flex !important;
-    font-size: 0.7rem !important;
-    padding: 0.25rem 0.65rem !important;
+    display: none !important;
+  }
+
+  /* Hide desktop action button in mobile navigation bar as it already exists in the drawer menu */
+  .navbar-desktop-action {
+    display: none !important;
   }
 
   /* Prevent button overflows and abnormal stretching on mobile */

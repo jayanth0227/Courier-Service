@@ -216,7 +216,17 @@ export const AuthProvider = ({ children }) => {
   }, [validateSession]);
 
   const login = async (credentials) => {
-    const res = await api.auth.login(credentials);
+    const safeCredentials = { ...credentials };
+    if (typeof safeCredentials.identifier === 'string') {
+      safeCredentials.identifier = safeCredentials.identifier.trim().toLowerCase();
+    }
+    if (typeof safeCredentials.username === 'string') {
+      safeCredentials.username = safeCredentials.username.trim().toLowerCase();
+    }
+    if (typeof safeCredentials.email === 'string') {
+      safeCredentials.email = safeCredentials.email.trim().toLowerCase();
+    }
+    const res = await api.auth.login(safeCredentials);
     if (res.success && res.token) {
       localStorage.setItem('courier_token', res.token);
       localStorage.setItem('courier_user', JSON.stringify(res.user));

@@ -370,6 +370,8 @@ export const CreateBookingPage = ({
 
   const [loading, setLoading] = useState(false);
   const [createdBooking, setCreatedBooking] = useState(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [pendingPayload, setPendingPayload] = useState(null);
 
   const selectedToCityObj = citiesList.find(
     (c) => (c.name || '').trim().toLowerCase() === (formData.toCity || '').trim().toLowerCase()
@@ -567,46 +569,55 @@ export const CreateBookingPage = ({
 
     setFieldErrors({});
 
+    const validated = validation.data;
+    const cleanedItems = validated.items.map((item) => ({
+      parcelType: item.parcelType,
+      quantity: item.quantity,
+      weight: item.weight,
+      charge: item.charge,
+      notes: item.notes || '',
+    }));
+
+    // Consolidated summary
+    const consolidatedParcelType =
+      cleanedItems.length === 1
+        ? cleanedItems[0].parcelType
+        : `${cleanedItems[0].parcelType} +${cleanedItems.length - 1} more items`;
+
+    const payload = {
+      fromCity: validated.fromCity,
+      toCity: validated.toCity,
+      deliveryAddress: validated.deliveryAddress,
+      customerName: validated.customerName,
+      customerPhone: validated.customerPhone,
+      customerWhatsapp: validated.customerPhone,
+      receiverPhone: validated.receiverPhone || '',
+      receiverName: validated.receiverName || '',
+      items: cleanedItems,
+      quantity: totalQuantity,
+      weight: totalWeight,
+      amount: validated.totalAmount,
+      parcelType: consolidatedParcelType,
+      notes: cleanedItems.map((i) => i.notes).filter(Boolean).join('; ') || '',
+      paymentStatus: validated.paymentStatus,
+    };
+
+    // Require user confirmation before issuing the official booking
+    setPendingPayload(payload);
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirmBooking = async () => {
+    if (!pendingPayload) return;
+
     try {
       setLoading(true);
-
-      const validated = validation.data;
-      const cleanedItems = validated.items.map((item) => ({
-        parcelType: item.parcelType,
-        quantity: item.quantity,
-        weight: item.weight,
-        charge: item.charge,
-        notes: item.notes || '',
-      }));
-
-      // Consolidated summary
-      const consolidatedParcelType =
-        cleanedItems.length === 1
-          ? cleanedItems[0].parcelType
-          : `${cleanedItems[0].parcelType} +${cleanedItems.length - 1} more items`;
-
-      const payload = {
-        fromCity: validated.fromCity,
-        toCity: validated.toCity,
-        deliveryAddress: validated.deliveryAddress,
-        customerName: validated.customerName,
-        customerPhone: validated.customerPhone,
-        customerWhatsapp: validated.customerPhone,
-        receiverPhone: validated.receiverPhone || '',
-        receiverName: validated.receiverName || '',
-        items: cleanedItems,
-        quantity: totalQuantity,
-        weight: totalWeight,
-        amount: validated.totalAmount,
-        parcelType: consolidatedParcelType,
-        notes: cleanedItems.map((i) => i.notes).filter(Boolean).join('; ') || '',
-        paymentStatus: validated.paymentStatus,
-      };
-
-      const res = await api.bookings.create(payload);
+      const res = await api.bookings.create(pendingPayload);
 
       if (res.success && res.data) {
         showToast(`Consignment Booked Successfully! LR ID: ${res.data.orderId}`, 'success');
+        setShowConfirmModal(false);
+        setPendingPayload(null);
         setCreatedBooking(res.data);
         notifyLocalChange('BOOKING_CREATED', res.data);
         await fetchCities();
@@ -643,6 +654,8 @@ export const CreateBookingPage = ({
       },
     ]);
     setCreatedBooking(null);
+    setShowConfirmModal(false);
+    setPendingPayload(null);
     setFieldErrors({});
     setPhoneSuggestions([]);
     setPhoneDropdownOpen(false);
@@ -1763,6 +1776,230 @@ export const CreateBookingPage = ({
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* Consignment Booking Confirmation Modal */}
+      {showConfirmModal && pendingPayload && (
+        <div
+          className="modal-overlay"
+          onClick={() => !loading && setShowConfirmModal(false)}
+          style={{ zIndex: 1100 }}
+        >
+          <div
+            className="modal-dialog modal-dialog-lg"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: '640px', border: '1px solid #cbd5e1', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}
+          >
+            <div className="modal-header" style={{ borderBottom: '1px solid #f1f5f9', padding: '1rem 1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                <div
+                  style={{
+                    width: '38px',
+                    height: '38px',
+                    borderRadius: '10px',
+                    backgroundColor: '#eff6ff',
+                    border: '1px solid #bfdbfe',
+                    color: '#2563eb',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <PackagePlus size={20} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#0f172a' }}>
+                    Confirm Consignment Booking
+                  </h3>
+                  <div style={{ fontSize: '0.775rem', color: '#64748b' }}>
+                    Please review details before issuing official LR
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => !loading && setShowConfirmModal(false)}
+                disabled={loading}
+                title="Close"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="modal-body" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {/* Route Path Card */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '0.85rem 1rem',
+                  backgroundColor: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: '0.6875rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    Origin Branch
+                  </div>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>
+                    {pendingPayload.fromCity}
+                  </div>
+                </div>
+                <div style={{ textAlign: 'center', color: '#2563eb', fontWeight: 800, fontSize: '1.1rem' }}>
+                  ➔
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '0.6875rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    Destination City & Counter
+                  </div>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>
+                    {pendingPayload.toCity}
+                  </div>
+                  {pendingPayload.deliveryAddress && (
+                    <div style={{ fontSize: '0.75rem', color: '#64748b', maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {pendingPayload.deliveryAddress}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Sender & Receiver Summary */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                <div style={{ padding: '0.8rem', border: '1px solid #e2e8f0', borderRadius: '8px', backgroundColor: '#ffffff' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.35rem' }}>
+                    <User size={13} color="#2563eb" />
+                    <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
+                      Consignor (Sender)
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>
+                    {pendingPayload.customerName}
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: '#475569', marginTop: '0.15rem' }}>
+                    📱 {pendingPayload.customerPhone}
+                  </div>
+                </div>
+
+                <div style={{ padding: '0.8rem', border: '1px solid #e2e8f0', borderRadius: '8px', backgroundColor: '#ffffff' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.35rem' }}>
+                    <Phone size={13} color="#059669" />
+                    <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
+                      Consignee (Receiver)
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>
+                    {pendingPayload.receiverName || 'Self / Counter Collection'}
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: '#475569', marginTop: '0.15rem' }}>
+                    {pendingPayload.receiverPhone ? `📱 ${pendingPayload.receiverPhone}` : 'No phone specified'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Parcels Breakdown */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                  <span style={{ fontSize: '0.725rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
+                    Articles Breakdown ({pendingPayload.items.length})
+                  </span>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569' }}>
+                    Total Qty: <strong>{pendingPayload.quantity} pcs</strong> • Weight: <strong>{pendingPayload.weight ? `${pendingPayload.weight} kg` : '0 kg'}</strong>
+                  </span>
+                </div>
+                <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8125rem' }}>
+                    <thead>
+                      <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0', textAlign: 'left', color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase' }}>
+                        <th style={{ padding: '0.45rem 0.75rem' }}>Parcel Item</th>
+                        <th style={{ padding: '0.45rem 0.75rem', textAlign: 'center' }}>Qty</th>
+                        <th style={{ padding: '0.45rem 0.75rem', textAlign: 'center' }}>Weight</th>
+                        <th style={{ padding: '0.45rem 0.75rem', textAlign: 'right' }}>Charge</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pendingPayload.items.map((item, idx) => (
+                        <tr key={idx} style={{ borderBottom: idx < pendingPayload.items.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+                          <td style={{ padding: '0.45rem 0.75rem', fontWeight: 600, color: '#1e293b' }}>
+                            {item.parcelType}
+                            {item.notes && <span style={{ color: '#64748b', fontSize: '0.725rem', marginLeft: '6px' }}>({item.notes})</span>}
+                          </td>
+                          <td style={{ padding: '0.45rem 0.75rem', textAlign: 'center' }}>{item.quantity}</td>
+                          <td style={{ padding: '0.45rem 0.75rem', textAlign: 'center' }}>{item.weight ? `${item.weight} kg` : '-'}</td>
+                          <td style={{ padding: '0.45rem 0.75rem', textAlign: 'right', fontWeight: 700 }}>₹{item.charge}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Total & Payment Mode Banner */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '0.85rem 1.1rem',
+                  backgroundColor: '#f0fdf4',
+                  border: '1px solid #bbf7d0',
+                  borderRadius: '8px',
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#166534', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    Total Freight Amount
+                  </div>
+                  <div style={{ fontSize: '1.45rem', fontWeight: 800, color: '#15803d' }}>
+                    ₹{pendingPayload.amount}
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: '0.2rem' }}>
+                    Payment Mode
+                  </div>
+                  <span
+                    style={{
+                      display: 'inline-block',
+                      padding: '0.25rem 0.75rem',
+                      borderRadius: '9999px',
+                      fontSize: '0.775rem',
+                      fontWeight: 800,
+                      backgroundColor: pendingPayload.paymentStatus === 'PAID' ? '#dcfce7' : '#fef3c7',
+                      color: pendingPayload.paymentStatus === 'PAID' ? '#15803d' : '#b45309',
+                      border: `1px solid ${pendingPayload.paymentStatus === 'PAID' ? '#86efac' : '#fde68a'}`,
+                    }}
+                  >
+                    {pendingPayload.paymentStatus}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.65rem', padding: '0.85rem 1.25rem', borderTop: '1px solid #f1f5f9' }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setShowConfirmModal(false)}
+                disabled={loading}
+              >
+                Back to Edit
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={handleConfirmBooking}
+                disabled={loading}
+                style={{ minWidth: '180px', fontWeight: 700 }}
+              >
+                <Check size={16} />
+                <span>{loading ? 'Issuing LR Docket...' : 'Confirm & Book Order'}</span>
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

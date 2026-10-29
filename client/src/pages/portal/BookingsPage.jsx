@@ -82,6 +82,68 @@ export const BookingsPage = ({
   const [bookedByRole, setBookedByRole] = useState('ALL');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [datePreset, setDatePreset] = useState('ALL');
+
+  const formatLocalYMD = (d) => {
+    if (!d) return '';
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const handleDatePresetChange = (preset) => {
+    setDatePreset(preset);
+    const today = new Date();
+
+    if (preset === 'ALL') {
+      setStartDate('');
+      setEndDate('');
+    } else if (preset === 'today') {
+      const todayStr = formatLocalYMD(today);
+      setStartDate(todayStr);
+      setEndDate(todayStr);
+    } else if (preset === 'yesterday') {
+      const yest = new Date(today);
+      yest.setDate(yest.getDate() - 1);
+      const yestStr = formatLocalYMD(yest);
+      setStartDate(yestStr);
+      setEndDate(yestStr);
+    } else if (preset === '7days') {
+      const past = new Date(today);
+      past.setDate(past.getDate() - 6);
+      setStartDate(formatLocalYMD(past));
+      setEndDate(formatLocalYMD(today));
+    } else if (preset === '30days') {
+      const past = new Date(today);
+      past.setDate(past.getDate() - 29);
+      setStartDate(formatLocalYMD(past));
+      setEndDate(formatLocalYMD(today));
+    } else if (preset === 'this_month') {
+      const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+      setStartDate(formatLocalYMD(firstDay));
+      setEndDate(formatLocalYMD(today));
+    } else if (preset === 'custom') {
+      if (!startDate) setStartDate(formatLocalYMD(today));
+      if (!endDate) setEndDate(formatLocalYMD(today));
+    }
+  };
+
+  const handleStartDateChange = (val) => {
+    setStartDate(val);
+    setDatePreset('custom');
+  };
+
+  const handleEndDateChange = (val) => {
+    setEndDate(val);
+    setDatePreset('custom');
+  };
+
+  const handleClearDateFilter = () => {
+    setDatePreset('ALL');
+    setStartDate('');
+    setEndDate('');
+  };
 
   // Selected Booking for View/Edit modal
   const [selectedBooking, setSelectedBooking] = useState(null);
@@ -852,38 +914,54 @@ export const BookingsPage = ({
           </p>
         </div>
         <button
-          className="btn btn-primary btn-sm"
+          className="btn btn-primary"
           onClick={() => onNavigateModule('create-booking')}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            height: '38px',
+            padding: '0 1.1rem',
+            borderRadius: '8px',
+            fontSize: '0.84rem',
+            fontWeight: 600,
+          }}
         >
-          <Plus size={15} />
+          <Plus size={16} />
           <span>New Booking</span>
         </button>
       </div>
 
-      {/* Minimal Filter and Search Bar */}
+      {/* Sleek Filter and Search Bar */}
       <div
         style={{
           display: 'flex',
           flexWrap: 'wrap',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: '0.75rem',
+          gap: '0.65rem',
           backgroundColor: '#ffffff',
           border: '1px solid #e2e8f0',
-          borderRadius: '8px',
+          borderRadius: '10px',
           padding: '0.75rem 1rem',
           marginBottom: '1.25rem',
-          boxShadow: 'var(--shadow-sm)',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
         }}
       >
         <form onSubmit={handleSearchSubmit} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: '1 1 280px' }}>
           <div style={{ position: 'relative', width: '100%' }}>
-            <Search size={15} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+            <Search size={15} style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
             <input
               type="text"
               className="form-control"
-              style={{ paddingLeft: '32px', paddingRight: search ? '28px' : '10px', fontSize: '0.875rem' }}
+              style={{
+                height: '38px',
+                paddingLeft: '34px',
+                paddingRight: search ? '28px' : '10px',
+                fontSize: '0.84rem',
+                borderRadius: '8px',
+                border: '1px solid #e2e8f0',
+              }}
               placeholder="Search by Order ID, Sender, Mobile, Staff, Bus..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -895,7 +973,7 @@ export const BookingsPage = ({
                 onClick={() => setSearch('')}
                 style={{
                   position: 'absolute',
-                  right: '8px',
+                  right: '9px',
                   top: '50%',
                   transform: 'translateY(-50%)',
                   background: 'none',
@@ -903,8 +981,8 @@ export const BookingsPage = ({
                   color: '#94a3b8',
                   cursor: 'pointer',
                   padding: '2px',
-                  fontWeight: 700,
-                  fontSize: '0.8125rem',
+                  display: 'flex',
+                  alignItems: 'center',
                 }}
                 title="Clear search"
               >
@@ -912,7 +990,20 @@ export const BookingsPage = ({
               </button>
             )}
           </div>
-          <button type="submit" className="btn btn-secondary btn-sm" style={{ whiteSpace: 'nowrap' }}>
+          <button
+            type="submit"
+            className="btn btn-secondary"
+            style={{
+              height: '38px',
+              padding: '0 1rem',
+              borderRadius: '8px',
+              fontSize: '0.8125rem',
+              whiteSpace: 'nowrap',
+              display: 'inline-flex',
+              alignItems: 'center',
+              fontWeight: 600,
+            }}
+          >
             Search
           </button>
         </form>
@@ -920,7 +1011,14 @@ export const BookingsPage = ({
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
           <select
             className="form-control"
-            style={{ width: '145px', fontSize: '0.8125rem' }}
+            style={{
+              width: '145px',
+              height: '38px',
+              fontSize: '0.8125rem',
+              borderRadius: '8px',
+              border: '1px solid #e2e8f0',
+              cursor: 'pointer',
+            }}
             value={bookedByRole}
             onChange={(e) => setBookedByRole(e.target.value)}
             title="Filter by who booked the order (Admin or Counter Staff)"
@@ -932,7 +1030,14 @@ export const BookingsPage = ({
 
           <select
             className="form-control"
-            style={{ width: '150px', fontSize: '0.8125rem' }}
+            style={{
+              width: '150px',
+              height: '38px',
+              fontSize: '0.8125rem',
+              borderRadius: '8px',
+              border: '1px solid #e2e8f0',
+              cursor: 'pointer',
+            }}
             value={status}
             onChange={(e) => setStatus(e.target.value)}
           >
@@ -945,7 +1050,14 @@ export const BookingsPage = ({
 
           <select
             className="form-control"
-            style={{ width: '160px', fontSize: '0.8125rem' }}
+            style={{
+              width: '160px',
+              height: '38px',
+              fontSize: '0.8125rem',
+              borderRadius: '8px',
+              border: '1px solid #e2e8f0',
+              cursor: 'pointer',
+            }}
             value={destination}
             onChange={(e) => setDestination(e.target.value)}
           >
@@ -957,20 +1069,129 @@ export const BookingsPage = ({
             ))}
           </select>
 
-          {(search || status !== 'ALL' || destination !== 'ALL' || parcelType !== 'ALL' || bookedByRole !== 'ALL') && (
+          {/* Date Filter */}
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              backgroundColor: startDate || endDate || datePreset !== 'ALL' ? '#eff6ff' : '#ffffff',
+              border: `1px solid ${startDate || endDate || datePreset !== 'ALL' ? '#93c5fd' : '#e2e8f0'}`,
+              borderRadius: '8px',
+              padding: '0 0.65rem',
+              height: '38px',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            <Calendar
+              size={14}
+              color={startDate || endDate || datePreset !== 'ALL' ? '#2563eb' : '#64748b'}
+            />
+            <select
+              style={{
+                width: '120px',
+                fontSize: '0.8125rem',
+                border: 'none',
+                background: 'transparent',
+                outline: 'none',
+                padding: '0 4px',
+                height: '100%',
+                fontWeight: startDate || endDate || datePreset !== 'ALL' ? 600 : 400,
+                color: startDate || endDate || datePreset !== 'ALL' ? '#1d4ed8' : '#334155',
+                cursor: 'pointer',
+              }}
+              value={datePreset}
+              onChange={(e) => handleDatePresetChange(e.target.value)}
+              title="Filter bookings by date"
+            >
+              <option value="ALL">All Dates</option>
+              <option value="today">Today</option>
+              <option value="yesterday">Yesterday</option>
+              <option value="7days">Last 7 Days</option>
+              <option value="30days">Last 30 Days</option>
+              <option value="this_month">This Month</option>
+              <option value="custom">Custom Range...</option>
+            </select>
+
+            {(datePreset === 'custom' || (startDate && datePreset === 'ALL')) && (
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', marginLeft: '0.25rem' }}>
+                <input
+                  type="date"
+                  className="form-control"
+                  value={startDate}
+                  onChange={(e) => handleStartDateChange(e.target.value)}
+                  style={{
+                    width: '125px',
+                    fontSize: '0.75rem',
+                    padding: '2px 4px',
+                    height: '28px',
+                    backgroundColor: '#ffffff',
+                    borderRadius: '4px',
+                  }}
+                  title="From date"
+                />
+                <span style={{ fontSize: '0.75rem', color: '#64748b' }}>to</span>
+                <input
+                  type="date"
+                  className="form-control"
+                  value={endDate}
+                  onChange={(e) => handleEndDateChange(e.target.value)}
+                  style={{
+                    width: '125px',
+                    fontSize: '0.75rem',
+                    padding: '2px 4px',
+                    height: '28px',
+                    backgroundColor: '#ffffff',
+                    borderRadius: '4px',
+                  }}
+                  title="To date"
+                />
+              </div>
+            )}
+
+            {(startDate || endDate || datePreset !== 'ALL') && (
+              <button
+                type="button"
+                onClick={handleClearDateFilter}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#64748b',
+                  cursor: 'pointer',
+                  padding: '2px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                }}
+                title="Clear date filter"
+              >
+                <X size={13} />
+              </button>
+            )}
+          </div>
+
+          {(search || status !== 'ALL' || destination !== 'ALL' || parcelType !== 'ALL' || bookedByRole !== 'ALL' || startDate || endDate || datePreset !== 'ALL') && (
             <button
               type="button"
-              className="btn btn-outline btn-sm"
+              className="btn btn-outline"
               onClick={() => {
                 setSearch('');
                 setStatus('ALL');
                 setDestination('ALL');
                 setParcelType('ALL');
                 setBookedByRole('ALL');
+                setDatePreset('ALL');
                 setStartDate('');
                 setEndDate('');
               }}
-              style={{ fontSize: '0.75rem' }}
+              style={{
+                height: '38px',
+                padding: '0 0.85rem',
+                borderRadius: '8px',
+                fontSize: '0.8125rem',
+                display: 'inline-flex',
+                alignItems: 'center',
+                fontWeight: 600,
+              }}
             >
               Reset
             </button>
@@ -1004,7 +1225,31 @@ export const BookingsPage = ({
               <tr>
                 <td colSpan={8} style={{ textAlign: 'center', padding: '3rem 1rem', color: '#64748b' }}>
                   <Package size={32} color="#cbd5e1" style={{ margin: '0 auto 8px auto', display: 'block' }} />
-                  <div>No consignment bookings found.</div>
+                  <div style={{ fontWeight: 600, color: '#334155' }}>No consignment bookings found</div>
+                  <div style={{ fontSize: '0.8125rem', marginTop: '0.25rem', color: '#64748b' }}>
+                    {startDate || endDate
+                      ? `No records found for ${startDate}${endDate && endDate !== startDate ? ` to ${endDate}` : ''}. Try selecting another date.`
+                      : 'Try adjusting your search or filters.'}
+                  </div>
+                  {(search || status !== 'ALL' || destination !== 'ALL' || parcelType !== 'ALL' || bookedByRole !== 'ALL' || startDate || endDate || datePreset !== 'ALL') && (
+                    <button
+                      type="button"
+                      className="btn btn-outline btn-sm"
+                      onClick={() => {
+                        setSearch('');
+                        setStatus('ALL');
+                        setDestination('ALL');
+                        setParcelType('ALL');
+                        setBookedByRole('ALL');
+                        setDatePreset('ALL');
+                        setStartDate('');
+                        setEndDate('');
+                      }}
+                      style={{ marginTop: '0.85rem', fontSize: '0.75rem' }}
+                    >
+                      Reset All Filters
+                    </button>
+                  )}
                 </td>
               </tr>
             ) : (

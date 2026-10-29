@@ -47,8 +47,14 @@ router.post('/login', async (req, res, next) => {
     }
 
     // Find user in database and populate tenant details
+    const escapedKey = loginKey.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const caseInsensitiveRegex = new RegExp(`^${escapedKey}$`, 'i');
+
     let user = await User.findOne({
       $or: [
+        { username: caseInsensitiveRegex },
+        { email: caseInsensitiveRegex },
+        { secondaryEmail: caseInsensitiveRegex },
         { username: loginKey },
         { email: loginKey },
         { secondaryEmail: loginKey },
@@ -60,6 +66,7 @@ router.post('/login', async (req, res, next) => {
     if (!user) {
       const tenant = await Tenant.findOne({
         $or: [
+          { contactEmail: caseInsensitiveRegex },
           { contactEmail: loginKey },
           { contactPhone: loginKey },
         ],
@@ -579,8 +586,16 @@ router.post('/forgot-password/send-otp', passwordResetLimiter, async (req, res, 
       });
     }
 
+    const escapedKey = rawKey.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const caseInsensitiveRegex = new RegExp(`^${escapedKey}$`, 'i');
+
     const user = await User.findOne({
-      $or: [{ username: rawKey }, { email: rawKey }],
+      $or: [
+        { username: caseInsensitiveRegex },
+        { email: caseInsensitiveRegex },
+        { username: rawKey },
+        { email: rawKey },
+      ],
     });
 
     if (!user) {
@@ -658,8 +673,16 @@ router.post('/forgot-password/verify-reset', passwordResetLimiter, async (req, r
       });
     }
 
+    const escapedKey = cleanIdentifier.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const caseInsensitiveRegex = new RegExp(`^${escapedKey}$`, 'i');
+
     const user = await User.findOne({
-      $or: [{ username: cleanIdentifier }, { email: cleanIdentifier }],
+      $or: [
+        { username: caseInsensitiveRegex },
+        { email: caseInsensitiveRegex },
+        { username: cleanIdentifier },
+        { email: cleanIdentifier },
+      ],
     });
 
     if (!user) {

@@ -280,12 +280,37 @@ router.get('/', async (req, res, next) => {
     if (startDate || endDate) {
       query.createdAt = {};
       if (startDate) {
-        query.createdAt.$gte = new Date(startDate);
+        const cleanStart = String(startDate).split('T')[0].trim();
+        const parts = cleanStart.split('-');
+        if (parts.length === 3) {
+          query.createdAt.$gte = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]), 0, 0, 0, 0);
+        } else {
+          const s = new Date(startDate);
+          s.setHours(0, 0, 0, 0);
+          query.createdAt.$gte = s;
+        }
       }
       if (endDate) {
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
-        query.createdAt.$lte = end;
+        const cleanEnd = String(endDate).split('T')[0].trim();
+        const parts = cleanEnd.split('-');
+        if (parts.length === 3) {
+          query.createdAt.$lte = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]), 23, 59, 59, 999);
+        } else {
+          const end = new Date(endDate);
+          end.setHours(23, 59, 59, 999);
+          query.createdAt.$lte = end;
+        }
+      } else if (startDate && !endDate) {
+        // If single date selected without an explicit end date, filter the entire day
+        const cleanStart = String(startDate).split('T')[0].trim();
+        const parts = cleanStart.split('-');
+        if (parts.length === 3) {
+          query.createdAt.$lte = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]), 23, 59, 59, 999);
+        } else {
+          const end = new Date(startDate);
+          end.setHours(23, 59, 59, 999);
+          query.createdAt.$lte = end;
+        }
       }
     }
 

@@ -131,13 +131,13 @@ export const PortalTopNav = ({
         <div className="portal-meta-bar">
           {user?.branch && (
             <div className="portal-meta-item" title="Operational Branch">
-              <MapPin size={13} color="#64748b" />
+              <MapPin size={14} />
               <span>{user.branch}</span>
             </div>
           )}
 
           <div className="portal-meta-item" title="System Live Time">
-            <Clock size={13} color="#64748b" />
+            <Clock size={14} />
             <span>{timeStr}</span>
           </div>
 

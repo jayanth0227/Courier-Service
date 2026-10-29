@@ -76,11 +76,12 @@ export const LoginPage = ({ onNavigate, onLoginSuccess, companySettings: propCom
   // Step 1: Send OTP to User's registered email
   const handleSendOtp = async (e) => {
     if (e) e.preventDefault();
-    const cleanKey = forgotIdentifier.trim();
+    const cleanKey = forgotIdentifier.trim().toLowerCase();
     if (!cleanKey) {
       showToast('Please enter your account username or registered email', 'error');
       return;
     }
+    setForgotIdentifier(cleanKey);
 
     try {
       setForgotLoading(true);
@@ -101,7 +102,7 @@ export const LoginPage = ({ onNavigate, onLoginSuccess, companySettings: propCom
   // Step 2: Verify OTP and apply new password
   const handleVerifyAndResetPassword = async (e) => {
     e.preventDefault();
-    const cleanKey = forgotIdentifier.trim();
+    const cleanKey = forgotIdentifier.trim().toLowerCase();
     const cleanCode = forgotOtp.trim();
 
     if (!cleanKey || !cleanCode || !forgotNewPassword) {
@@ -144,7 +145,8 @@ export const LoginPage = ({ onNavigate, onLoginSuccess, companySettings: propCom
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!identifier.trim() || !password) {
+    const cleanIdentifier = identifier.trim().toLowerCase();
+    if (!cleanIdentifier || !password) {
       setError('Please enter both username/email and password');
       return;
     }
@@ -152,7 +154,8 @@ export const LoginPage = ({ onNavigate, onLoginSuccess, companySettings: propCom
     try {
       setLoading(true);
       setError('');
-      const res = await login({ identifier: identifier.trim(), password });
+      setIdentifier(cleanIdentifier);
+      const res = await login({ identifier: cleanIdentifier, password });
       showToast('Login successful! Welcome to Counter Operations.', 'success');
       if (onLoginSuccess) {
         onLoginSuccess(res?.user);
@@ -272,9 +275,9 @@ export const LoginPage = ({ onNavigate, onLoginSuccess, companySettings: propCom
               <input
                 type="text"
                 className="form-control"
-                placeholder="Enter your username..."
+                placeholder="Enter your username or email..."
                 value={identifier}
-                onChange={(e) => setIdentifier(e.target.value)}
+                onChange={(e) => setIdentifier(e.target.value.toLowerCase())}
                 required
                 autoFocus
               />
@@ -436,7 +439,7 @@ export const LoginPage = ({ onNavigate, onLoginSuccess, companySettings: propCom
                       className="form-control"
                       placeholder="e.g. staff1 or admin@mrcargo.com"
                       value={forgotIdentifier}
-                      onChange={(e) => setForgotIdentifier(e.target.value)}
+                      onChange={(e) => setForgotIdentifier(e.target.value.toLowerCase())}
                       required
                       autoFocus
                     />

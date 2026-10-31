@@ -28,6 +28,15 @@ router.get('/:orderId', async (req, res, next) => {
       });
     }
 
+    // 90-Day Data Retention Policy check
+    const minRetentionDate = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+    if (booking.createdAt && new Date(booking.createdAt) < minRetentionDate) {
+      return res.status(404).json({
+        success: false,
+        message: `Consignment #${rawOrderId} was booked more than 90 days ago and has been archived or purged in accordance with our 90-day data retention policy.`,
+      });
+    }
+
     // Lookup tenant settings for custom branding
     let companySettings = null;
     if (booking.tenantId) {

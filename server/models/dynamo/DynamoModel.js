@@ -11,6 +11,32 @@ const { docClient, getFullTableName } = require('../../config/dynamoClient');
 // In-memory model registry to support cross-entity .populate('tenantId') etc.
 const modelRegistry = {};
 
+// 90-Day Ephemeral Entities (strictly purged and hidden beyond 90 days)
+const EPHEMERAL_ENTITIES = new Set([
+  'bookings',
+  'busdispatches',
+  'notifications',
+  'auditlogs',
+  'inquiries',
+  'booking',
+  'busdispatch',
+  'notification',
+  'auditlog',
+  'inquiry',
+]);
+
+const RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
+
+function isExpiredItem(entityName, item) {
+  if (!item || !EPHEMERAL_ENTITIES.has(String(entityName || '').toLowerCase())) {
+    return false;
+  }
+  const rawDate = item.createdAt || item.dispatchedAt || item.timestamp || item.sentAt;
+  if (!rawDate) return false;
+  const itemTime = new Date(rawDate).getTime();
+  return !isNaN(itemTime) && itemTime < (Date.now() - RETENTION_MS);
+}
+
 /**
  * Evaluates whether an in-memory document satisfies a MongoDB query filter
  */
@@ -335,6 +361,11 @@ class QueryChain {
       items = await this.model._rawScan();
     }
 
+    // 90-Day Retention Visibility Guard: hide expired records from ephemeral entities
+    if (EPHEMERAL_ENTITIES.has(this.model.entityName)) {
+      items = items.filter((item) => !isExpiredItem(this.model.entityName, item));
+    }
+
     items = items.filter((item) => matchesFilter(item, this.filter));
 
     // Sorting
@@ -438,6 +469,13 @@ class DynamoModel {
     cleanData.id = String(cleanId);
     cleanData._id = String(cleanId);
 
+    // 90-Day DynamoDB TTL attribute calculation for ephemeral entities
+    if (EPHEMERAL_ENTITIES.has(self.entityName)) {
+      if (!cleanData.ttl) {
+        cleanData.ttl = Math.floor(Date.now() / 1000) + (90 * 24 * 60 * 60);
+      }
+    }
+
     // Attach instance methods
     Object.defineProperties(cleanData, {
       save: {
@@ -448,6 +486,9 @@ class DynamoModel {
             this.password = await bcrypt.hash(this.password, salt);
           }
           this.updatedAt = new Date().toISOString();
+          if (EPHEMERAL_ENTITIES.has(self.entityName) && !this.ttl) {
+            this.ttl = Math.floor(Date.now() / 1000) + (90 * 24 * 60 * 60);
+          }
           await self._rawPut(this);
           return this;
         },
@@ -544,6 +585,13 @@ class DynamoModel {
     if (!payload.createdAt) payload.createdAt = new Date().toISOString();
     payload.updatedAt = new Date().toISOString();
 
+    // 90-Day DynamoDB TTL attribute calculation for ephemeral entities
+    if (EPHEMERAL_ENTITIES.has(this.entityName)) {
+      if (!payload.ttl) {
+        payload.ttl = Math.floor(Date.now() / 1000) + (90 * 24 * 60 * 60);
+      }
+    }
+
     let attempts = 0;
     while (attempts < 3) {
       try {
@@ -563,6 +611,11 @@ class DynamoModel {
             this._memoryCache.push(payload);
           }
         }
+        item.ttl = payload.ttl;
+        item.createdAt = payload.createdAt;
+        item.updatedAt = payload.updatedAt;
+        item.id = payload.id;
+        item._id = payload._id;
         return payload;
       } catch (err) {
         const isNetworkErr =
@@ -694,13 +747,19 @@ class DynamoModel {
   }
 
   async countDocuments(filter = {}) {
-    const items = await this._rawScan();
+    let items = await this._rawScan();
+    if (EPHEMERAL_ENTITIES.has(this.entityName)) {
+      items = items.filter((item) => !isExpiredItem(this.entityName, item));
+    }
     return items.filter((item) => matchesFilter(item, filter)).length;
   }
 
   // Mongoose: Model.aggregate(pipeline)
   async aggregate(pipeline = []) {
     let items = await this._rawScan();
+    if (EPHEMERAL_ENTITIES.has(this.entityName)) {
+      items = items.filter((item) => !isExpiredItem(this.entityName, item));
+    }
 
     for (const stage of pipeline) {
       const stageName = Object.keys(stage)[0];
@@ -802,6 +861,21 @@ class DynamoModel {
     }
 
     return items;
+  }
+  // Mongoose: Model.distinct(field, filter)
+  async distinct(field, filter = {}) {
+    let items = await this._rawScan();
+    if (EPHEMERAL_ENTITIES.has(this.entityName)) {
+      items = items.filter((item) => !isExpiredItem(this.entityName, item));
+    }
+    items = items.filter((item) => matchesFilter(item, filter));
+    const set = new Set();
+    for (const it of items) {
+      if (it[field] !== undefined && it[field] !== null) {
+        set.add(it[field]);
+      }
+    }
+    return Array.from(set);
   }
 }
 

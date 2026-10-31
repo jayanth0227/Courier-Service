@@ -373,7 +373,7 @@ export const OrganizationDetailView = ({
           <div className="stat-card-value">{metrics.bookingsCount ?? 0}</div>
           <div className="stat-card-caption" style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span>Today: {metrics.todayBookingsCount ?? 0} booked</span>
-            <span style={{ fontWeight: 600, color: '#2563eb' }}>All Time</span>
+            <span style={{ fontWeight: 600, color: '#2563eb' }}>90 Days</span>
           </div>
         </div>
 

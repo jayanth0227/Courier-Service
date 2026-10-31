@@ -97,8 +97,10 @@ export const BookingsPage = ({
     const today = new Date();
 
     if (preset === 'ALL') {
-      setStartDate('');
-      setEndDate('');
+      const past90 = new Date(today);
+      past90.setDate(past90.getDate() - 89);
+      setStartDate(formatLocalYMD(past90));
+      setEndDate(formatLocalYMD(today));
     } else if (preset === 'today') {
       const todayStr = formatLocalYMD(today);
       setStartDate(todayStr);
@@ -199,16 +201,18 @@ export const BookingsPage = ({
     }
   };
 
-  const fetchBookings = async (page = 1, searchQuery = search, isInitial = false) => {
+  const fetchBookings = async (page = 1, searchQuery = search, isInitial = false, overridePreset = null) => {
     try {
       if (isInitial && bookings.length === 0) {
         setLoading(true);
       } else {
         setIsFetching(true);
       }
+      const activePreset = overridePreset !== null ? overridePreset : datePreset;
+      const isToday = activePreset === 'today';
       const params = {
-        page,
-        limit: pagination.limit,
+        page: isToday ? 1 : page,
+        limit: isToday ? 0 : (pagination.limit || 12),
       };
       if (searchQuery && searchQuery.trim()) params.search = searchQuery.trim();
       if (status !== 'ALL') params.status = status;
@@ -247,7 +251,7 @@ export const BookingsPage = ({
     }, delay);
 
     return () => clearTimeout(timer);
-  }, [search, status, destination, parcelType, bookedByRole, startDate, endDate]);
+  }, [search, status, destination, parcelType, bookedByRole, startDate, endDate, datePreset]);
 
   // Real-time live synchronization: receives updates without manual refresh
   useEffect(() => {
@@ -1105,7 +1109,7 @@ export const BookingsPage = ({
               onChange={(e) => handleDatePresetChange(e.target.value)}
               title="Filter bookings by date"
             >
-              <option value="ALL">All Dates</option>
+              <option value="ALL">All Dates (Last 90 Days)</option>
               <option value="today">Today</option>
               <option value="yesterday">Yesterday</option>
               <option value="7days">Last 7 Days</option>
@@ -1119,6 +1123,8 @@ export const BookingsPage = ({
                 <input
                   type="date"
                   className="form-control"
+                  min={formatLocalYMD(new Date(Date.now() - 90 * 86400000))}
+                  max={formatLocalYMD(new Date())}
                   value={startDate}
                   onChange={(e) => handleStartDateChange(e.target.value)}
                   style={{
@@ -1129,12 +1135,14 @@ export const BookingsPage = ({
                     backgroundColor: '#ffffff',
                     borderRadius: '4px',
                   }}
-                  title="From date"
+                  title="From date (Max 90 days back)"
                 />
                 <span style={{ fontSize: '0.75rem', color: '#64748b' }}>to</span>
                 <input
                   type="date"
                   className="form-control"
+                  min={formatLocalYMD(new Date(Date.now() - 90 * 86400000))}
+                  max={formatLocalYMD(new Date())}
                   value={endDate}
                   onChange={(e) => handleEndDateChange(e.target.value)}
                   style={{
@@ -1453,28 +1461,38 @@ export const BookingsPage = ({
         }}
       >
         <div>
-          Showing {bookings.length} of {pagination.total} total bookings (Page {pagination.page} of{' '}
-          {pagination.pages})
+          {datePreset === 'today' ? (
+            <span style={{ fontWeight: 600, color: '#1e293b' }}>
+              Showing all <strong>{bookings.length}</strong> {bookings.length === 1 ? 'booking' : 'bookings'} booked today (No pagination)
+            </span>
+          ) : (
+            <span>
+              Showing {bookings.length} of {pagination.total} total bookings (Page {pagination.page} of{' '}
+              {pagination.pages})
+            </span>
+          )}
         </div>
 
-        <div style={{ display: 'flex', gap: '0.4rem' }}>
-          <button
-            className="btn btn-secondary btn-sm"
-            disabled={pagination.page <= 1}
-            onClick={() => fetchBookings(pagination.page - 1)}
-          >
-            <ChevronLeft size={14} />
-            Previous
-          </button>
-          <button
-            className="btn btn-secondary btn-sm"
-            disabled={pagination.page >= pagination.pages}
-            onClick={() => fetchBookings(pagination.page + 1)}
-          >
-            Next
-            <ChevronRight size={14} />
-          </button>
-        </div>
+        {datePreset !== 'today' && pagination.pages > 1 && (
+          <div style={{ display: 'flex', gap: '0.4rem' }}>
+            <button
+              className="btn btn-secondary btn-sm"
+              disabled={pagination.page <= 1}
+              onClick={() => fetchBookings(pagination.page - 1)}
+            >
+              <ChevronLeft size={14} />
+              Previous
+            </button>
+            <button
+              className="btn btn-secondary btn-sm"
+              disabled={pagination.page >= pagination.pages}
+              onClick={() => fetchBookings(pagination.page + 1)}
+            >
+              Next
+              <ChevronRight size={14} />
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )}

@@ -167,6 +167,7 @@ router.get('/public', async (req, res, next) => {
           companyEmail: '',
           companyAddress: '',
           gstin: '',
+          portfolioUrl: '',
           receiptFooterNote: 'Thank you for choosing our bus parcel service.',
           termsAndConditions: `1. Goods carried strictly at owner's risk; company is not liable for leakage, breakage, or natural damages.
 2. Value of goods must be declared at booking; company liability for undeclared items is strictly limited to ₹500.
@@ -208,8 +209,11 @@ router.get('/public', async (req, res, next) => {
         companyPhone: settings.companyPhone,
         companyEmail: settings.companyEmail,
         companyAddress: settings.companyAddress,
+        receiptAddress: settings.receiptAddress || '',
+        receiptAdminName: settings.receiptAdminName || '',
         fromCity: settings.fromCity || '',
         gstin: settings.gstin || '',
+        portfolioUrl: settings.portfolioUrl || '',
         receiptFooterNote: settings.receiptFooterNote,
         termsAndConditions: settings.termsAndConditions,
         standardRoutes: settings.standardRoutes || [],
@@ -252,6 +256,7 @@ router.get('/public', async (req, res, next) => {
         companyEmail: 'operations@mrcargo.com',
         companyAddress: 'Central Terminal Hub & Logistics Station',
         gstin: '',
+        portfolioUrl: '',
         receiptFooterNote: 'Thank you for choosing our bus parcel service.',
         termsAndConditions: `1. Goods carried strictly at owner's risk; company is not liable for leakage, breakage, or natural damages.
 2. Value of goods must be declared at booking; company liability for undeclared items is strictly limited to ₹500.
@@ -322,8 +327,11 @@ router.put('/', protect, tenantScope, authorize('admin', 'superadmin'), async (r
       companyPhone,
       companyEmail,
       companyAddress,
+      receiptAddress,
+      receiptAdminName,
       fromCity,
       gstin,
+      portfolioUrl,
       receiptFooterNote,
       termsAndConditions,
       whatsappProvider,
@@ -342,8 +350,11 @@ router.put('/', protect, tenantScope, authorize('admin', 'superadmin'), async (r
     if (companyPhone !== undefined) settings.companyPhone = (companyPhone || '').trim();
     if (companyEmail !== undefined) settings.companyEmail = (companyEmail || '').trim();
     if (companyAddress !== undefined) settings.companyAddress = (companyAddress || '').trim();
+    if (receiptAddress !== undefined) settings.receiptAddress = (receiptAddress || '').trim();
+    if (receiptAdminName !== undefined) settings.receiptAdminName = (receiptAdminName || '').trim();
     if (fromCity !== undefined) settings.fromCity = (fromCity || '').trim();
     if (gstin !== undefined) settings.gstin = (gstin || '').trim();
+    if (portfolioUrl !== undefined) settings.portfolioUrl = (portfolioUrl || '').trim();
     if (receiptFooterNote !== undefined) settings.receiptFooterNote = (receiptFooterNote || '').trim();
     if (termsAndConditions !== undefined) settings.termsAndConditions = (termsAndConditions || '').trim();
 

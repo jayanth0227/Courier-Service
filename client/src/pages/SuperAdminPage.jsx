@@ -83,6 +83,7 @@ export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigat
     companyAddress: '',
     gstin: '',
     receiptFooterNote: '',
+    portfolioUrl: '',
     announcementText: 'Scheduled passenger bus parcel dispatch active across all hub counters with instant WhatsApp alerts.',
     announcementLink: '#services',
     showAnnouncement: true,
@@ -445,6 +446,7 @@ export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigat
           companyAddress: res.data.companyAddress || prev.companyAddress,
           gstin: res.data.gstin || prev.gstin,
           receiptFooterNote: res.data.receiptFooterNote || prev.receiptFooterNote,
+          portfolioUrl: res.data.portfolioUrl !== undefined ? res.data.portfolioUrl : prev.portfolioUrl,
           announcementText: res.data.announcementText || prev.announcementText,
           announcementLink: res.data.announcementLink || prev.announcementLink,
           showAnnouncement: res.data.showAnnouncement !== undefined ? res.data.showAnnouncement : prev.showAnnouncement,
@@ -2011,6 +2013,22 @@ export const SuperAdminPage = ({ onNavigatePortal, onOpenTenantPortal, onNavigat
                     value={cmsSettings.companyAddress || ''}
                     onChange={(e) => setCmsSettings({ ...cmsSettings, companyAddress: e.target.value })}
                   />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">
+                    Portfolio URL / Website
+                  </label>
+                  <input
+                    type="url"
+                    className="form-control"
+                    placeholder="e.g. https://yourportfolio.com or www.yourportfolio.com"
+                    value={cmsSettings.portfolioUrl || ''}
+                    onChange={(e) => setCmsSettings({ ...cmsSettings, portfolioUrl: e.target.value })}
+                  />
+                  <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
+                    Displays a dynamic Portfolio link in the website footer alongside contact and SaaS enquiries.
+                  </div>
                 </div>
 
                 <div className="form-group" style={{ marginBottom: 0 }}>

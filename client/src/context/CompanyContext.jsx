@@ -9,8 +9,11 @@ const DEFAULT_COMPANY_SETTINGS = {
   companyPhone: '',
   companyEmail: '',
   companyAddress: '',
+  receiptAddress: '',
+  receiptAdminName: '',
   fromCity: '',
   gstin: '',
+  portfolioUrl: '',
   receiptFooterNote: 'Thank you for choosing our bus parcel service. Present this receipt or 6-digit Order ID at destination counter.',
   termsAndConditions: `1. Goods carried strictly at owner's risk; company is not liable for leakage, breakage, or natural damages.
 2. Value of goods must be declared at booking; company liability for undeclared items is strictly limited to ₹500.

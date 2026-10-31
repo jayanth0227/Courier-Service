@@ -51,11 +51,20 @@ router.get('/dashboard-stats', async (req, res, next) => {
         { $match: { ...baseFilter, createdAt: { $gte: todayStart, $lte: todayEnd }, status: { $ne: 'CANCELLED' } } },
         { $group: { _id: null, total: { $sum: '$amount' } } },
       ]),
-      // 6. Total Bookings
-      Booking.countDocuments(baseFilter),
-      // 7. Total Revenue
+      // 6. Total Bookings (Scoped to 90-day active retention policy)
+      Booking.countDocuments({
+        ...baseFilter,
+        createdAt: { $gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) },
+      }),
+      // 7. Total Revenue (Scoped to 90-day active retention policy)
       Booking.aggregate([
-        { $match: { ...baseFilter, status: { $ne: 'CANCELLED' } } },
+        {
+          $match: {
+            ...baseFilter,
+            createdAt: { $gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) },
+            status: { $ne: 'CANCELLED' },
+          },
+        },
         { $group: { _id: null, total: { $sum: '$amount' } } },
       ]),
       // 8. Recent 8 bookings
@@ -132,6 +141,16 @@ router.get('/detailed', async (req, res, next) => {
         }
         // Protect against server/client clock skew by allowing up to Date.now() + 60s if querying current day
         query.createdAt.$lte = new Date(Math.max(endDt.getTime(), Date.now() + 60000));
+      }
+    }
+
+    // 90-Day Retention Policy: Clamp lower bound to last 90 days
+    const minRetentionDate = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+    if (!query.createdAt) {
+      query.createdAt = { $gte: minRetentionDate };
+    } else {
+      if (!query.createdAt.$gte || new Date(query.createdAt.$gte) < minRetentionDate) {
+        query.createdAt.$gte = minRetentionDate;
       }
     }
 
@@ -247,17 +266,23 @@ router.get('/analytics', async (req, res, next) => {
     } else if (timeframe === 'month') {
       startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
       endDate = new Date(Math.max(new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999).getTime(), Date.now() + 60000));
-    } else if (timeframe === 'all') {
-      startDate = null;
-      endDate = null;
+    } else if (timeframe === 'all' || timeframe === '90days') {
+      const d = new Date(now);
+      d.setDate(d.getDate() - 89);
+      startDate = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
+      endDate = new Date(Math.max(new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999).getTime(), Date.now() + 60000));
+    }
+
+    // Enforce 90-Day minimum boundary
+    const minAnalyticsDate = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+    if (!startDate || startDate < minAnalyticsDate) {
+      startDate = minAnalyticsDate;
     }
 
     const matchQuery = { ...req.tenantFilter };
-    if (startDate || endDate) {
-      matchQuery.createdAt = {};
-      if (startDate) matchQuery.createdAt.$gte = startDate;
-      if (endDate) matchQuery.createdAt.$lte = endDate;
-    }
+    matchQuery.createdAt = {};
+    if (startDate) matchQuery.createdAt.$gte = startDate;
+    if (endDate) matchQuery.createdAt.$lte = endDate;
     if (status && status !== 'ALL') {
       matchQuery.status = status;
     }
@@ -321,9 +346,9 @@ router.get('/analytics', async (req, res, next) => {
     } else if (timeframe === 'month') {
       daysToGenerate = now.getDate();
     } else if (timeframe === 'custom' && startDate && endDate) {
-      daysToGenerate = Math.max(1, Math.min(60, Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24))));
-    } else if (timeframe === 'all') {
-      daysToGenerate = 14;
+      daysToGenerate = Math.max(1, Math.min(90, Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24))));
+    } else if (timeframe === 'all' || timeframe === '90days') {
+      daysToGenerate = 90;
     }
 
     const dailyMap = {};

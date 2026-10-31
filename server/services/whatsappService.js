@@ -69,10 +69,6 @@ class WhatsAppNotificationService {
           : destinationAddress)
       : cleanTo;
 
-    const payStatusStr = (paymentStatus || 'PAID').toUpperCase();
-    const payDisplay = payStatusStr === 'TO PAY'
-      ? `₹${Number(amount || 0).toFixed(2)} (TO PAY)`
-      : `PAID (₹${Number(amount || 0).toFixed(2)})`;
 
     const driverInfo = driverName || driverPhone
       ? `${driverName ? `${driverName} ` : ''}${driverPhone ? `(${driverPhone})` : ''}`.trim()
@@ -91,7 +87,6 @@ class WhatsAppNotificationService {
       lines.push(`• Driver: ${driverInfo}`);
     }
     lines.push(`• Delivery Counter: ${fullDest}`);
-    lines.push(`• Payment: ${payDisplay}`);
     lines.push('');
     lines.push('Track live:');
     lines.push(`https://mrcargo.online/#track?id=${cleanId}`);
@@ -133,10 +128,6 @@ class WhatsAppNotificationService {
           : deliveryAddress)
       : (toCity || 'Destination Counter');
 
-    const payStatus = (paymentStatus || 'PAID').toUpperCase();
-    const payDisplay = payStatus === 'TO PAY'
-      ? `₹${Number(amount || 0).toFixed(2)} (TO PAY at Destination)`
-      : `₹${Number(amount || 0).toFixed(2)} (PAID)`;
 
     const lines = [
       `*${brand} - Booking Confirmation*`,
@@ -146,7 +137,6 @@ class WhatsAppNotificationService {
       `• LR Number: #${cleanId}`,
       `• Route: ${route}`,
       `• Delivery Stop: ${fullDest}`,
-      `• Payment: ${payDisplay}`,
     ];
 
     if (remarks && remarks.trim()) {

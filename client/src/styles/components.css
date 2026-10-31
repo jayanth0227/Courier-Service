@@ -1635,9 +1635,79 @@
   border-bottom: 1px dashed #666666;
 }
 
-/* 1 Copy (Half of A4 Sheet: ~140mm height) */
+/* Table wrapper for vertical flex distribution */
+.bw-table-wrapper,
+.ref-table-wrapper {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  border-bottom: 1px solid #000000;
+  min-height: 0;
+}
+
+.ref-bill-table {
+  width: 100%;
+  height: 100%;
+  border-collapse: collapse;
+}
+
+.ref-bill-table td,
+.ref-bill-table th {
+  box-sizing: border-box;
+}
+
+/* Animated Travel Bus Animation Rules */
+@keyframes busWheelRotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes busBodyFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-1.2px);
+  }
+}
+
+@keyframes roadLineSlide {
+  0% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -20;
+  }
+}
+
+.travel-bus-wheel {
+  animation: busWheelRotate 2s linear infinite;
+}
+
+.travel-bus-body {
+  animation: busBodyFloat 2.2s ease-in-out infinite;
+}
+
+.travel-bus-road-line {
+  animation: roadLineSlide 1.2s linear infinite;
+}
+
+@media print {
+  .travel-bus-wheel,
+  .travel-bus-body,
+  .travel-bus-road-line {
+    animation: none !important;
+  }
+}
+
+/* 1 Copy (Half of A4 Sheet: ~142.5mm height) */
 .bw-copies-1 .bw-bill-box {
-  min-height: 140mm;
+  min-height: 142.5mm;
   font-size: 12px;
   line-height: 1.35;
   color: #000000;
@@ -1659,7 +1729,7 @@
 
 /* 2 Copies (Equal Halves: fills the whole A4 page, zero gap) */
 .bw-copies-2 .bw-bill-box {
-  min-height: 138mm;
+  min-height: 142mm;
   font-size: 10.5px;
   line-height: 1.28;
   color: #000000;
@@ -1676,17 +1746,18 @@
   color: #000000;
 }
 .bw-copies-2 .bw-signature-area {
-  height: 28px;
+  height: 32px;
 }
 .bw-copies-2 .bw-cut-line {
-  margin: 5px 0;
+  margin: 4px 0;
   font-size: 9.5px;
+  height: 4mm;
 }
 
 /* 3 Copies (Equal Thirds: fits strictly within 1 A4 sheet without spilling) */
 .bw-copies-3 .bw-bill-box {
-  height: 86mm;
-  max-height: 86mm;
+  height: 93.5mm;
+  max-height: 93.5mm;
   overflow: hidden;
   font-size: 8.5px;
   line-height: 1.15;
@@ -1704,10 +1775,18 @@
   font-size: 8.5px;
   color: #000000;
 }
+.bw-copies-3 .bw-table-wrapper,
+.bw-copies-3 .ref-table-wrapper {
+  flex: 0 0 auto;
+}
+.bw-copies-3 .bw-table,
+.bw-copies-3 .ref-bill-table {
+  height: auto;
+}
 .bw-copies-3 .bw-cut-line {
   margin: 1px 0;
   font-size: 7.5px;
-  height: 3.5mm;
+  height: 2.75mm;
 }
 .bw-copies-3 .bw-signature-area {
   height: 13px;

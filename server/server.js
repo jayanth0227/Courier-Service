@@ -7,6 +7,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const connectDB = require('./config/db');
 const seedData = require('./utils/seed');
+const { initRetentionWorker } = require('./services/dataRetentionService');
 const errorHandler = require('./middleware/errorHandler');
 const {
   mongoSanitizer,
@@ -39,10 +40,11 @@ const inquiryRoutes = require('./routes/inquiryRoutes');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Connect to Database & sync single admin
+// Connect to Database & sync single admin & initialize data retention worker
 connectDB().then((conn) => {
   if (conn) {
     seedData();
+    initRetentionWorker();
   }
 });
 

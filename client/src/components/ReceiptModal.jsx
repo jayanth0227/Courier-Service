@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Printer, ArrowLeft, Scissors, ShieldCheck } from 'lucide-react';
 import { useCompanySettings } from '../context/CompanyContext';
+import { api } from '../services/api';
 
 // Indian Number System Converter to Words (e.g., 450 -> "Rupees Four Hundred Fifty Only")
 const numberToWordsIndian = (num) => {
@@ -43,20 +44,23 @@ const numberToWordsIndian = (num) => {
   return `Rupees ${words.trim()} Only`;
 };
 
-// Default Bus Cargo Terms Fallback if admin hasn't configured custom terms yet
+// Default Bus Cargo Terms matching authentic reference waybill
 const DEFAULT_BUS_TERMS = [
-  "1. Goods carried strictly at owner's risk; company is not liable for leakage, breakage, or natural damages.",
-  "2. Value of goods must be declared at booking; company liability for undeclared items is strictly limited to ₹500.",
-  "3. Hazardous, contraband, inflammable, or prohibited goods are strictly not accepted.",
-  "4. Demurrage will be levied if cargo is not claimed within 24 hours of bus arrival at destination.",
-  "5. Consignee must verify package condition before counter delivery acknowledgment.",
-  "6. Original LR copy or SMS verification must be produced at destination counter to claim consignment.",
-  "7. All disputes are subject to local jurisdiction only."
+  "1) Luggage is transported at owners risk. Management will not be responsible for any loss that may occur due to delay, breakages, damages, theft, robbery, fire accident or any other reasons beyond our control.",
+  "2) For any type of loss, company shall not be held liable for (i) any amount exceeding to Rs.1000/- for the loss in total. (ii) Rs.50/- per kg max upto Rs.1000/- whichever is less.",
+  "3) Any amount paid as Octroi, Sales tax or other taxes will be collected from receiving party.",
+  "4) Prohibited / Contraband articles, Jewellery and currency are not allowed & not accepted. In case of such events management will take legal action against both party.",
+  "5) Company will not entertain any claim pertaining to loss of interest, Profitability & goods will under any circumstances.",
+  "6) This agreement does not create any right which is covered under any carriers act, transfer of goods act or any other act time being in-force at the time of dispute.",
+  "7) Management will not be responsible if goods are not taken within 5 days."
 ];
+
+
 
 const ConsignmentBill = ({
   booking,
   company,
+  superadminLogo = '/logo.png',
   copyTitle,
   copyBadge,
   showAmount,
@@ -66,35 +70,49 @@ const ConsignmentBill = ({
 }) => {
   const isToPay = booking.paymentStatus === 'TO_PAY';
 
-  // Parse origin station cleanly
-  const rawFrom = booking.fromCity || booking.fromAddress || company.fromCity || '';
-  const fromStation = (
-    rawFrom ||
-    (booking.destination?.includes('→')
-      ? booking.destination.split('→')[0].trim()
-      : booking.destination?.includes('->')
-      ? booking.destination.split('->')[0].trim()
-      : '') ||
-    company.companyAddress ||
-    'Origin Counter'
-  ).trim();
+  // Booking date & time calculations matching reference layout
+  const bookingDateObj = new Date(booking.createdAt || Date.now());
+  const dateFormatted = `${String(bookingDateObj.getDate()).padStart(2, '0')}-${String(bookingDateObj.getMonth() + 1).padStart(2, '0')}-${bookingDateObj.getFullYear()}`;
+  const timeFormatted = bookingDateObj.toLocaleTimeString('en-IN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  });
+  // Fetch admin signatory name from system settings, or fallback to bookedByName / Admin
+  const adminSignatoryName = (company.receiptAdminName || '').trim() || booking.bookedByName || booking.createdBy?.name || 'Admin';
+  const bookedByWithTime = `${adminSignatoryName} ${timeFormatted}`;
 
-  // Parse destination city cleanly (stripping any origin prefix)
+  // Parse origin and destination cities
+  const fromCityName = (
+    booking.fromCity ||
+    (booking.destination?.includes('→') ? booking.destination.split('→')[0].trim() : '') ||
+    company.fromCity ||
+    'HYDERABAD'
+  ).toUpperCase();
+
   const rawDest = booking.destination || '';
-  let cleanTo = booking.toCity || '';
-  if (!cleanTo) {
-    if (rawDest.includes('→')) cleanTo = rawDest.split('→').slice(1).join('→').trim();
-    else if (rawDest.includes('->')) cleanTo = rawDest.split('->').slice(1).join('->').trim();
-    else cleanTo = rawDest || 'Destination';
+  let toCityName = booking.toCity || '';
+  if (!toCityName) {
+    if (rawDest.includes('→')) toCityName = rawDest.split('→').slice(1).join('→').trim();
+    else if (rawDest.includes('->')) toCityName = rawDest.split('->').slice(1).join('->').trim();
+    else toCityName = rawDest || 'DESTINATION';
   }
-  cleanTo = cleanTo.trim();
+  toCityName = toCityName.toUpperCase();
+
+  const originAddress =
+    booking.fromAddress
+      ? (booking.fromCity && !booking.fromAddress.toLowerCase().includes(booking.fromCity.toLowerCase())
+          ? `${booking.fromAddress}, ${booking.fromCity}`
+          : booking.fromAddress)
+      : (company.companyAddress || 'Near Tabla Restaurant, Metro Piller No. 731, KPHB Colony, Main Road, Hyderabad-500 072');
 
   const stopAddress = (booking.deliveryAddress || '').trim();
-  const fullRoute = `${fromStation} → ${cleanTo}`;
   const fullToAddress =
-    stopAddress && !stopAddress.toLowerCase().includes(cleanTo.toLowerCase())
-      ? `${cleanTo} - ${stopAddress}`
-      : stopAddress || cleanTo;
+    stopAddress && !stopAddress.toLowerCase().includes(toCityName.toLowerCase())
+      ? `${toCityName} - ${stopAddress}`
+      : stopAddress || toCityName;
+
+  const bookingRemarks = (booking.remarks || booking.notes || '').trim();
 
   const items =
     Array.isArray(booking.items) && booking.items.length > 0
@@ -109,40 +127,30 @@ const ConsignmentBill = ({
           },
         ];
 
-  const totalQuantity = items.reduce((acc, it) => acc + (Number(it.quantity) || 1), 0);
-  const totalWeight = items.reduce((acc, it) => acc + (Number(it.weight) || 0), 0);
-
-  // Dynamic Terms & Conditions from Admin Settings
-  const allTerms = company.termsAndConditions
+  // Dynamic Terms & Conditions from Admin Settings - Show all clauses across all copies
+  const dynamicTerms = company.termsAndConditions
     ? company.termsAndConditions
         .split('\n')
         .map((line) => line.trim())
         .filter((line) => line.length > 0)
     : DEFAULT_BUS_TERMS;
 
-  // When printing 3 slips on a single A4, limit to the top 2-3 essential terms so all copies strictly fit on 1 page
-  const dynamicTerms = copyCount === 3
-    ? (items.length > 2 ? allTerms.slice(0, 2) : allTerms.slice(0, 3))
-    : allTerms;
-
   const travelsOperator =
     booking.busDetails?.operator ||
     booking.busDetails?.busName ||
-    'BUS LOGISTICS DISPATCH';
-
-  const busNumber = booking.busDetails?.busNumber || 'Scheduled Bus';
+    'TRAVELBUS';
 
   return (
     <div className={`bw-bill-box ${isDriverCopy ? 'bw-driver-copy' : ''}`}>
-      {/* 1. Header Bar: Authenticated Bus Cargo Header (Clean Centered Layout) */}
+      {/* 1. Header Bar: Logo (Left) | Company & Dynamic Address (Center) | Travel Bus Sketch (Right) */}
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: '70px 1fr 70px',
+          gridTemplateColumns: copyCount === 3 ? '60px 1fr 70px' : '85px 1fr 95px',
           alignItems: 'center',
-          borderBottom: '1.5px solid #000000',
-          padding: copyCount === 3 ? '2px 6px' : '4px 8px',
-          gap: '8px',
+          borderBottom: '1px solid #000000',
+          padding: copyCount === 3 ? '2px 5px' : '4px 8px',
+          gap: '6px',
         }}
       >
         {/* Left: Organization / Deity Logo */}
@@ -152,16 +160,16 @@ const ConsignmentBill = ({
               src={company.logoUrl}
               alt="Logo"
               style={{
-                maxHeight: copyCount === 3 ? '24px' : '42px',
-                maxWidth: '60px',
+                maxHeight: copyCount === 3 ? '28px' : '46px',
+                maxWidth: copyCount === 3 ? '55px' : '75px',
                 objectFit: 'contain',
               }}
             />
           ) : (
             <div
               style={{
-                width: copyCount === 3 ? '28px' : '42px',
-                height: copyCount === 3 ? '28px' : '42px',
+                width: copyCount === 3 ? '32px' : '48px',
+                height: copyCount === 3 ? '32px' : '48px',
                 border: '1.5px solid #000000',
                 borderRadius: '4px',
                 display: 'flex',
@@ -169,19 +177,19 @@ const ConsignmentBill = ({
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontWeight: 900,
-                fontSize: copyCount === 3 ? '10px' : '13px',
+                fontSize: copyCount === 3 ? '10px' : '14px',
                 lineHeight: 1.1,
                 textAlign: 'center',
                 backgroundColor: '#f8fafc',
               }}
             >
               <span>SV</span>
-              <span style={{ fontSize: '7px', fontWeight: 700 }}>CARGO</span>
+              <span style={{ fontSize: '7px', fontWeight: 700 }}>LOGISTICS</span>
             </div>
           )}
         </div>
 
-        {/* Center: Company Name & Fetched Origin Address Directly Below */}
+        {/* Center: Company Name & Dynamic Header Address */}
         <div style={{ textAlign: 'center', padding: '0 4px' }}>
           <div
             className="bw-company-title"
@@ -192,484 +200,353 @@ const ConsignmentBill = ({
               lineHeight: 1.15,
             }}
           >
-            {company.companyName || 'JAYANTH CARGO'}
-          </div>
-          {/* Fetched Origin Address directly below Company Title */}
-          <div
-            style={{
-              fontSize: copyCount === 3 ? '10.5px' : (copyCount === 2 ? '12px' : '13px'),
-              fontWeight: 800,
-              marginTop: '1px',
-              textTransform: 'uppercase',
-              letterSpacing: '0.02em',
-              color: '#000000',
-            }}
-          >
-            {booking.fromAddress
-              ? (booking.fromCity && !booking.fromAddress.toLowerCase().includes(booking.fromCity.toLowerCase())
-                  ? `${booking.fromAddress}, ${booking.fromCity}`
-                  : booking.fromAddress)
-              : fromStation}
+            {company.companyName || 'SRI VINAYAKA LOGISTICS'}
           </div>
           <div
             style={{
-              fontSize: copyCount === 3 ? '9.5px' : (copyCount === 2 ? '10.5px' : '11.5px'),
-              color: '#000000',
+              fontSize: copyCount === 3 ? '8.5px' : (copyCount === 2 ? '10px' : '11px'),
               fontWeight: 600,
+              color: '#000000',
               marginTop: '1px',
               lineHeight: 1.25,
             }}
           >
-            <span>Ph: {company.companyPhone || '+91 9010253076'}</span>
-            {company.gstin && <span> • GSTIN: {company.gstin}</span>}
-            {company.companyEmail && <span> • {company.companyEmail}</span>}
+            {(company.receiptAddress || '').trim() || originAddress}
+          </div>
+          <div
+            style={{
+              fontSize: copyCount === 3 ? '8px' : (copyCount === 2 ? '9.5px' : '10.5px'),
+              color: '#000000',
+              fontWeight: 700,
+              marginTop: '1px',
+              lineHeight: 1.2,
+            }}
+          >
+            <span>Mobile No: {company.companyPhone || '9494958319'}</span>
           </div>
         </div>
 
-        {/* Right: Symmetrical Empty Spacer (Travels badge removed) */}
-        <div style={{ width: '70px' }} />
+        {/* Right: Super Admin Platform Logo */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <img
+            src={superadminLogo || '/logo.png'}
+            alt="Super Admin Logo"
+            style={{
+              maxHeight: copyCount === 3 ? '28px' : (copyCount === 2 ? '42px' : '48px'),
+              maxWidth: copyCount === 3 ? '60px' : (copyCount === 2 ? '80px' : '90px'),
+              objectFit: 'contain',
+            }}
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = '/logo.png';
+            }}
+          />
+        </div>
       </div>
 
-      {/* 2. Banner: ....... Consignment Details ....... & Copy Badge */}
+      {/* 2. Heading: .......Consignment Details ....... */}
       <div
         style={{
           display: 'flex',
-          justifyContent: 'space-between',
+          justifyContent: 'center',
+          position: 'relative',
           alignItems: 'center',
-          backgroundColor: '#f1f5f9',
+          backgroundColor: '#ffffff',
           borderBottom: '1px solid #000000',
-          padding: copyCount === 3 ? '2px 6px' : '3px 8px',
+          padding: copyCount === 3 ? '1px 4px' : '2px 8px',
         }}
       >
-        <div
+        <span
           style={{
             fontWeight: 900,
-            fontSize: copyCount === 3 ? '10px' : (copyCount === 2 ? '11px' : '12px'),
+            fontSize: copyCount === 3 ? '10px' : (copyCount === 2 ? '11.5px' : '13px'),
             letterSpacing: '0.04em',
-            textTransform: 'uppercase',
             color: '#000000',
           }}
         >
-          ....... Consignment Details .......
-        </div>
-        <div
-          style={{
-            fontWeight: 900,
-            textTransform: 'uppercase',
-            fontSize: copyCount === 3 ? '9.5px' : (copyCount === 2 ? '10.5px' : '11.5px'),
-            border: '1px solid #000000',
-            padding: '1px 6px',
-            backgroundColor: isDriverCopy ? '#000000' : '#ffffff',
-            color: isDriverCopy ? '#ffffff' : '#000000',
-            borderRadius: '2px',
-          }}
-        >
-          {copyTitle}
-        </div>
-      </div>
-
-      {/* 3. Authentic 3-Column Metadata Box */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '1.15fr 1.25fr 1fr',
-          borderBottom: '1.5px solid #000000',
-          fontSize: copyCount === 3 ? '9.5px' : (copyCount === 2 ? '10.5px' : '11.5px'),
-          lineHeight: copyCount === 3 ? 1.22 : 1.32,
-          color: '#000000',
-        }}
-      >
-        {/* Col 1: Date, From Hub & Consignor (Sender) */}
-        <div
-          style={{
-            padding: copyCount === 3 ? '2px 5px' : '4px 7px',
-            borderRight: '1px solid #000000',
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
-            <span style={{ color: '#000000', fontWeight: 600 }}>Date:</span>
-            <strong style={{ fontWeight: 800 }}>{formattedDate}</strong>
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
-            <span style={{ color: '#000000', fontWeight: 600 }}>From Hub:</span>
-            <strong style={{ textTransform: 'uppercase', fontWeight: 900, fontSize: copyCount === 3 ? '10.5px' : '11.5px' }}>{fromStation}</strong>
-          </div>
-
-          <div style={{ borderTop: '1px dashed #666666', paddingTop: '2px', marginTop: '2px' }}>
-            <div style={{ fontWeight: 900, textTransform: 'uppercase', fontSize: copyCount === 3 ? '9.5px' : '10.5px' }}>
-              Consignor (Sender):
-            </div>
-            <div style={{ fontWeight: 800, fontSize: copyCount === 3 ? '10.5px' : '12px' }}>{booking.customerName}</div>
-            <div>
-              <span style={{ color: '#000000', fontWeight: 600 }}>Ph:</span>{' '}
-              <strong style={{ fontWeight: 800 }}>{booking.customerPhone}</strong>
-            </div>
-            {company.gstin && (
-              <div style={{ fontSize: copyCount === 3 ? '9px' : '10px', color: '#000000' }}>
-                GST: {booking.senderGst || company.gstin || '-'}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Col 2: LR Docket No, To Hub & Consignee (Receiver) */}
-        <div
-          style={{
-            padding: copyCount === 3 ? '2px 5px' : '4px 7px',
-            borderRight: '1px solid #000000',
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
-            <span style={{ color: '#000000', fontWeight: 700 }}>LR Docket No:</span>
-            <strong
-              style={{
-                fontFamily: 'monospace',
-                fontSize: copyCount === 3 ? '13.5px' : (copyCount === 2 ? '15px' : '16.5px'),
-                letterSpacing: '0.04em',
-                fontWeight: 900,
-                color: '#000000',
-              }}
-            >
-              #{booking.orderId}
-            </strong>
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
-            <span style={{ color: '#000000', fontWeight: 600 }}>To Hub:</span>
-            <strong style={{ textTransform: 'uppercase', fontWeight: 900, fontSize: copyCount === 3 ? '10.5px' : '11.5px' }}>{cleanTo}</strong>
-          </div>
-
-          <div style={{ borderTop: '1px dashed #666666', paddingTop: '2px', marginTop: '2px' }}>
-            <div style={{ fontWeight: 900, textTransform: 'uppercase', fontSize: copyCount === 3 ? '9.5px' : '10.5px' }}>
-              Consignee (Receiver):
-            </div>
-            <div style={{ fontWeight: 800, fontSize: copyCount === 3 ? '10.5px' : '12px' }}>
-              {booking.receiverName || 'Counter Consignee'}
-            </div>
-            <div>
-              <span style={{ color: '#000000', fontWeight: 600 }}>Ph:</span>{' '}
-              <strong style={{ fontWeight: 800 }}>{booking.receiverPhone || 'N/A'}</strong>
-            </div>
-            <div style={{ fontSize: copyCount === 3 ? '9px' : '10px', marginTop: '1px' }}>
-              <span style={{ color: '#000000', fontWeight: 600 }}>Stop:</span> <strong>{fullToAddress}</strong>
-            </div>
-          </div>
-        </div>
-
-        {/* Col 3: Freight Type, Amount & Transit Dispatch */}
-        <div
-          style={{
-            padding: copyCount === 3 ? '2px 5px' : '4px 7px',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-          }}
-        >
-          <div>
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: '3px',
-              }}
-            >
-              <span style={{ color: '#000000', fontWeight: 700 }}>Freight Type:</span>
-              <strong
-                style={{
-                  textTransform: 'uppercase',
-                  border: '1.5px solid #000000',
-                  padding: '1px 6px',
-                  backgroundColor: isToPay ? '#ffffff' : '#000000',
-                  color: isToPay ? '#000000' : '#ffffff',
-                  fontSize: copyCount === 3 ? '9.5px' : '10.5px',
-                  fontWeight: 900,
-                  letterSpacing: '0.03em',
-                }}
-              >
-                {isToPay ? 'TO PAY' : 'PAID'}
-              </strong>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
-              <span style={{ color: '#000000', fontWeight: 600 }}>Freight:</span>
-              <strong style={{ fontWeight: 800 }}>
-                {showAmount ? `₹ ${Number(booking.amount || 0).toFixed(2)}` : '***'}
-              </strong>
-            </div>
-
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                marginBottom: '3px',
-                borderTop: '1px dotted #666666',
-                paddingTop: '2px',
-              }}
-            >
-              <span style={{ fontWeight: 800, color: '#000000' }}>Total:</span>
-              <strong
-                style={{
-                  fontSize: copyCount === 3 ? '12px' : (copyCount === 2 ? '13px' : '14px'),
-                  fontFamily: 'monospace',
-                  fontWeight: 900,
-                  color: '#000000',
-                }}
-              >
-                {showAmount ? `₹ ${Number(booking.amount || 0).toFixed(2)}` : '*** (Transit)'}
-              </strong>
-            </div>
-          </div>
-
-          <div
+          .......Consignment Details .......
+        </span>
+        {copyBadge && (
+          <span
             style={{
-              borderTop: '1px dashed #666666',
-              paddingTop: '2px',
-              fontSize: copyCount === 3 ? '9px' : '10px',
+              position: 'absolute',
+              right: '6px',
+              fontWeight: 800,
+              fontSize: copyCount === 3 ? '8px' : '9.5px',
+              textTransform: 'uppercase',
+              border: '1px solid #000000',
+              padding: '0 4px',
+              backgroundColor: isDriverCopy ? '#000000' : '#ffffff',
+              color: isDriverCopy ? '#ffffff' : '#000000',
+              borderRadius: '2px',
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: '#000000', fontWeight: 600 }}>Booked By:</span>
-              <span style={{ fontWeight: 700, color: '#000000' }}>
-                {booking.bookedByName || booking.createdBy?.name || 'Admin'}
-              </span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '1px' }}>
-              <span style={{ color: '#000000', fontWeight: 600 }}>Bus / Vehicle:</span>
-              <span style={{ fontWeight: 800, color: '#000000' }}>{busNumber}</span>
-            </div>
-          </div>
-        </div>
+            {copyTitle || copyBadge}
+          </span>
+        )}
       </div>
 
-      {/* 4. Goods Description Table */}
-      <table className="bw-table">
-        <thead>
-          <tr>
-            <th style={{ width: '30px', textAlign: 'center', color: '#000000' }}>Art</th>
-            <th style={{ color: '#000000' }}>Description / Goods Type</th>
-            <th style={{ width: '150px', color: '#000000' }}>Route (From → To)</th>
-            <th style={{ width: '75px', textAlign: 'center', color: '#000000' }}>Actual Wt</th>
-            <th style={{ width: '55px', textAlign: 'center', color: '#000000' }}>Qty</th>
-            <th style={{ color: '#000000' }}>Handling Remarks</th>
-            <th style={{ width: '100px', textAlign: 'right', color: '#000000' }}>Freight (₹)</th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((it, idx) => (
-            <tr key={idx}>
-              <td style={{ textAlign: 'center', fontWeight: 800, color: '#000000' }}>{it.quantity || 1}</td>
-              <td style={{ fontWeight: 800, color: '#000000' }}>{it.parcelType || 'General Parcel'}</td>
-              <td style={{ fontWeight: 700, color: '#000000' }}>{fullRoute}</td>
-              <td style={{ textAlign: 'center', fontWeight: 700, color: '#000000' }}>{it.weight ? `${it.weight} kg` : '-'}</td>
-              <td style={{ textAlign: 'center', fontWeight: 700, color: '#000000' }}>{it.quantity || 1}</td>
-              <td style={{ color: '#000000' }}>{it.notes || '-'}</td>
-              <td style={{ textAlign: 'right', fontWeight: 800, color: '#000000' }}>
-                {showAmount ? `₹ ${Number(it.charge || 0).toFixed(2)}` : '***'}
+      {/* 3. Consolidated 3-Column Main Table (Reference Image Structure) */}
+      <div className="ref-table-wrapper" style={{ flex: '1 1 auto', display: 'flex', flexDirection: 'column', width: '100%', borderBottom: '1px solid #000000' }}>
+        <table
+          className="ref-bill-table"
+          style={{
+            width: '100%',
+            height: '100%',
+            borderCollapse: 'collapse',
+            fontSize: copyCount === 3 ? '8.5px' : (copyCount === 2 ? '9.5px' : '11px'),
+            lineHeight: copyCount === 3 ? 1.2 : 1.3,
+            color: '#000000',
+          }}
+        >
+          <colgroup>
+            <col style={{ width: '38%' }} />
+            <col style={{ width: '38%' }} />
+            <col style={{ width: '24%' }} />
+          </colgroup>
+          <tbody>
+            {/* Line 1: Date | LR No | Freight Type (Highlighted) */}
+            <tr style={{ borderBottom: '1px solid #000000' }}>
+              <td style={{ borderRight: '1px solid #000000', padding: copyCount === 3 ? '2px 5px' : '3px 7px', fontWeight: 700 }}>
+                Date : <span style={{ fontWeight: 900 }}>{dateFormatted}</span>
+              </td>
+              <td style={{ borderRight: '1px solid #000000', padding: copyCount === 3 ? '1.5px 4px' : '2px 7px', fontWeight: 900, verticalAlign: 'middle' }}>
+                <span style={{ fontSize: copyCount === 3 ? '8.5px' : '10.5px', textTransform: 'uppercase', marginRight: '4px', letterSpacing: '0.04em' }}>
+                  LR No :
+                </span>
+                <span
+                  style={{
+                    fontWeight: 900,
+                    fontFamily: 'monospace',
+                    fontSize: copyCount === 3 ? '11.5px' : '14px',
+                    letterSpacing: '0.08em',
+                    backgroundColor: '#000000',
+                    color: '#ffffff',
+                    padding: copyCount === 3 ? '1.5px 6px' : '2px 9px',
+                    borderRadius: '3px',
+                    display: 'inline-block',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
+                    border: '1px solid #000000',
+                    lineHeight: 1.15,
+                  }}
+                >
+                  {booking.orderId}
+                </span>
+              </td>
+              <td
+                style={{
+                  padding: copyCount === 3 ? '2px 5px' : '3px 7px',
+                  fontWeight: 900,
+                  backgroundColor: isToPay ? '#ffffff' : '#f1f5f9',
+                }}
+              >
+                Freight Type: <span style={{ textDecoration: 'underline' }}>{isToPay ? 'TO PAY' : 'PAID'}</span>
               </td>
             </tr>
-          ))}
-          {/* Total Row */}
-          <tr style={{ backgroundColor: '#f8fafc', fontWeight: 800, color: '#000000' }}>
-            <td style={{ textAlign: 'center' }}>{totalQuantity}</td>
-            <td colSpan={2} style={{ textAlign: 'left', paddingLeft: '8px' }}>
-              TOTAL SUMMARY ({totalQuantity} {totalQuantity === 1 ? 'Piece' : 'Pieces'})
-            </td>
-            <td style={{ textAlign: 'center' }}>{totalWeight > 0 ? `${totalWeight} kg` : '-'}</td>
-            <td style={{ textAlign: 'center' }}>{totalQuantity} pcs</td>
-            <td style={{ textAlign: 'right', paddingRight: '8px' }}>GRAND TOTAL:</td>
-            <td style={{ textAlign: 'right', fontSize: copyCount === 3 ? '12px' : '13.5px', fontFamily: 'monospace', fontWeight: 900 }}>
-              {showAmount ? `₹ ${Number(booking.amount || 0).toFixed(2)}` : '*** (Transit)'}
-            </td>
-          </tr>
-        </tbody>
-      </table>
 
-      {/* 5. Amount in Words & Payment Instructions Bar */}
+            {/* Line 2: Consignor Cell | Consignee Cell | Freight Cell */}
+            <tr style={{ borderBottom: '1px solid #000000' }}>
+              {/* Col 1: From, Consignor, Mobile, GST in a single cell */}
+              <td
+                style={{
+                  borderRight: '1px solid #000000',
+                  padding: copyCount === 3 ? '3px 5px' : '4px 7px',
+                  verticalAlign: 'top',
+                }}
+              >
+                <div>From : <strong style={{ textTransform: 'uppercase' }}>{fromCityName}</strong></div>
+                <div>Consignor: <strong>{booking.customerName}</strong></div>
+                <div>Mobile No: <strong>{booking.customerPhone}</strong></div>
+                <div>GST No: <span>{booking.senderGst || '-'}</span></div>
+              </td>
+
+              {/* Col 2: To, Consignee, Mobile, GST, Stop in a single cell */}
+              <td
+                style={{
+                  borderRight: '1px solid #000000',
+                  padding: copyCount === 3 ? '3px 5px' : '4px 7px',
+                  verticalAlign: 'top',
+                }}
+              >
+                <div>To: <strong style={{ textTransform: 'uppercase' }}>{toCityName}</strong></div>
+                <div>Consignee: <strong>{booking.receiverName || 'Counter Consignee'}</strong></div>
+                <div>Mobile No: <strong>{booking.receiverPhone || 'N/A'}</strong></div>
+                <div>GST No: <span>{booking.receiverGst || '-'}</span></div>
+                {stopAddress && (
+                  <div style={{ fontSize: copyCount === 3 ? '7.5px' : '8.5px', marginTop: '1px' }}>
+                    Stop: <strong>{fullToAddress}</strong>
+                  </div>
+                )}
+                {bookingRemarks && (
+                  <div style={{ fontSize: copyCount === 3 ? '7.5px' : '8.5px', marginTop: '1.5px', color: '#000000' }}>
+                    Remarks: <strong>{bookingRemarks}</strong>
+                  </div>
+                )}
+              </td>
+
+              {/* Col 3: Freight Row */}
+              <td
+                style={{
+                  padding: 0,
+                  verticalAlign: 'top',
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    padding: copyCount === 3 ? '3px 5px' : '4px 7px',
+                    borderBottom: '1px solid #000000',
+                    fontWeight: 700,
+                  }}
+                >
+                  <span>Freight</span>
+                  <span>
+                    {showAmount
+                      ? `${Number(booking.amount || 0).toFixed(2)}`
+                      : '***'}
+                  </span>
+                </div>
+              </td>
+            </tr>
+
+            {/* Line 3: Items Sub-Table (Col 1 & 2) | Total & Booked By (Col 3) */}
+            <tr style={{ height: copyCount === 3 ? 'auto' : '100%', borderBottom: '1px solid #000000' }}>
+              <td colSpan={2} style={{ borderRight: '1px solid #000000', padding: 0, verticalAlign: 'top', height: copyCount === 3 ? 'auto' : '100%' }}>
+                <table style={{ width: '100%', height: copyCount === 3 ? 'auto' : '100%', borderCollapse: 'collapse', fontSize: copyCount === 3 ? '7.8px' : '9.5px' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid #000000', backgroundColor: '#f8fafc', fontWeight: 800 }}>
+                      <th style={{ width: '14%', borderRight: '1px solid #000000', padding: copyCount === 3 ? '1.5px 3px' : '2px 4px', textAlign: 'center' }}>Qty</th>
+                      <th style={{ width: '56%', borderRight: '1px solid #000000', padding: copyCount === 3 ? '1.5px 5px' : '2px 6px', textAlign: 'left' }}>Description</th>
+                      <th style={{ width: '30%', padding: copyCount === 3 ? '1.5px 5px' : '2px 6px', textAlign: 'left' }}>INV / Value</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.map((it, idx) => {
+                      const itemVal = it.charge != null && it.charge !== ''
+                        ? `₹${Number(it.charge).toFixed(2)}`
+                        : (it.declaredValue != null && it.declaredValue !== ''
+                            ? `₹${Number(it.declaredValue).toFixed(2)}`
+                            : (it.amount != null && it.amount !== ''
+                                ? `₹${Number(it.amount).toFixed(2)}`
+                                : (items.length === 1 && booking.amount ? `₹${Number(booking.amount).toFixed(2)}` : '0.00')));
+                      return (
+                        <tr key={idx} style={{ borderBottom: '1px solid #000000' }}>
+                          <td style={{ borderRight: '1px solid #000000', padding: copyCount === 3 ? '1.5px 3px' : '3px 6px', textAlign: 'center', fontWeight: 800 }}>
+                            {it.quantity || 1}
+                          </td>
+                          <td style={{ borderRight: '1px solid #000000', padding: copyCount === 3 ? '1.5px 5px' : '3px 8px', fontWeight: 700 }}>
+                            <div>{it.parcelType || 'General Parcel'}{it.notes ? ` - ${it.notes}` : ''}</div>
+                            {bookingRemarks && idx === 0 && (
+                              <div style={{ fontSize: copyCount === 3 ? '7px' : '8.5px', color: '#000000', fontWeight: 600, marginTop: '1px' }}>
+                                Remarks: <strong>{bookingRemarks}</strong>
+                              </div>
+                            )}
+                          </td>
+                          <td style={{ padding: copyCount === 3 ? '1.5px 5px' : '3px 8px' }}>
+                            <div>INV: {it.invoiceNumber || '-'}</div>
+                            <div style={{ fontWeight: 800, marginTop: '0.5px' }}>
+                              Value: {showAmount ? itemVal : '***'}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {/* Filler row ensuring vertical column borders span cleanly */}
+                    <tr style={{ height: copyCount === 3 ? '4px' : '100%' }}>
+                      <td style={{ borderRight: '1px solid #000000', padding: 0 }}>&nbsp;</td>
+                      <td style={{ borderRight: '1px solid #000000', padding: 0 }}>&nbsp;</td>
+                      <td style={{ padding: 0 }}>&nbsp;</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </td>
+
+              {/* Col 3: Total & Staff Signature / Time */}
+              <td style={{ padding: 0, verticalAlign: 'top', height: copyCount === 3 ? 'auto' : '100%' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'flex-end',
+                    height: '100%',
+                    minHeight: copyCount === 3 ? '26px' : '52px',
+                  }}
+                >
+                  <div style={{ flex: '1 1 auto', minHeight: copyCount === 3 ? '3px' : '24px' }}></div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      padding: copyCount === 3 ? '2px 4px' : '4px 7px',
+                      borderTop: '1px solid #000000',
+                      borderBottom: '1px solid #000000',
+                      fontWeight: 900,
+                      fontSize: copyCount === 3 ? '8.5px' : '11px',
+                      backgroundColor: '#f8fafc',
+                    }}
+                  >
+                    <span>Total</span>
+                    <span>
+                      {showAmount
+                        ? `${Number(booking.amount || 0).toFixed(2)}`
+                        : '***'}
+                    </span>
+                  </div>
+
+                  <div
+                    style={{
+                      padding: copyCount === 3 ? '1.5px 3px' : '3px 6px',
+                      fontSize: copyCount === 3 ? '7px' : '8.5px',
+                      fontWeight: 700,
+                      color: '#000000',
+                      textAlign: 'right',
+                    }}
+                  >
+                    {bookedByWithTime}
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      {/* 4. Terms and Conditions (Directly below table matching reference photo) */}
       <div
         style={{
-          padding: copyCount === 3 ? '2px 6px' : '3px 8px',
-          borderBottom: '1px solid #000000',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          backgroundColor: '#fafafa',
-          fontSize: copyCount === 3 ? '9px' : (copyCount === 2 ? '10px' : '11px'),
-          lineHeight: 1.25,
+          borderTop: '1px solid #000000',
+          padding: copyCount === 3 ? '1.5px 4px' : '4px 8px',
+          fontSize: copyCount === 3 ? '6.8px' : (copyCount === 2 ? '8.5px' : '9.5px'),
+          lineHeight: copyCount === 3 ? 1.12 : 1.25,
           color: '#000000',
         }}
       >
-        <div style={{ flex: 1, paddingRight: '8px' }}>
-          <strong style={{ fontWeight: 800 }}>Amount in Words: </strong>
-          <span style={{ fontWeight: 700 }}>
-            {showAmount
-              ? numberToWordsIndian(booking.amount)
-              : '*** DRIVER TRANSIT COPY (COMMERCIAL VALUATION MASKED - DETAILS & LR ONLY) ***'}
-          </span>
+        <div style={{ fontWeight: 800, marginBottom: copyCount === 3 ? '0.5px' : '1px' }}>
+          Goods booked At Owner's risk and said to contain basis.
         </div>
-        <div style={{ whiteSpace: 'nowrap' }}>
-          <strong style={{ fontWeight: 800 }}>Payment Mode: </strong>
-          <span style={{ fontWeight: 800 }}>
-            {isToPay
-              ? 'TO PAY (COLLECT CASH AT DESTINATION)'
-              : 'PAID (BOOKING COUNTER CASH)'}
-          </span>
-        </div>
-      </div>
-
-      {/* 5B. Booking Remarks & Special Instructions (Printed on all copies) */}
-      {(booking.remarks || (booking.items?.length === 1 && booking.items[0]?.notes) || booking.notes) && (
-        <div
-          style={{
-            padding: copyCount === 3 ? '2px 6px' : '3px 8px',
-            borderBottom: '1px solid #000000',
-            backgroundColor: '#ffffff',
-            fontSize: copyCount === 3 ? '9px' : (copyCount === 2 ? '10px' : '11px'),
-            lineHeight: 1.25,
-            color: '#000000',
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: '6px',
-          }}
-        >
-          <strong style={{ fontWeight: 800, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
-            Remarks / Special Notes:
-          </strong>
-          <span style={{ fontWeight: 700, color: '#000000' }}>
-            {booking.remarks || (booking.items?.length === 1 ? booking.items[0]?.notes : '') || booking.notes}
-          </span>
-        </div>
-      )}
-
-      {/* 6. Dynamic Terms & Conditions (Editable by Admin) & Dual Signatures */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '1.75fr 1fr',
-          borderTop: 'none',
-        }}
-      >
-        {/* Left: Dynamic Terms & Conditions / Privacy Policies from Database */}
-        <div
-          style={{
-            padding: copyCount === 3 ? '2px 5px' : '4px 7px',
-            borderRight: '1px solid #000000',
-            fontSize: copyCount === 3 ? '8px' : (copyCount === 2 ? '9px' : '10px'),
-            lineHeight: copyCount === 3 ? 1.2 : 1.25,
-            color: '#000000',
-          }}
-        >
-          <div
-            style={{
-              fontWeight: 900,
-              textTransform: 'uppercase',
-              marginBottom: '2px',
-              color: '#000000',
-              letterSpacing: '0.02em',
-              display: 'flex',
-              justifyContent: 'space-between',
-              fontSize: copyCount === 3 ? '8.5px' : (copyCount === 2 ? '9.5px' : '10.5px'),
-            }}
-          >
-            <span>Terms, Conditions & Carriage Policies:</span>
-            <span style={{ fontWeight: 700, color: '#000000' }}>
-              Subject to Local Jurisdiction
-            </span>
-          </div>
-
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '1px',
-            }}
-          >
-            {dynamicTerms.map((term, i) => (
-              <div key={i} style={{ marginBottom: '1px', fontWeight: 600 }}>
-                {term}
-              </div>
-            ))}
-          </div>
-
-          {company.receiptFooterNote && (
-            <div
-              style={{
-                marginTop: '2px',
-                paddingTop: '2px',
-                borderTop: '1px dotted #000000',
-                fontWeight: 700,
-                color: '#000000',
-                fontSize: copyCount === 3 ? '8px' : '9px',
-              }}
-            >
-              Notice: {company.receiptFooterNote}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: copyCount === 3 ? '0.2px' : '0.5px' }}>
+          {dynamicTerms.map((term, i) => (
+            <div key={i} style={{ color: '#000000' }}>
+              {term}
             </div>
-          )}
+          ))}
         </div>
-
-        {/* Right: Dual Signatures (Consignor & Authorized Signatory) */}
         <div
           style={{
-            padding: copyCount === 3 ? '2px 5px' : '4px 7px',
             display: 'flex',
-            flexDirection: 'column',
             justifyContent: 'space-between',
-            textAlign: 'center',
+            alignItems: 'flex-end',
+            marginTop: copyCount === 3 ? '1.5px' : '4px',
+            paddingTop: copyCount === 3 ? '1px' : '2px',
           }}
         >
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'flex-start',
-              fontSize: copyCount === 3 ? '9px' : (copyCount === 2 ? '10px' : '11px'),
-              fontWeight: 800,
-              color: '#000000',
-            }}
-          >
-            <div style={{ textAlign: 'left' }}>Consignor Signature</div>
-            <div style={{ textAlign: 'right' }}>
-              For {company.companyName || 'SRI VINAYAKA LOGISTICS'}
-            </div>
-          </div>
-
-          <div
-            className="bw-signature-area"
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'flex-end',
-              paddingBottom: '2px',
-            }}
-          >
-            <div
-              style={{
-                width: '45%',
-                borderBottom: '1px dotted #000000',
-                height: copyCount === 3 ? '13px' : '28px',
-              }}
-            />
-            <div
-              style={{
-                width: '45%',
-                borderBottom: '1px dotted #000000',
-                height: copyCount === 3 ? '13px' : '28px',
-              }}
-            />
-          </div>
-
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              fontSize: copyCount === 3 ? '8.5px' : (copyCount === 2 ? '9.5px' : '10.5px'),
-              fontWeight: 700,
-              color: '#000000',
-            }}
-          >
-            <span>Customer / Sender</span>
-            <span>Authorized Booking Clerk</span>
+          <span style={{ fontWeight: 800 }}>
+            Subject to {fromCityName || 'Hyderabad'} Jurisdiction.
+          </span>
+          <div style={{ display: 'flex', gap: copyCount === 3 ? '12px' : '20px', fontSize: copyCount === 3 ? '6.5px' : '8px', fontWeight: 600 }}>
+            <span>Consignor Signature</span>
+            <span>Authorized Signatory</span>
           </div>
         </div>
       </div>
@@ -691,6 +568,22 @@ export const ReceiptModal = ({ booking, onClose, companySettings: propCompanySet
 
   // User selectable copies per A4 page: 1, 2, or 3 (Defaults to 2: Consignor & Driver)
   const [copyCount, setCopyCount] = useState(2);
+  const [superadminLogo, setSuperadminLogo] = useState('/logo.png');
+
+  useEffect(() => {
+    let isMounted = true;
+    api.settings
+      .getPublic()
+      .then((res) => {
+        if (isMounted && res && res.success && res.data && res.data.logoUrl) {
+          setSuperadminLogo(res.data.logoUrl);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handlePrint = () => {
     window.print();
@@ -928,6 +821,7 @@ export const ReceiptModal = ({ booking, onClose, companySettings: propCompanySet
               <ConsignmentBill
                 booking={booking}
                 company={company}
+                superadminLogo={superadminLogo}
                 copyTitle={copyItem.title}
                 copyBadge={copyItem.copyBadge}
                 showAmount={copyItem.showAmount}

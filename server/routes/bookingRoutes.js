@@ -316,6 +316,16 @@ router.get('/', async (req, res, next) => {
       }
     }
 
+    // 90-Day Retention Policy: Clamp lower date bound to last 90 days
+    const minRetentionDate = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+    if (!query.createdAt) {
+      query.createdAt = { $gte: minRetentionDate };
+    } else {
+      if (!query.createdAt.$gte || new Date(query.createdAt.$gte) < minRetentionDate) {
+        query.createdAt.$gte = minRetentionDate;
+      }
+    }
+
     // Optimized search query: direct index path for Order IDs & phone numbers, general text for names
     if (search && search.trim()) {
       const cleanSearch = search.trim();
@@ -345,20 +355,24 @@ router.get('/', async (req, res, next) => {
       }
     }
 
+    const isNoLimit = limit === '0' || limit === 'all' || limit === 0;
     const pageNum = parseInt(page, 10) || 1;
-    const limitNum = parseInt(limit, 10) || 15;
-    const skip = (pageNum - 1) * limitNum;
+    const limitNum = isNoLimit ? 0 : (parseInt(limit, 10) || 15);
+    const skip = isNoLimit ? 0 : (pageNum - 1) * limitNum;
 
     const sortOptions = {};
     sortOptions[sortBy] = sortOrder === 'asc' ? 1 : -1;
 
+    let queryBuilder = Booking.find(query)
+      .select('-timeline')
+      .sort(sortOptions);
+
+    if (!isNoLimit) {
+      queryBuilder = queryBuilder.skip(skip).limit(limitNum);
+    }
+
     const [bookings, total] = await Promise.all([
-      Booking.find(query)
-        .select('-timeline')
-        .sort(sortOptions)
-        .skip(skip)
-        .limit(limitNum)
-        .lean(),
+      queryBuilder.lean(),
       Booking.countDocuments(query),
     ]);
 
@@ -367,9 +381,10 @@ router.get('/', async (req, res, next) => {
       data: bookings,
       pagination: {
         total,
-        page: pageNum,
-        pages: Math.ceil(total / limitNum) || 1,
-        limit: limitNum,
+        page: isNoLimit ? 1 : pageNum,
+        pages: isNoLimit ? 1 : (Math.ceil(total / limitNum) || 1),
+        limit: isNoLimit ? total : limitNum,
+        noPagination: isNoLimit,
       },
     });
   } catch (error) {
@@ -395,6 +410,15 @@ router.get('/:id', async (req, res, next) => {
 
     if (!booking) {
       return res.status(404).json({ success: false, message: 'Booking not found in your organization' });
+    }
+
+    // 90-Day Retention Policy Check
+    const minRetentionDate = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+    if (booking.createdAt && new Date(booking.createdAt) < minRetentionDate) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found or has expired in accordance with the 90-day data retention policy',
+      });
     }
 
     // Role-based authorization & BOLA/IDOR check: Staff can only view their own bookings

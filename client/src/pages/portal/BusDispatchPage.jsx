@@ -940,7 +940,7 @@ export const BusDispatchPage = ({
                 Date:
               </span>
               {[
-                { id: 'all', label: 'All' },
+                { id: 'all', label: 'All (90 Days)' },
                 { id: 'today', label: 'Today' },
                 { id: 'yesterday', label: 'Yesterday' },
                 { id: '7days', label: 'Last 7 Days' },
@@ -971,6 +971,8 @@ export const BusDispatchPage = ({
                 <input
                   type="date"
                   className="form-control"
+                  min={new Date(Date.now() - 90 * 86400000).toISOString().split('T')[0]}
+                  max={new Date().toISOString().split('T')[0]}
                   style={{ width: '135px', padding: '4px 8px', fontSize: '0.75rem' }}
                   value={historyStartDate}
                   onChange={(e) => {
@@ -985,6 +987,8 @@ export const BusDispatchPage = ({
                 <input
                   type="date"
                   className="form-control"
+                  min={new Date(Date.now() - 90 * 86400000).toISOString().split('T')[0]}
+                  max={new Date().toISOString().split('T')[0]}
                   style={{ width: '135px', padding: '4px 8px', fontSize: '0.75rem' }}
                   value={historyEndDate}
                   onChange={(e) => {

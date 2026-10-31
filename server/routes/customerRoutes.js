@@ -75,9 +75,11 @@ router.get('/:id', async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Customer not found in your organization' });
     }
 
-    // Get all bookings for this customer within this tenant
+    // Get bookings for this customer within this tenant (Scoped to 90-day retention window)
+    const minRetentionDate = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
     const bookings = await Booking.find({
       ...req.tenantFilter,
+      createdAt: { $gte: minRetentionDate },
       $or: [{ customer: customer._id }, { customerPhone: customer.phone }],
     })
       .sort({ createdAt: -1 })

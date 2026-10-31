@@ -60,7 +60,6 @@ export const WhatsAppModal = ({ booking, onClose, onSuccess }) => {
     lines.push(`• Driver: ${driverInfo}`);
   }
   lines.push(`• Delivery Counter: ${fullStop}`);
-  lines.push(`• Payment: ${payDisplay}`);
   lines.push('');
   lines.push('Track live:');
   lines.push(`https://mrcargo.online/#track?id=${cleanId}`);

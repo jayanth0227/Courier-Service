@@ -31,19 +31,24 @@ const aggregateAnalyticsData = (bookings = [], tf = '7days', dashboardStats = nu
     startDate.setDate(now.getDate() - 29);
     startDate.setHours(0, 0, 0, 0);
   } else {
-    startDate = new Date(0); // all time
+    // 90-Day Retention Policy: Max operational visibility is last 90 days
+    startDate.setDate(now.getDate() - 89);
+    startDate.setHours(0, 0, 0, 0);
   }
 
   const todayZero = new Date();
   todayZero.setHours(0, 0, 0, 0);
 
-  // Filter bookings for the selected timeframe
-  const filteredBookings = tf === 'all'
-    ? bookings
-    : bookings.filter((b) => {
-        if (!b.createdAt) return true;
-        return new Date(b.createdAt) >= startDate;
-      });
+  // 90-Day Retention Policy Cutoff
+  const minRetentionDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+  const effectiveStartDate = startDate < minRetentionDate ? minRetentionDate : startDate;
+
+  // Filter bookings for the selected timeframe (strictly bounded by 90-day window)
+  const filteredBookings = bookings.filter((b) => {
+    if (!b.createdAt) return true;
+    const bDate = new Date(b.createdAt);
+    return bDate >= effectiveStartDate && bDate >= minRetentionDate;
+  });
 
   let totalRevenue = 0;
   let todayRevenue = 0;
@@ -68,9 +73,9 @@ const aggregateAnalyticsData = (bookings = [], tf = '7days', dashboardStats = nu
   };
   const busMap = {};
 
-  // Build daily trend dictionary
+  // Build daily trend dictionary (up to 90 days)
   const dailyMap = {};
-  const numDays = tf === 'today' ? 1 : tf === '30days' ? 30 : 7;
+  const numDays = tf === 'today' ? 1 : tf === '30days' ? 30 : tf === 'all' ? 90 : 7;
   for (let i = numDays - 1; i >= 0; i--) {
     const d = new Date();
     d.setDate(d.getDate() - i);
@@ -369,7 +374,7 @@ export const DashboardPage = ({
               { id: 'today', label: 'Today' },
               { id: '7days', label: '7 Days' },
               { id: '30days', label: '30 Days' },
-              { id: 'all', label: 'All Time' },
+              { id: 'all', label: '90 Days' },
             ].map((t) => (
               <button
                 key={t.id}

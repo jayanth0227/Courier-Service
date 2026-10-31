@@ -420,6 +420,7 @@ export const CreateBookingPage = ({
         .filter(Boolean)
     )
   );
+  const [isCustomStop, setIsCustomStop] = useState(false);
 
   // Quick Add Parcel Type Handler (Admin only)
   const handleQuickAddParcelType = async (e) => {
@@ -668,6 +669,7 @@ export const CreateBookingPage = ({
   const handleReset = () => {
     const defaultPt = parcelTypesList.length > 0 ? parcelTypesList[0] : null;
     setIsSameAsSender(false);
+    setIsCustomStop(false);
     setFormData({
       fromCity: defaultOrigin || '',
       toCity: '',
@@ -952,6 +954,7 @@ export const CreateBookingPage = ({
                 error={fieldErrors.toCity}
                 onChange={(cityName, cityObj) => {
                   clearFieldError('toCity');
+                  setIsCustomStop(false);
                   setFormData((prev) => {
                     const updated = { ...prev, toCity: cityName };
                     if (!cityName) {
@@ -975,68 +978,171 @@ export const CreateBookingPage = ({
                 autoFocus
               />
 
-              {/* Delivery Address / Collection Stop */}
+              {/* Delivery Stop / Counter Selection with Checkboxes */}
               <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="docket-field-label">
-                  Delivery Stop / Counter <span className="required">*</span>
-                </label>
-                <input
-                  type="text"
-                  id="cb_delivery_addr"
-                  name="cb_dest_stop_addr"
-                  className={`form-control docket-input ${fieldErrors.deliveryAddress ? 'input-error' : ''}`}
-                  placeholder={
-                    availableLocations.length > 0
-                      ? 'Select a stop below or enter counter address...'
-                      : 'e.g. Bus Stand Counter #4, Benz Circle / Station Road'
-                  }
-                  value={formData.deliveryAddress}
-                  onChange={(e) => {
-                    clearFieldError('deliveryAddress');
-                    setFormData((prev) => ({ ...prev, deliveryAddress: e.target.value }));
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      document.getElementById('cb_sender_phone')?.focus();
-                    }
-                  }}
-                  required
-                  autoComplete="off"
-                  data-lpignore="true"
-                />
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
+                  <label className="docket-field-label" style={{ margin: 0 }}>
+                    Delivery Stop / Counter <span className="required">*</span>
+                  </label>
+                  {availableLocations.length > 0 && (
+                    <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600 }}>
+                      Select 1 stop
+                    </span>
+                  )}
+                </div>
+
+                {availableLocations.length > 0 ? (
+                  <div
+                    className={`docket-stops-checkbox-wrapper ${fieldErrors.deliveryAddress ? 'input-error' : ''}`}
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.35rem',
+                      backgroundColor: '#ffffff',
+                      border: `1px solid ${fieldErrors.deliveryAddress ? '#ef4444' : '#cbd5e1'}`,
+                      borderRadius: '6px',
+                      padding: '0.45rem',
+                      minHeight: '40px',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', alignItems: 'center' }}>
+                      {availableLocations.map((loc, idx) => {
+                        const isSelected =
+                          !isCustomStop &&
+                          (formData.deliveryAddress || '').trim().toLowerCase() === loc.trim().toLowerCase();
+                        return (
+                          <label
+                            key={idx}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              padding: '5px 10px',
+                              borderRadius: '5px',
+                              fontSize: '0.8125rem',
+                              fontWeight: isSelected ? 700 : 500,
+                              backgroundColor: isSelected ? '#eff6ff' : '#f8fafc',
+                              border: `1px solid ${isSelected ? '#2563eb' : '#e2e8f0'}`,
+                              color: isSelected ? '#1d4ed8' : '#334155',
+                              cursor: 'pointer',
+                              userSelect: 'none',
+                              transition: 'all 0.15s ease',
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              name="cb_dest_stop_checkbox"
+                              checked={isSelected}
+                              onChange={() => {
+                                clearFieldError('deliveryAddress');
+                                setIsCustomStop(false);
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  deliveryAddress: isSelected ? '' : loc,
+                                }));
+                              }}
+                              style={{
+                                accentColor: '#2563eb',
+                                cursor: 'pointer',
+                                width: '15px',
+                                height: '15px',
+                              }}
+                            />
+                            <span>{loc}</span>
+                          </label>
+                        );
+                      })}
+
+                      {/* Custom / Other Stop Checkbox */}
+                      <label
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '5px 10px',
+                          borderRadius: '5px',
+                          fontSize: '0.8125rem',
+                          fontWeight: isCustomStop ? 700 : 500,
+                          backgroundColor: isCustomStop ? '#eff6ff' : '#f8fafc',
+                          border: `1px solid ${isCustomStop ? '#2563eb' : '#e2e8f0'}`,
+                          color: isCustomStop ? '#1d4ed8' : '#64748b',
+                          cursor: 'pointer',
+                          userSelect: 'none',
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          name="cb_dest_stop_checkbox"
+                          checked={isCustomStop}
+                          onChange={() => {
+                            clearFieldError('deliveryAddress');
+                            const next = !isCustomStop;
+                            setIsCustomStop(next);
+                            if (next) {
+                              setFormData((prev) => ({ ...prev, deliveryAddress: '' }));
+                            } else if (availableLocations.length > 0) {
+                              setFormData((prev) => ({ ...prev, deliveryAddress: availableLocations[0] }));
+                            }
+                          }}
+                          style={{
+                            accentColor: '#2563eb',
+                            cursor: 'pointer',
+                            width: '15px',
+                            height: '15px',
+                          }}
+                        />
+                        <span>Other...</span>
+                      </label>
+                    </div>
+
+                    {isCustomStop && (
+                      <input
+                        type="text"
+                        id="cb_delivery_addr"
+                        name="cb_dest_stop_addr"
+                        className="form-control docket-input"
+                        style={{ marginTop: '0.25rem', height: '32px', fontSize: '0.8125rem' }}
+                        placeholder="Type custom delivery counter / address..."
+                        value={formData.deliveryAddress}
+                        onChange={(e) => {
+                          clearFieldError('deliveryAddress');
+                          setFormData((prev) => ({ ...prev, deliveryAddress: e.target.value }));
+                        }}
+                        autoFocus
+                        required
+                      />
+                    )}
+                  </div>
+                ) : (
+                  <input
+                    type="text"
+                    id="cb_delivery_addr"
+                    name="cb_dest_stop_addr"
+                    className={`form-control docket-input ${fieldErrors.deliveryAddress ? 'input-error' : ''}`}
+                    placeholder="e.g. Bus Stand Counter #4, Benz Circle / Station Road"
+                    value={formData.deliveryAddress}
+                    onChange={(e) => {
+                      clearFieldError('deliveryAddress');
+                      setFormData((prev) => ({ ...prev, deliveryAddress: e.target.value }));
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        document.getElementById('cb_sender_phone')?.focus();
+                      }
+                    }}
+                    required
+                    autoComplete="off"
+                    data-lpignore="true"
+                  />
+                )}
                 {fieldErrors.deliveryAddress && (
                   <div className="form-error-msg">{fieldErrors.deliveryAddress}</div>
                 )}
               </div>
             </div>
-
-            {/* Branch Stops Chips */}
-            {availableLocations.length > 1 && (
-              <div className="docket-stops-bar">
-                <span className="docket-stops-label">Configured Stops:</span>
-                <div className="docket-stops-chips">
-                  {availableLocations.map((loc, idx) => {
-                    const isSelected =
-                      (formData.deliveryAddress || '').trim().toLowerCase() === loc.trim().toLowerCase();
-                    return (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => {
-                          clearFieldError('deliveryAddress');
-                          setFormData((prev) => ({ ...prev, deliveryAddress: loc }));
-                        }}
-                        className={`docket-stop-chip ${isSelected ? 'active' : ''}`}
-                      >
-                        {isSelected && <Check size={12} />}
-                        <span>{loc}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Section 2: Consignor & Consignee (Sender & Receiver) */}

@@ -53,8 +53,9 @@ router.post('/', async (req, res, next) => {
 // @access  Private (Superadmin, Admin)
 router.get('/', protect, authorize('superadmin', 'admin'), async (req, res, next) => {
   try {
-    const inquiries = await Inquiry.find().sort({ createdAt: -1 }).limit(100);
-    const countNew = await Inquiry.countDocuments({ status: 'New' });
+    const minRetentionDate = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+    const inquiries = await Inquiry.find({ createdAt: { $gte: minRetentionDate } }).sort({ createdAt: -1 }).limit(100);
+    const countNew = await Inquiry.countDocuments({ status: 'New', createdAt: { $gte: minRetentionDate } });
     return res.json({
       success: true,
       count: inquiries.length,

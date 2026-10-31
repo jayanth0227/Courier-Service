@@ -45,12 +45,13 @@ router.get('/stats', async (req, res, next) => {
     const activeTenants = await Tenant.countDocuments({ status: 'ACTIVE' });
     const suspendedTenants = await Tenant.countDocuments({ status: 'SUSPENDED' });
 
-    const totalBookings = await Booking.countDocuments();
-    const totalDispatches = await BusDispatch.countDocuments();
+    const minRetentionDate = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+    const totalBookings = await Booking.countDocuments({ createdAt: { $gte: minRetentionDate } });
+    const totalDispatches = await BusDispatch.countDocuments({ dispatchedAt: { $gte: minRetentionDate } });
 
-    // Calculate platform gross revenue
+    // Calculate platform gross revenue (90-day active retention window)
     const revenueAgg = await Booking.aggregate([
-      { $match: { status: { $ne: 'CANCELLED' } } },
+      { $match: { createdAt: { $gte: minRetentionDate }, status: { $ne: 'CANCELLED' } } },
       { $group: { _id: null, total: { $sum: '$amount' } } },
     ]);
     const totalRevenue = revenueAgg.length > 0 ? revenueAgg[0].total : 0;
@@ -320,15 +321,38 @@ router.get('/tenants/:id', async (req, res, next) => {
     ] = await Promise.all([
       Setting.findOne({ tenantId: tenant._id }),
       User.find({ tenantId: tenant._id }).select('-password').sort({ role: 1, createdAt: -1 }),
-      Booking.find({ tenantId: tenant._id }).sort({ createdAt: -1 }).limit(10).lean(),
-      Booking.countDocuments({ tenantId: tenant._id }),
+      Booking.find({
+        tenantId: tenant._id,
+        createdAt: { $gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) },
+      })
+        .sort({ createdAt: -1 })
+        .limit(10)
+        .lean(),
+      Booking.countDocuments({
+        tenantId: tenant._id,
+        createdAt: { $gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) },
+      }),
       Bus.countDocuments({ tenantId: tenant._id }),
       Driver.countDocuments({ tenantId: tenant._id }),
-      Booking.countDocuments({ tenantId: tenant._id, status: { $in: ['BOOKED', 'WAITING_FOR_BUS'] } }),
-      Booking.countDocuments({ tenantId: tenant._id, status: 'DELIVERED' }),
+      Booking.countDocuments({
+        tenantId: tenant._id,
+        status: { $in: ['BOOKED', 'WAITING_FOR_BUS'] },
+        createdAt: { $gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) },
+      }),
+      Booking.countDocuments({
+        tenantId: tenant._id,
+        status: 'DELIVERED',
+        createdAt: { $gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) },
+      }),
       Booking.countDocuments({ tenantId: tenant._id, createdAt: { $gte: todayStart } }),
       Booking.aggregate([
-        { $match: { tenantId: tenant._id, status: { $ne: 'CANCELLED' } } },
+        {
+          $match: {
+            tenantId: tenant._id,
+            createdAt: { $gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) },
+            status: { $ne: 'CANCELLED' },
+          },
+        },
         { $group: { _id: null, total: { $sum: '$amount' } } },
       ]),
     ]);
@@ -751,8 +775,11 @@ router.put('/settings', async (req, res, next) => {
       companyPhone,
       companyEmail,
       companyAddress,
+      receiptAddress,
+      receiptAdminName,
       gstin,
       receiptFooterNote,
+      portfolioUrl,
       whatsappProvider,
       whatsappSenderNumber,
       whatsappApiKey,
@@ -813,8 +840,11 @@ router.put('/settings', async (req, res, next) => {
     if (companyPhone !== undefined) settings.companyPhone = (companyPhone || '').trim();
     if (companyEmail !== undefined) settings.companyEmail = (companyEmail || '').trim();
     if (companyAddress !== undefined) settings.companyAddress = (companyAddress || '').trim();
+    if (receiptAddress !== undefined) settings.receiptAddress = (receiptAddress || '').trim();
+    if (receiptAdminName !== undefined) settings.receiptAdminName = (receiptAdminName || '').trim();
     if (gstin !== undefined) settings.gstin = (gstin || '').trim();
     if (receiptFooterNote !== undefined) settings.receiptFooterNote = (receiptFooterNote || '').trim();
+    if (portfolioUrl !== undefined) settings.portfolioUrl = (portfolioUrl || '').trim();
     if (whatsappProvider !== undefined) settings.whatsappProvider = whatsappProvider;
     if (whatsappSenderNumber !== undefined) settings.whatsappSenderNumber = (whatsappSenderNumber || '').trim();
     if (whatsappApiKey !== undefined) settings.whatsappApiKey = (whatsappApiKey || '').trim();
@@ -1070,6 +1100,49 @@ router.post('/test-smtp', async (req, res, next) => {
   try {
     const result = await emailService.verifyConnection();
     res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// @route   POST /api/superadmin/retention/run-purge
+// @desc    Trigger an immediate on-demand sweep to delete all data older than 90 days
+router.post('/retention/run-purge', async (req, res, next) => {
+  try {
+    const { runDataRetentionSweep, RETENTION_DAYS, PROTECTED_MASTER_ENTITIES, EPHEMERAL_ENTITIES } = require('../services/dataRetentionService');
+    const results = await runDataRetentionSweep();
+
+    res.json({
+      success: true,
+      message: `Data retention sweep executed: purged ${results.totalPurged} record(s) older than ${RETENTION_DAYS} days.`,
+      data: {
+        ...results,
+        protectedEntities: PROTECTED_MASTER_ENTITIES,
+        ephemeralEntities: EPHEMERAL_ENTITIES,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// @route   GET /api/superadmin/retention/status
+// @desc    Get data retention policy settings and active window
+router.get('/retention/status', async (req, res, next) => {
+  try {
+    const { RETENTION_DAYS, RETENTION_MS, PROTECTED_MASTER_ENTITIES, EPHEMERAL_ENTITIES } = require('../services/dataRetentionService');
+    const cutoffDate = new Date(Date.now() - RETENTION_MS);
+
+    res.json({
+      success: true,
+      policy: {
+        retentionDays: RETENTION_DAYS,
+        cutoffDate: cutoffDate.toISOString(),
+        description: 'Throughout the application, only the last 90 days of operational records are retained and visible. System settings, CMS, bus fleet, crew, organizations, and vendor details are permanently preserved.',
+        ephemeralEntities: EPHEMERAL_ENTITIES,
+        protectedEntities: PROTECTED_MASTER_ENTITIES,
+      },
+    });
   } catch (err) {
     next(err);
   }

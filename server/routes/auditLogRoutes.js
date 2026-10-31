@@ -54,6 +54,16 @@ router.get('/', async (req, res, next) => {
       }
     }
 
+    // 90-Day Retention Policy: Clamp lower bound to last 90 days
+    const minRetentionDate = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+    if (!query.timestamp) {
+      query.timestamp = { $gte: minRetentionDate };
+    } else {
+      if (!query.timestamp.$gte || new Date(query.timestamp.$gte) < minRetentionDate) {
+        query.timestamp.$gte = minRetentionDate;
+      }
+    }
+
     const pageNum = Math.max(1, parseInt(page, 10) || 1);
     const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 25));
     const skip = (pageNum - 1) * limitNum;

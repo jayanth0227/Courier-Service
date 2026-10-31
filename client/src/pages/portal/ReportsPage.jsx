@@ -147,8 +147,14 @@ export const ReportsPage = ({
         const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
         params.startDate = formatLocalYMD(firstDay);
         params.endDate = formatLocalYMD(new Date());
+      } else if (timeframe === 'all') {
+        const d = new Date();
+        d.setDate(d.getDate() - 89);
+        params.startDate = formatLocalYMD(d);
+        params.endDate = formatLocalYMD(new Date());
       } else if (timeframe === 'custom') {
-        if (startDate) params.startDate = startDate;
+        const minDate = formatLocalYMD(new Date(Date.now() - 90 * 86400000));
+        if (startDate) params.startDate = startDate < minDate ? minDate : startDate;
         if (endDate) params.endDate = endDate;
       }
 
@@ -718,7 +724,7 @@ export const ReportsPage = ({
       '7days': 'Last 7 Days',
       '30days': 'Last 30 Days',
       month: 'This Month',
-      all: 'All Time',
+      all: 'All Time (90 Days)',
       custom: 'Custom Range',
     };
     const activeLabel = labels[timeframe] || 'Selected Tenure';
@@ -739,9 +745,11 @@ export const ReportsPage = ({
       const first = new Date(now.getFullYear(), now.getMonth(), 1);
       rangeText = `${first.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })} – ${now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}`;
     } else if (timeframe === 'all') {
-      rangeText = 'Complete Auditable History';
+      const d = new Date(now);
+      d.setDate(d.getDate() - 89);
+      rangeText = `${d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })} – ${now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })} (Active 90-Day Retention Window)`;
     } else if (timeframe === 'custom') {
-      rangeText = startDate && endDate ? `${startDate} to ${endDate}` : 'Select dates';
+      rangeText = startDate && endDate ? `${startDate} to ${endDate}` : 'Select dates (Last 90 Days)';
     }
 
     return { activeLabel, rangeText };
@@ -1041,13 +1049,13 @@ export const ReportsPage = ({
               { id: '7days', label: 'Last 7 Days' },
               { id: '30days', label: 'Last 30 Days' },
               { id: 'month', label: 'This Month' },
-              { id: 'all', label: 'All Time' },
+              { id: 'all', label: 'All Time (90 Days)' },
               { id: 'custom', label: 'Custom Range' },
             ].map((t) => (
               <button
                 key={t.id}
                 type="button"
-                onClick={() => handleTimeframeChange(t.id)}
+                onClick={() => setTimeframe(t.id)}
                 style={{
                   border: 'none',
                   padding: '5px 12px',
@@ -1201,6 +1209,8 @@ export const ReportsPage = ({
               <input
                 type="date"
                 className="form-control"
+                min={formatLocalYMD(new Date(Date.now() - 90 * 86400000))}
+                max={formatLocalYMD(new Date())}
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
                 style={{ width: '130px', padding: '2px 4px', fontSize: '0.75rem' }}
@@ -1209,6 +1219,8 @@ export const ReportsPage = ({
               <input
                 type="date"
                 className="form-control"
+                min={formatLocalYMD(new Date(Date.now() - 90 * 86400000))}
+                max={formatLocalYMD(new Date())}
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
                 style={{ width: '130px', padding: '2px 4px', fontSize: '0.75rem' }}

@@ -56,6 +56,8 @@ export const SettingsPage = ({ onRefreshGlobalDestinations }) => {
     companyPhone: '',
     companyEmail: '',
     companyAddress: '',
+    receiptAddress: '',
+    receiptAdminName: '',
     fromCity: '',
     gstin: '',
     receiptFooterNote: '',
@@ -2203,6 +2205,56 @@ export const SettingsPage = ({ onRefreshGlobalDestinations }) => {
                 value={settings.receiptFooterNote || ''}
                 onChange={(e) => setSettings({ ...settings, receiptFooterNote: e.target.value })}
               />
+            </div>
+
+            <div className="form-row" style={{ marginBottom: '1.25rem' }}>
+              <div className="form-group">
+                <label className="form-label" style={{ fontWeight: 700 }}>
+                  Consignment Bill Header Address (Prints in Header Middle Cell)
+                </label>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="e.g. Near Tabla Restaurant, Metro Piller No. 731, KPHB Colony, Main Road, Hyderabad-500 072"
+                  value={settings.receiptAddress || ''}
+                  onChange={(e) => setSettings({ ...settings, receiptAddress: e.target.value })}
+                />
+                <div className="form-hint" style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '3px' }}>
+                  This address prints dynamically in the consignment bill header middle cell (overrides default hub address).
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" style={{ fontWeight: 700 }}>
+                  Admin / Signatory Name (Prints below Total / Price Column)
+                </label>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="e.g. Kiran Kumar or Jayanth"
+                  value={settings.receiptAdminName || ''}
+                  onChange={(e) => setSettings({ ...settings, receiptAdminName: e.target.value })}
+                />
+                <div className="form-hint" style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '3px' }}>
+                  This name fetches below the price/total column along with booking time (e.g. "Kiran Kumar 05:46 PM").
+                </div>
+              </div>
+            </div>
+
+            <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+              <label className="form-label" style={{ fontWeight: 700 }}>
+                Portfolio URL / Website (Displays in Website Footer)
+              </label>
+              <input
+                type="url"
+                className="form-control"
+                placeholder="e.g. https://yourportfolio.com or www.yourportfolio.com"
+                value={settings.portfolioUrl || ''}
+                onChange={(e) => setSettings({ ...settings, portfolioUrl: e.target.value })}
+              />
+              <div className="form-hint" style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '3px' }}>
+                Displays a live clickable link under SaaS Platform & Vendor Enquiries in the footer.
+              </div>
             </div>
 
             <div className="form-group" style={{ marginBottom: 0 }}>

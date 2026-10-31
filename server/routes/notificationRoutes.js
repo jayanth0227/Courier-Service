@@ -21,6 +21,10 @@ router.get('/', async (req, res, next) => {
     if (orderId) query.orderId = new RegExp(escapeRegex(orderId.trim()), 'i');
     if (status && status !== 'ALL') query.status = status;
 
+    // 90-Day Retention Policy: Clamp lower bound to last 90 days
+    const minRetentionDate = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+    query.sentAt = { $gte: minRetentionDate };
+
     const pageNum = parseInt(page, 10) || 1;
     const limitNum = parseInt(limit, 10) || 20;
     const skip = (pageNum - 1) * limitNum;

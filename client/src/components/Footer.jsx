@@ -1,5 +1,5 @@
 import React from 'react';
-import { Truck, Phone, Mail, MapPin, FileText, Info, Building2 } from 'lucide-react';
+import { Truck, Phone, Mail, MapPin, FileText, Info, Building2, Globe } from 'lucide-react';
 import { useCompanySettings } from '../context/CompanyContext';
 
 export const Footer = ({ onNavigate, companySettings: propCompanySettings }) => {
@@ -10,6 +10,7 @@ export const Footer = ({ onNavigate, companySettings: propCompanySettings }) => 
   const companyPhone = company.companyPhone || '+91 9347808545';
   const companyEmail = company.companyEmail || 'mrcargo59@gmail.com';
   const companyAddress = company.companyAddress || 'Hyderabad';
+  const portfolioUrl = (company.portfolioUrl || '').trim();
   const gstin = company.gstin;
 
   return (
@@ -122,6 +123,22 @@ export const Footer = ({ onNavigate, companySettings: propCompanySettings }) => 
               <MapPin size={14} color="#2563eb" style={{ flexShrink: 0, marginTop: '2px' }} />
               <span><strong>Platform HQ:</strong> {companyAddress}</span>
             </div>
+            {portfolioUrl && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Globe size={14} color="#2563eb" style={{ flexShrink: 0 }} />
+                <span>
+                  <strong>Portfolio:</strong>{' '}
+                  <a
+                    href={portfolioUrl.startsWith('http://') || portfolioUrl.startsWith('https://') ? portfolioUrl : `https://${portfolioUrl}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: '#2563eb', fontWeight: 600, textDecoration: 'none' }}
+                  >
+                    {portfolioUrl.replace(/^https?:\/\/(www\.)?/i, '') || 'View Portfolio'} ↗
+                  </a>
+                </span>
+              </div>
+            )}
             {gstin && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#475569', fontWeight: 600 }}>
                 <FileText size={14} color="#475569" style={{ flexShrink: 0 }} />

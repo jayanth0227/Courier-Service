@@ -446,6 +446,7 @@ export const BookingsPage = ({
       destination: booking.destination || '',
       deliveryAddress: booking.deliveryAddress || '',
       notes: booking.notes || '',
+      remarks: booking.remarks || '',
     });
   };
 

@@ -420,6 +420,8 @@ class DynamoModel {
     this.entityName = entityName.toLowerCase();
     this.tableName = getFullTableName(entityName);
     this.options = options;
+    this._memoryCache = [];
+    this._hasCached = false;
 
     // Register into model registry
     modelRegistry[this.entityName] = this;
@@ -490,12 +492,33 @@ class DynamoModel {
   async _rawScan() {
     try {
       const res = await docClient.send(new ScanCommand({ TableName: this.tableName }));
-      return res.Items || [];
+      const items = res.Items || [];
+      this._memoryCache = items;
+      this._hasCached = true;
+      return items;
     } catch (err) {
       if (err.name === 'ResourceNotFoundException') {
         console.warn(`[DynamoDB] Table "${this.tableName}" does not exist yet. Returning empty list.`);
         return [];
       }
+
+      // Check for transient DNS / network blips (ENOTFOUND, ETIMEDOUT, ECONNRESET, etc.)
+      const isTransientNetworkError =
+        err.code === 'ENOTFOUND' ||
+        err.code === 'ETIMEDOUT' ||
+        err.code === 'ECONNRESET' ||
+        err.code === 'EAI_AGAIN' ||
+        err.message?.includes('ENOTFOUND') ||
+        err.message?.includes('getaddrinfo') ||
+        err.name === 'TimeoutError';
+
+      if (isTransientNetworkError && this._hasCached) {
+        console.warn(
+          `[DynamoDB Network Failover] Transient network issue (${err.code || err.message}) on table "${this.tableName}". Serving ${this._memoryCache.length} cached record(s) from memory.`
+        );
+        return this._memoryCache;
+      }
+
       throw err;
     }
   }
@@ -521,12 +544,39 @@ class DynamoModel {
     if (!payload.createdAt) payload.createdAt = new Date().toISOString();
     payload.updatedAt = new Date().toISOString();
 
-    await docClient.send(
-      new PutCommand({
-        TableName: this.tableName,
-        Item: payload,
-      })
-    );
+    let attempts = 0;
+    while (attempts < 3) {
+      try {
+        attempts++;
+        await docClient.send(
+          new PutCommand({
+            TableName: this.tableName,
+            Item: payload,
+          })
+        );
+        // Update memory cache
+        if (this._hasCached) {
+          const idx = this._memoryCache.findIndex((it) => (it.id || it._id) === payload.id);
+          if (idx >= 0) {
+            this._memoryCache[idx] = payload;
+          } else {
+            this._memoryCache.push(payload);
+          }
+        }
+        return payload;
+      } catch (err) {
+        const isNetworkErr =
+          err.code === 'ENOTFOUND' ||
+          err.code === 'ETIMEDOUT' ||
+          err.code === 'ECONNRESET' ||
+          err.message?.includes('getaddrinfo');
+        if (isNetworkErr && attempts < 3) {
+          await new Promise((r) => setTimeout(r, attempts * 250));
+          continue;
+        }
+        throw err;
+      }
+    }
     return payload;
   }
 

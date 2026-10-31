@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useCompanySettings } from '../context/CompanyContext';
+import { InteractiveParticleBackground } from '../components/InteractiveParticleBackground';
 
 // Helper to resolve icon from Super Admin CMS configuration
 const renderServiceIcon = (iconName, size = 18, color = '#2563eb') => {
@@ -338,6 +339,9 @@ export const HomePage = ({ onNavigate, onTrackOrder, companySettings: propCompan
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#ffffff' }}>
       {/* 1. PROFESSIONAL SAAS HERO & UNIFIED DISPATCH CONSOLE */}
       <section id="home" className="hero-main-section-modern">
+        {/* Interactive Logistics Constellation Particle Network */}
+        <InteractiveParticleBackground />
+
         <div style={{ maxWidth: '1200px', margin: '0 auto', position: 'relative', zIndex: 2, width: '100%', boxSizing: 'border-box' }}>
           {/* Top Trust Micro-Pill */}
           <div style={{ textAlign: 'center' }}>

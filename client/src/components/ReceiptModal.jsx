@@ -518,6 +518,30 @@ const ConsignmentBill = ({
         </div>
       </div>
 
+      {/* 5B. Booking Remarks & Special Instructions (Printed on all copies) */}
+      {(booking.remarks || (booking.items?.length === 1 && booking.items[0]?.notes) || booking.notes) && (
+        <div
+          style={{
+            padding: copyCount === 3 ? '2px 6px' : '3px 8px',
+            borderBottom: '1px solid #000000',
+            backgroundColor: '#ffffff',
+            fontSize: copyCount === 3 ? '9px' : (copyCount === 2 ? '10px' : '11px'),
+            lineHeight: 1.25,
+            color: '#000000',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '6px',
+          }}
+        >
+          <strong style={{ fontWeight: 800, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
+            Remarks / Special Notes:
+          </strong>
+          <span style={{ fontWeight: 700, color: '#000000' }}>
+            {booking.remarks || (booking.items?.length === 1 ? booking.items[0]?.notes : '') || booking.notes}
+          </span>
+        </div>
+      )}
+
       {/* 6. Dynamic Terms & Conditions (Editable by Admin) & Dual Signatures */}
       <div
         style={{

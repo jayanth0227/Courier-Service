@@ -11,13 +11,28 @@ const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
 const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
 const tablePrefix = process.env.DYNAMODB_TABLE_PREFIX || 'mrcargo_';
 
+const https = require('https');
+const { NodeHttpHandler } = require('@smithy/node-http-handler');
+
 if (!accessKeyId || !secretAccessKey) {
   console.warn('[AWS DynamoDB Warning] AWS_ACCESS_KEY_ID or AWS_SECRET_ACCESS_KEY is not defined in .env');
 }
 
+const httpsAgent = new https.Agent({
+  keepAlive: true,
+  maxSockets: 50,
+  keepAliveMsecs: 60000,
+});
+
 const rawClient = new DynamoDBClient({
   region,
   credentials: accessKeyId && secretAccessKey ? { accessKeyId, secretAccessKey } : undefined,
+  maxAttempts: 6,
+  requestHandler: new NodeHttpHandler({
+    httpsAgent,
+    connectionTimeout: 6000,
+    requestTimeout: 12000,
+  }),
 });
 
 const docClient = DynamoDBDocumentClient.from(rawClient, {

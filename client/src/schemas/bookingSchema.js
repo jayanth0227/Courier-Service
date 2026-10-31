@@ -61,6 +61,10 @@ export const bookingFormSchema = z.object({
     .string()
     .trim()
     .optional(),
+  remarks: z
+    .string()
+    .optional()
+    .default(''),
   paymentStatus: z
     .string()
     .default('PAID'),

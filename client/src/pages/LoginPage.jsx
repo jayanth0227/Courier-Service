@@ -20,6 +20,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { api } from '../services/api';
 import { useCompanySettings } from '../context/CompanyContext';
+import { InteractiveParticleBackground } from '../components/InteractiveParticleBackground';
 
 export const LoginPage = ({ onNavigate, onLoginSuccess, companySettings: propCompanySettings }) => {
   const { login } = useAuth();
@@ -177,9 +178,12 @@ export const LoginPage = ({ onNavigate, onLoginSuccess, companySettings: propCom
         justifyContent: 'center',
         padding: '2.5rem 1rem',
         backgroundColor: '#ffffff',
+        position: 'relative',
+        overflow: 'hidden',
       }}
     >
-      <div style={{ width: '100%', maxWidth: '400px' }}>
+      <InteractiveParticleBackground />
+      <div style={{ width: '100%', maxWidth: '400px', position: 'relative', zIndex: 2 }}>
         <button
           onClick={() => onNavigate('home')}
           className="btn btn-outline btn-sm"

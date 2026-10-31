@@ -27,6 +27,7 @@ import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useCompanySettings } from '../context/CompanyContext';
 import { useToast } from '../context/ToastContext';
+import { InteractiveParticleBackground } from '../components/InteractiveParticleBackground';
 
 export const TrackingPage = ({ initialOrderId = '', onNavigate, companySettings: propCompanySettings }) => {
   const { user } = useAuth();
@@ -159,6 +160,7 @@ export const TrackingPage = ({ initialOrderId = '', onNavigate, companySettings:
       {/* 1. PUBLIC HERO HEADER OR PORTAL HEADER */}
       {!isPortal ? (
         <section className="tracking-hero-section">
+          <InteractiveParticleBackground />
           <div className="tracking-hero-grid" />
           <div className="tracking-hero-content">
             {/* Top Navigation Row */}

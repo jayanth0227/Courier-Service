@@ -6,6 +6,8 @@ const Tenant = require('../models/Tenant');
 const { protect, authorize } = require('../middleware/auth');
 const tenantScope = require('../middleware/tenantScope');
 
+let lastKnownPublicSettings = null;
+
 // @route   GET /api/settings/public
 // @desc    Get public company profile information (no auth required)
 // @access  Public
@@ -197,7 +199,7 @@ router.get('/public', async (req, res, next) => {
       });
     }
 
-    res.json({
+    const responsePayload = {
       success: true,
       data: {
         companyName: settings.companyName,
@@ -231,9 +233,46 @@ router.get('/public', async (req, res, next) => {
         vendorBenefitsTitle: settings.vendorBenefitsTitle || 'Why Leading Commercial Vendors Choose Us',
         vendorBenefits: (settings.vendorBenefits && settings.vendorBenefits.length > 0) ? settings.vendorBenefits : defaultVendorBenefits,
       },
-    });
+    };
+
+    lastKnownPublicSettings = responsePayload;
+    return res.json(responsePayload);
   } catch (error) {
-    next(error);
+    console.warn('[Settings Public Notice] Transient error accessing settings from DB:', error.message);
+    if (lastKnownPublicSettings) {
+      return res.json(lastKnownPublicSettings);
+    }
+    return res.json({
+      success: true,
+      data: {
+        companyName: 'Mr Cargo',
+        logoUrl: '/logo.png',
+        tagline: 'Premier Bus Parcel & Logistics Network',
+        companyPhone: '+91 99999 99999',
+        companyEmail: 'operations@mrcargo.com',
+        companyAddress: 'Central Terminal Hub & Logistics Station',
+        gstin: '',
+        receiptFooterNote: 'Thank you for choosing our bus parcel service.',
+        termsAndConditions: `1. Goods carried strictly at owner's risk; company is not liable for leakage, breakage, or natural damages.
+2. Value of goods must be declared at booking; company liability for undeclared items is strictly limited to ₹500.
+3. Hazardous, contraband, inflammable, or prohibited goods are strictly not accepted.
+4. Demurrage will be levied if cargo is not claimed within 24 hours of bus arrival at destination.
+5. Consignee must verify package condition before counter delivery acknowledgment.
+6. Original LR copy or SMS verification must be produced at destination counter to claim consignment.
+7. All disputes are subject to local jurisdiction only.`,
+        standardRoutes: [],
+        announcementText: 'Scheduled passenger bus parcel dispatch active across all hub counters with instant WhatsApp alerts.',
+        announcementLink: '#services',
+        showAnnouncement: true,
+        heroBadge: 'Verified Counter-to-Counter Parcel Network',
+        heroTitle: 'Premier Bus Parcel & Logistics Network',
+        heroSubtitle: 'Ship commercial cartons, grain sacks, industrial parts, documents, and merchandise across state routes via daily scheduled passenger buses. Real-time 6-digit Order ID tracking and instant WhatsApp dispatch alerts.',
+        heroPrimaryCtaText: 'Operations Portal',
+        heroPrimaryCtaLink: '#login',
+        heroSecondaryCtaText: 'Track Consignment',
+        heroSecondaryCtaLink: '#track',
+      },
+    });
   }
 });
 

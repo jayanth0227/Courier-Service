@@ -110,8 +110,12 @@ export const CreateBookingPage = ({
     customerName: '',
     receiverPhone: '',
     receiverName: '',
+    remarks: '',
     paymentStatus: 'PAID',
   });
+
+  // Toggle state: when true, receiver phone & name auto-sync with sender
+  const [isSameAsSender, setIsSameAsSender] = useState(false);
 
   useEffect(() => {
     if (defaultOrigin) {
@@ -211,6 +215,7 @@ export const CreateBookingPage = ({
           setFormData((prev) => ({
             ...prev,
             customerName: exactMatch.name || prev.customerName,
+            ...(isSameAsSender ? { receiverName: exactMatch.name || prev.customerName, receiverPhone: cleaned } : {}),
           }));
         }
 
@@ -221,11 +226,27 @@ export const CreateBookingPage = ({
     } catch (err) {
       console.error('Customer phone search error:', err);
     }
-  }, [formData.customerName]);
+  }, [formData.customerName, isSameAsSender]);
+
+  const handleToggleSameAsSender = (checked) => {
+    setIsSameAsSender(checked);
+    clearFieldError('receiverPhone');
+    if (checked) {
+      setFormData((prev) => ({
+        ...prev,
+        receiverPhone: prev.customerPhone,
+        receiverName: prev.customerName,
+      }));
+    }
+  };
 
   const handlePhoneInputChange = (val) => {
     const cleaned = val.replace(/\D/g, '').slice(0, 10);
-    setFormData((prev) => ({ ...prev, customerPhone: cleaned }));
+    setFormData((prev) => ({
+      ...prev,
+      customerPhone: cleaned,
+      ...(isSameAsSender ? { receiverPhone: cleaned } : {}),
+    }));
 
     if (phoneDebounceRef.current) {
       clearTimeout(phoneDebounceRef.current);
@@ -246,16 +267,27 @@ export const CreateBookingPage = ({
     if (!cust) return;
     clearFieldError('customerPhone');
     clearFieldError('customerName');
+    if (isSameAsSender) clearFieldError('receiverPhone');
     setFormData((prev) => ({
       ...prev,
       customerPhone: cust.phone || prev.customerPhone,
       customerName: cust.name || prev.customerName,
+      ...(isSameAsSender
+        ? {
+            receiverPhone: cust.phone || prev.customerPhone,
+            receiverName: cust.name || prev.customerName,
+          }
+        : {}),
     }));
     setPhoneDropdownOpen(false);
     showToast(`Existing Customer Loaded: ${cust.name}`, 'info');
 
     setTimeout(() => {
-      document.getElementById('cb_receiver_phone')?.focus();
+      if (!isSameAsSender) {
+        document.getElementById('cb_receiver_phone')?.focus();
+      } else {
+        document.getElementById('cb_booking_remarks')?.focus();
+      }
     }, 60);
   };
 
@@ -519,6 +551,7 @@ export const CreateBookingPage = ({
       customerName: (formData.customerName || '').trim(),
       receiverPhone: (formData.receiverPhone || '').trim(),
       receiverName: (formData.receiverName || '').trim(),
+      remarks: (formData.remarks || '').trim(),
       paymentStatus: formData.paymentStatus,
       items: parcelItems.map((item) => ({
         parcelType: (item.parcelType || '').trim(),
@@ -599,6 +632,7 @@ export const CreateBookingPage = ({
       amount: validated.totalAmount,
       parcelType: consolidatedParcelType,
       notes: cleanedItems.map((i) => i.notes).filter(Boolean).join('; ') || '',
+      remarks: validated.remarks !== undefined ? validated.remarks.trim() : (formData.remarks || '').trim(),
       paymentStatus: validated.paymentStatus,
     };
 
@@ -633,6 +667,7 @@ export const CreateBookingPage = ({
 
   const handleReset = () => {
     const defaultPt = parcelTypesList.length > 0 ? parcelTypesList[0] : null;
+    setIsSameAsSender(false);
     setFormData({
       fromCity: defaultOrigin || '',
       toCity: '',
@@ -641,6 +676,7 @@ export const CreateBookingPage = ({
       customerName: '',
       receiverPhone: '',
       receiverName: '',
+      remarks: '',
       paymentStatus: 'PAID',
     });
     setParcelItems([
@@ -838,6 +874,27 @@ export const CreateBookingPage = ({
                 </tbody>
               </table>
             </div>
+
+            {/* Consignment Remarks (if recorded) */}
+            {createdBooking.remarks && (
+              <div
+                style={{
+                  marginTop: '0.85rem',
+                  padding: '0.6rem 0.85rem',
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #e2e8f0',
+                  borderLeft: '4px solid #2563eb',
+                  borderRadius: '4px',
+                  fontSize: '0.8125rem',
+                  display: 'flex',
+                  gap: '6px',
+                  alignItems: 'flex-start',
+                }}
+              >
+                <strong style={{ color: '#0f172a', whiteSpace: 'nowrap' }}>Booking Remarks:</strong>
+                <span style={{ color: '#334155', fontWeight: 500 }}>{createdBooking.remarks}</span>
+              </div>
+            )}
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '0.75rem', marginTop: '1.25rem' }}>
@@ -1139,12 +1196,21 @@ export const CreateBookingPage = ({
                     value={formData.customerName}
                     onChange={(e) => {
                       clearFieldError('customerName');
-                      setFormData((prev) => ({ ...prev, customerName: e.target.value }));
+                      const val = e.target.value;
+                      setFormData((prev) => ({
+                        ...prev,
+                        customerName: val,
+                        ...(isSameAsSender ? { receiverName: val } : {}),
+                      }));
                     }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
-                        document.getElementById('cb_receiver_phone')?.focus();
+                        if (isSameAsSender) {
+                          document.getElementById('cb_booking_remarks')?.focus();
+                        } else {
+                          document.getElementById('cb_receiver_phone')?.focus();
+                        }
                       }
                     }}
                     required
@@ -1160,11 +1226,41 @@ export const CreateBookingPage = ({
 
             {/* Receiver Information Card */}
             <div className="docket-card" style={{ marginBottom: 0 }}>
-              <div className="docket-card-header">
+              <div className="docket-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
                   <Phone size={16} color="#0f172a" />
                   <span className="docket-card-title">Consignee (Receiver)</span>
                 </div>
+
+                {/* Receiver is same as sender checkbox */}
+                <label
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '0.785rem',
+                    fontWeight: 650,
+                    color: isSameAsSender ? '#2563eb' : '#475569',
+                    cursor: 'pointer',
+                    userSelect: 'none',
+                    backgroundColor: isSameAsSender ? '#eff6ff' : '#f8fafc',
+                    border: `1px solid ${isSameAsSender ? '#93c5fd' : '#cbd5e1'}`,
+                    padding: '3px 9px',
+                    borderRadius: '6px',
+                    boxShadow: isSameAsSender ? '0 1px 2px rgba(37,99,235,0.08)' : 'none',
+                    transition: 'all 0.15s ease',
+                  }}
+                  title="Tick if the sender and receiver is the same person"
+                >
+                  <input
+                    type="checkbox"
+                    id="cb_same_as_sender"
+                    checked={isSameAsSender}
+                    onChange={(e) => handleToggleSameAsSender(e.target.checked)}
+                    style={{ cursor: 'pointer', accentColor: '#2563eb', width: '14px', height: '14px' }}
+                  />
+                  <span>Same as Sender (Self)</span>
+                </label>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
@@ -1172,6 +1268,11 @@ export const CreateBookingPage = ({
                 <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="docket-field-label">
                     Receiver Mobile
+                    {isSameAsSender && (
+                      <span style={{ fontSize: '0.6875rem', color: '#2563eb', fontWeight: 600, marginLeft: '6px' }}>
+                        (Synced)
+                      </span>
+                    )}
                   </label>
                   <input
                     type="tel"
@@ -1184,6 +1285,9 @@ export const CreateBookingPage = ({
                       clearFieldError('receiverPhone');
                       const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
                       setFormData((prev) => ({ ...prev, receiverPhone: digits }));
+                      if (isSameAsSender && digits !== formData.customerPhone) {
+                        setIsSameAsSender(false);
+                      }
                     }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
@@ -1194,6 +1298,7 @@ export const CreateBookingPage = ({
                     maxLength={10}
                     autoComplete="off"
                     data-lpignore="true"
+                    style={isSameAsSender ? { backgroundColor: '#f8fafc', borderColor: '#bfdbfe' } : {}}
                   />
                   {fieldErrors.receiverPhone && (
                     <div className="form-error-msg">{fieldErrors.receiverPhone}</div>
@@ -1204,6 +1309,11 @@ export const CreateBookingPage = ({
                 <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="docket-field-label">
                     Contact / Shop Name
+                    {isSameAsSender && (
+                      <span style={{ fontSize: '0.6875rem', color: '#2563eb', fontWeight: 600, marginLeft: '6px' }}>
+                        (Synced)
+                      </span>
+                    )}
                   </label>
                   <input
                     type="text"
@@ -1212,7 +1322,13 @@ export const CreateBookingPage = ({
                     className="form-control docket-input"
                     placeholder="e.g. Annapurna Depot"
                     value={formData.receiverName}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, receiverName: e.target.value }))}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setFormData((prev) => ({ ...prev, receiverName: val }));
+                      if (isSameAsSender && val !== formData.customerName) {
+                        setIsSameAsSender(false);
+                      }
+                    }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
@@ -1221,6 +1337,7 @@ export const CreateBookingPage = ({
                     }}
                     autoComplete="off"
                     data-lpignore="true"
+                    style={isSameAsSender ? { backgroundColor: '#f8fafc', borderColor: '#bfdbfe' } : {}}
                   />
                 </div>
               </div>
@@ -1412,6 +1529,37 @@ export const CreateBookingPage = ({
                 {fieldErrors.items}
               </div>
             )}
+
+            {/* Optional Booking Remarks & Special Instructions */}
+            <div
+              style={{
+                backgroundColor: '#ffffff',
+                border: '1px solid #e2e8f0',
+                borderRadius: 'var(--radius-md)',
+                padding: '0.85rem 1rem',
+                marginBottom: '1rem',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem', flexWrap: 'wrap', gap: '0.25rem' }}>
+                <label htmlFor="cb_booking_remarks" className="docket-field-label" style={{ marginBottom: 0, fontWeight: 700, color: '#0f172a' }}>
+                  Booking Remarks / Special Instructions
+                </label>
+                <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 500 }}>
+                  (Optional - prints on official LR copy)
+                </span>
+              </div>
+              <input
+                type="text"
+                id="cb_booking_remarks"
+                name="cb_booking_remarks"
+                className="form-control docket-input"
+                placeholder="e.g. Fragile glassware / Handle with care / Call receiver before delivery / Deliver after 4 PM"
+                value={formData.remarks || ''}
+                onChange={(e) => setFormData((prev) => ({ ...prev, remarks: e.target.value }))}
+                autoComplete="off"
+                data-lpignore="true"
+              />
+            </div>
 
             {/* Live Totals & Payment Summary Bar - Modern Executive Card */}
             <div

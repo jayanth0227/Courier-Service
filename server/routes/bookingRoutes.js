@@ -34,6 +34,7 @@ router.post('/', async (req, res, next) => {
       quantity,
       weight,
       notes,
+      remarks,
       amount,
       items,
       paymentStatus,
@@ -190,6 +191,7 @@ router.post('/', async (req, res, next) => {
       quantity: computedQuantity,
       weight: computedWeight,
       notes: computedNotes,
+      remarks: remarks !== undefined ? String(remarks).trim() : (computedNotes || ''),
       items: processedItems,
       amount: computedAmount,
       paymentStatus: paymentStatus || 'PAID',
@@ -451,6 +453,7 @@ router.put('/:id', async (req, res, next) => {
       weight,
       items,
       notes,
+      remarks,
       paymentStatus,
     } = req.body;
 
@@ -465,6 +468,7 @@ router.put('/:id', async (req, res, next) => {
     if (destination) booking.destination = destination.trim();
     if (paymentStatus) booking.paymentStatus = paymentStatus;
     if (notes !== undefined) booking.notes = notes.trim();
+    if (remarks !== undefined) booking.remarks = remarks.trim();
 
     // Handle items manifest update
     if (Array.isArray(items) && items.length > 0) {

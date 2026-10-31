@@ -109,6 +109,8 @@ class WhatsAppNotificationService {
    * Build WhatsApp booking confirmation message (sent immediately on booking)
    */
   buildBookingConfirmationMessage({
+    recipientRole = 'CUSTOMER',
+    recipientName,
     customerName,
     orderId,
     fromCity,
@@ -117,12 +119,13 @@ class WhatsAppNotificationService {
     items,
     amount,
     paymentStatus,
+    remarks,
     companyName,
     companyPhone,
   }) {
     const brand = companyName || 'Mr Cargo';
     const cleanId = String(orderId || '').replace(/^#/, '');
-    const recipient = (customerName || 'Customer').trim();
+    const recipient = (recipientName || customerName || 'Customer').trim();
     const route = `${fromCity || 'Origin'} → ${toCity || 'Destination'}`;
     const fullDest = deliveryAddress
       ? (toCity && !deliveryAddress.toLowerCase().includes(toCity.toLowerCase())
@@ -144,10 +147,15 @@ class WhatsAppNotificationService {
       `• Route: ${route}`,
       `• Delivery Stop: ${fullDest}`,
       `• Payment: ${payDisplay}`,
-      '',
-      'Track online:',
-      `https://mrcargo.online/#track?id=${cleanId}`,
     ];
+
+    if (remarks && remarks.trim()) {
+      lines.push(`• Remarks: ${remarks.trim()}`);
+    }
+
+    lines.push('');
+    lines.push('Track online:');
+    lines.push(`https://mrcargo.online/#track?id=${cleanId}`);
 
     if (companyPhone) {
       lines.push('');
@@ -288,44 +296,87 @@ class WhatsAppNotificationService {
       return { success: false, skipped: true, reason: 'WhatsApp provider is MOCK' };
     }
 
-    const recipientPhone = booking.customerWhatsapp || booking.customerPhone;
-    const message = this.buildBookingConfirmationMessage({
-      customerName: booking.customerName,
-      orderId: booking.orderId,
-      fromCity: booking.fromCity,
-      toCity: booking.toCity,
-      deliveryAddress: booking.deliveryAddress,
-      items: booking.items,
-      amount: booking.amount,
-      paymentStatus: booking.paymentStatus,
-      companyName,
-      companyPhone,
-    });
+    const senderPhone = (booking.customerWhatsapp || booking.customerPhone || '').trim();
+    const senderName = (booking.customerName || '').trim();
+    const receiverPhone = (booking.receiverWhatsapp || booking.receiverPhone || '').trim();
+    const receiverName = (booking.receiverName || '').trim();
+    const remarks = (booking.remarks || booking.notes || '').trim();
 
-    const result = await this.sendTextMessage(recipientPhone, message, settings);
+    // Determine target recipients with strict deduplication
+    const recipients = [];
+    const cleanedSender = this.formatPhoneNumber(senderPhone);
+    const cleanedReceiver = this.formatPhoneNumber(receiverPhone);
 
-    // Log notification to DB
-    try {
-      await Notification.create({
-        tenantId: booking.tenantId || settings?.tenantId,
-        bookingId: booking._id,
-        orderId: booking.orderId,
-        customerId: booking.customer,
-        customerName: booking.customerName,
-        type: 'WHATSAPP',
-        recipientPhone,
-        message,
-        provider: settings.whatsappProvider || 'MOCK',
-        status: result.success ? 'SENT' : 'FAILED',
-        failureReason: result.error || null,
-        providerResponse: result.response || null,
-        sentAt: new Date(),
+    // 1. Sender (Consignor)
+    if (senderPhone && cleanedSender) {
+      recipients.push({
+        role: 'SENDER',
+        roleLabel: 'Sender (Consignor)',
+        name: senderName || 'Customer',
+        phone: senderPhone,
       });
-    } catch (err) {
-      console.error('Failed to log booking confirmation notification:', err.message);
     }
 
-    return result;
+    // 2. Receiver (Consignee) - send if provided AND different number from sender
+    if (receiverPhone && cleanedReceiver && cleanedReceiver !== cleanedSender) {
+      recipients.push({
+        role: 'RECEIVER',
+        roleLabel: 'Receiver (Consignee)',
+        name: receiverName || 'Consignee',
+        phone: receiverPhone,
+      });
+    }
+
+    const results = [];
+    for (const r of recipients) {
+      const message = this.buildBookingConfirmationMessage({
+        recipientRole: r.role,
+        recipientName: r.name,
+        customerName: senderName,
+        orderId: booking.orderId,
+        fromCity: booking.fromCity,
+        toCity: booking.toCity,
+        deliveryAddress: booking.deliveryAddress,
+        items: booking.items,
+        amount: booking.amount,
+        paymentStatus: booking.paymentStatus,
+        remarks,
+        companyName,
+        companyPhone,
+      });
+
+      const res = await this.sendTextMessage(r.phone, message, settings);
+      results.push({
+        recipientRole: r.role,
+        recipientPhone: r.phone,
+        success: res.success,
+        message,
+        error: res.error,
+      });
+
+      // Log notification to DB
+      try {
+        await Notification.create({
+          tenantId: booking.tenantId || settings?.tenantId,
+          bookingId: booking._id,
+          orderId: booking.orderId,
+          customerId: booking.customer,
+          customerName: r.name,
+          type: 'WHATSAPP',
+          recipientPhone: r.phone,
+          message,
+          provider: settings.whatsappProvider || 'MOCK',
+          status: res.success ? 'SENT' : 'FAILED',
+          failureReason: res.error || null,
+          providerResponse: res.response || null,
+          sentAt: new Date(),
+        });
+      } catch (err) {
+        console.error('Failed to log booking confirmation notification:', err.message);
+      }
+    }
+
+    return results.length === 1 ? results[0] : { success: results.some((r) => r.success), results };
   }
 
   /**

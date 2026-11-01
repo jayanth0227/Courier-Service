@@ -161,6 +161,12 @@ const ConsignmentBill = ({
   let itemRowPadding = isSingleItem ? '5px 8px' : '3.5px 6px';
   let tableFillerHeight = isSingleItem ? '8px' : '3px';
 
+  // From & To Address text sizing (defaults for 2 Copies)
+  let addressTitleFontSize = '13px';
+  let addressTextFontSize = '11.5px';
+  let addressLineHeight = 1.35;
+  let addressPadding = '5px 8px';
+
   // Terms & Conditions sizing
   let termsTitleSize = isSingleItem ? '10.5px' : '9.5px';
   let termsFontSize = isSingleItem ? '9.8px' : (isFewItems ? '9.0px' : '8.2px');
@@ -185,6 +191,11 @@ const ConsignmentBill = ({
     itemRowPadding = isSingleItem ? '8px 10px' : '5px 8px';
     tableFillerHeight = isSingleItem ? '16px' : '6px';
 
+    addressTitleFontSize = '15px';
+    addressTextFontSize = '13px';
+    addressLineHeight = 1.4;
+    addressPadding = '7px 10px';
+
     termsTitleSize = '12px';
     termsFontSize = isFewItems ? '11px' : '10px';
     termsLineHeight = 1.40;
@@ -206,6 +217,11 @@ const ConsignmentBill = ({
     tableLineHeight = 1.15;
     itemRowPadding = '2px 4px';
     tableFillerHeight = '2px';
+
+    addressTitleFontSize = '10.5px';
+    addressTextFontSize = '9.5px';
+    addressLineHeight = 1.25;
+    addressPadding = '3px 5px';
 
     termsTitleSize = '8px';
     termsFontSize = isSingleItem ? '7.8px' : '7.2px';
@@ -377,9 +393,9 @@ const ConsignmentBill = ({
           }}
         >
           <colgroup>
-            <col style={{ width: '38%' }} />
-            <col style={{ width: '38%' }} />
-            <col style={{ width: '24%' }} />
+            <col style={{ width: '40%' }} />
+            <col style={{ width: '40%' }} />
+            <col style={{ width: '20%' }} />
           </colgroup>
           <tbody>
             {/* Line 1: Date | LR No | Freight Type (Highlighted) */}
@@ -427,13 +443,17 @@ const ConsignmentBill = ({
               <td
                 style={{
                   borderRight: '1px solid #000000',
-                  padding: copyCount === 3 ? '3px 5px' : '4px 7px',
+                  padding: addressPadding,
                   verticalAlign: 'top',
+                  lineHeight: addressLineHeight,
+                  fontSize: addressTextFontSize,
                 }}
               >
-                <div>From : <strong style={{ textTransform: 'uppercase' }}>{fromCityName}</strong></div>
-                <div>Consignor: <strong>{booking.customerName}</strong></div>
-                <div>Mobile No: <strong>{booking.customerPhone}</strong></div>
+                <div style={{ fontSize: addressTitleFontSize, fontWeight: 800, marginBottom: '2.5px', color: '#000000' }}>
+                  From : <span style={{ textTransform: 'uppercase' }}>{fromCityName}</span>
+                </div>
+                <div>Consignor: <strong style={{ fontWeight: 800 }}>{booking.customerName}</strong></div>
+                <div>Mobile No: <strong style={{ fontWeight: 800 }}>{booking.customerPhone}</strong></div>
                 <div>GST No: <span>{booking.senderGst || '-'}</span></div>
               </td>
 
@@ -441,16 +461,20 @@ const ConsignmentBill = ({
               <td
                 style={{
                   borderRight: '1px solid #000000',
-                  padding: copyCount === 3 ? '3px 5px' : '4px 7px',
+                  padding: addressPadding,
                   verticalAlign: 'top',
+                  lineHeight: addressLineHeight,
+                  fontSize: addressTextFontSize,
                 }}
               >
-                <div>To: <strong style={{ textTransform: 'uppercase' }}>{fullToAddress || toCityName}</strong></div>
-                <div>Consignee: <strong>{booking.receiverName || 'Counter Consignee'}</strong></div>
-                <div>Mobile No: <strong>{booking.receiverPhone || 'N/A'}</strong></div>
+                <div style={{ fontSize: addressTitleFontSize, fontWeight: 800, marginBottom: '2.5px', color: '#000000' }}>
+                  To: <span style={{ textTransform: 'uppercase' }}>{fullToAddress || toCityName}</span>
+                </div>
+                <div>Consignee: <strong style={{ fontWeight: 800 }}>{booking.receiverName || 'Counter Consignee'}</strong></div>
+                <div>Mobile No: <strong style={{ fontWeight: 800 }}>{booking.receiverPhone || 'N/A'}</strong></div>
                 <div>GST No: <span>{booking.receiverGst || '-'}</span></div>
                 {bookingRemarks && (
-                  <div style={{ fontSize: copyCount === 3 ? '7.5px' : '8.5px', marginTop: '1.5px', color: '#000000' }}>
+                  <div style={{ fontSize: copyCount === 3 ? '8px' : '9.5px', marginTop: '2px', color: '#000000' }}>
                     Remarks: <strong>{bookingRemarks}</strong>
                   </div>
                 )}

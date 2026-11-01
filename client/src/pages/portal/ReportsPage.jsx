@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   BarChart3,
   Calendar,
@@ -535,6 +535,15 @@ export const ReportsPage = ({
 
   const maxTrendBookings = Math.max(...dailyTrends.map((d) => d.bookings), 5);
   const maxTrendRevenue = Math.max(...dailyTrends.map((d) => d.revenue), 500);
+
+  const trendScrollRef = useRef(null);
+
+  useEffect(() => {
+    if (trendScrollRef.current) {
+      // Auto-scroll to the end (most recent days) when data changes
+      trendScrollRef.current.scrollLeft = trendScrollRef.current.scrollWidth;
+    }
+  }, [dailyTrends, timeframe, activeTab]);
 
   // Status Distribution for Donut Chart
   const statusDist = useMemo(() => {
@@ -1386,16 +1395,21 @@ export const ReportsPage = ({
       {activeTab === 'analytics' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           {/* Row 1: Daily Revenue Trajectory (Interactive Bar Chart) + Status Donut */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '1.25rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))', gap: '1.25rem' }}>
             {/* Visual Chart 1: Daily Trend */}
-            <div style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '1.25rem', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '1.25rem', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
                 <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
                     <BarChart3 size={16} color="#0f172a" />
                     <h3 style={{ fontSize: '0.9375rem', color: '#0f172a', margin: 0, fontWeight: 700 }}>
                       Operational Volume & Financial Trajectory
                     </h3>
+                    {dailyTrends.length > 14 && (
+                      <span style={{ fontSize: '0.6875rem', color: '#475569', backgroundColor: '#f1f5f9', border: '1px solid #e2e8f0', padding: '1px 6px', borderRadius: '4px', fontWeight: 600 }}>
+                        {dailyTrends.length} Days (Scrollable &rarr;)
+                      </span>
+                    )}
                   </div>
                   <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '2px 0 0 0' }}>
                     Daily intake velocity and revenue collections across the timeline
@@ -1443,87 +1457,136 @@ export const ReportsPage = ({
                   No consignment data in this timeframe
                 </div>
               ) : (
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', minHeight: '200px' }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', height: '160px', padding: '0 0.5rem 0.5rem 0.5rem', borderBottom: '1px solid #e2e8f0', position: 'relative' }}>
-                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, borderBottom: '1px dashed #f1f5f9' }} />
-                    <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, borderBottom: '1px dashed #f1f5f9' }} />
+                <div
+                  ref={trendScrollRef}
+                  style={{
+                    flex: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'flex-end',
+                    minHeight: '200px',
+                    overflowX: dailyTrends.length > 14 ? 'auto' : 'hidden',
+                    overflowY: 'hidden',
+                    width: '100%',
+                    paddingBottom: dailyTrends.length > 14 ? '6px' : '0',
+                  }}
+                >
+                  <div
+                    style={{
+                      minWidth: dailyTrends.length > 14 ? `${Math.max(dailyTrends.length * 36, 100)}px` : '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      width: '100%',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: dailyTrends.length > 14 ? '4px' : '8px', height: '160px', padding: '0 0.5rem 0.5rem 0.5rem', borderBottom: '1px solid #e2e8f0', position: 'relative' }}>
+                      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, borderBottom: '1px dashed #f1f5f9' }} />
+                      <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, borderBottom: '1px dashed #f1f5f9' }} />
 
-                    {dailyTrends.map((d, i) => {
-                      const val = trendMetric === 'bookings' ? d.bookings : d.revenue;
-                      const maxVal = trendMetric === 'bookings' ? maxTrendBookings : maxTrendRevenue;
-                      const heightPercent = Math.max(Math.round((val / (maxVal || 1)) * 100), val > 0 ? 8 : 2);
-                      const isHovered = hoveredBarIndex === i;
+                      {dailyTrends.map((d, i) => {
+                        const val = trendMetric === 'bookings' ? d.bookings : d.revenue;
+                        const maxVal = trendMetric === 'bookings' ? maxTrendBookings : maxTrendRevenue;
+                        const heightPercent = Math.max(Math.round((val / (maxVal || 1)) * 100), val > 0 ? 8 : 2);
+                        const isHovered = hoveredBarIndex === i;
+                        const showValueText = isHovered || (dailyTrends.length <= 14 ? true : val > 0);
 
-                      return (
+                        return (
+                          <div
+                            key={d.date}
+                            style={{
+                              flex: 1,
+                              minWidth: dailyTrends.length > 14 ? '28px' : '0',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              height: '100%',
+                              justifyContent: 'flex-end',
+                              position: 'relative',
+                              cursor: 'pointer',
+                            }}
+                            onMouseEnter={() => setHoveredBarIndex(i)}
+                            onMouseLeave={() => setHoveredBarIndex(null)}
+                          >
+                            {isHovered && (
+                              <div
+                                style={{
+                                  position: 'absolute',
+                                  bottom: `${heightPercent + 12}%`,
+                                  backgroundColor: '#0f172a',
+                                  color: '#ffffff',
+                                  padding: '4px 8px',
+                                  borderRadius: '4px',
+                                  fontSize: '0.6875rem',
+                                  whiteSpace: 'nowrap',
+                                  zIndex: 20,
+                                  boxShadow: '0 4px 8px rgba(0,0,0,0.15)',
+                                  pointerEvents: 'none',
+                                  textAlign: 'center',
+                                }}
+                              >
+                                <div style={{ fontWeight: 700 }}>{d.label || d.date}</div>
+                                <div>{trendMetric === 'revenue' ? `₹${d.revenue.toLocaleString('en-IN')}` : `${d.bookings} parcels`}</div>
+                              </div>
+                            )}
+
+                            <div
+                              style={{
+                                fontSize: '0.5625rem',
+                                fontWeight: 600,
+                                color: isHovered ? '#0f172a' : '#64748b',
+                                marginBottom: '3px',
+                                height: '14px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {showValueText ? (trendMetric === 'revenue' ? (val > 0 ? `₹${val}` : '0') : val) : ''}
+                            </div>
+
+                            <div
+                              style={{
+                                width: '100%',
+                                maxWidth: '32px',
+                                height: `${heightPercent}%`,
+                                backgroundColor: isHovered ? '#2563eb' : (val > 0 ? '#0f172a' : '#e2e8f0'),
+                                borderRadius: '3px 3px 0 0',
+                                transition: 'all 0.15s ease',
+                              }}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <div style={{ display: 'flex', gap: dailyTrends.length > 14 ? '4px' : '8px', marginTop: '6px', padding: '0 0.5rem' }}>
+                      {dailyTrends.map((d) => (
                         <div
                           key={d.date}
                           style={{
                             flex: 1,
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            height: '100%',
-                            justifyContent: 'flex-end',
-                            position: 'relative',
-                            cursor: 'pointer',
+                            minWidth: dailyTrends.length > 14 ? '28px' : '0',
+                            textAlign: 'center',
+                            fontSize: '0.625rem',
+                            color: '#64748b',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
                           }}
-                          onMouseEnter={() => setHoveredBarIndex(i)}
-                          onMouseLeave={() => setHoveredBarIndex(null)}
+                          title={d.label || d.date}
                         >
-                          {isHovered && (
-                            <div
-                              style={{
-                                position: 'absolute',
-                                bottom: `${heightPercent + 12}%`,
-                                backgroundColor: '#0f172a',
-                                color: '#ffffff',
-                                padding: '4px 8px',
-                                borderRadius: '4px',
-                                fontSize: '0.6875rem',
-                                whiteSpace: 'nowrap',
-                                zIndex: 10,
-                                boxShadow: '0 4px 8px rgba(0,0,0,0.15)',
-                                pointerEvents: 'none',
-                                textAlign: 'center',
-                              }}
-                            >
-                              <div style={{ fontWeight: 700 }}>{d.label || d.date}</div>
-                              <div>{trendMetric === 'revenue' ? `₹${d.revenue.toLocaleString('en-IN')}` : `${d.bookings} parcels`}</div>
-                            </div>
-                          )}
-
-                          <div style={{ fontSize: '0.625rem', fontWeight: 600, color: isHovered ? '#0f172a' : '#64748b', marginBottom: '3px' }}>
-                            {trendMetric === 'revenue' ? (val > 0 ? `₹${val}` : '0') : val}
-                          </div>
-
-                          <div
-                            style={{
-                              width: '100%',
-                              maxWidth: '36px',
-                              height: `${heightPercent}%`,
-                              backgroundColor: isHovered ? '#2563eb' : '#0f172a',
-                              borderRadius: '4px 4px 0 0',
-                              transition: 'all 0.15s ease',
-                            }}
-                          />
+                          {d.shortDay || d.date.slice(5)}
                         </div>
-                      );
-                    })}
-                  </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', padding: '0 0.5rem' }}>
-                    {dailyTrends.map((d) => (
-                      <span key={d.date} style={{ fontSize: '0.6875rem', color: '#64748b' }}>
-                        {d.shortDay || d.date.slice(5)}
-                      </span>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}
             </div>
 
             {/* Visual Chart 2: Delivery Fulfillment Status Donut */}
-            <div style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '1.25rem', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '1.25rem', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.75rem' }}>
                 <PieChart size={16} color="#0f172a" />
                 <h3 style={{ fontSize: '0.9375rem', color: '#0f172a', margin: 0, fontWeight: 700 }}>
@@ -1607,9 +1670,9 @@ export const ReportsPage = ({
           </div>
 
           {/* Row 2: Route Corridors + Cargo Types + Payment Mix */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: '1.25rem' }}>
             {/* Top Revenue Route Corridors */}
-            <div style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '1.25rem', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+            <div style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '1.25rem', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', minWidth: 0 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                   <MapPin size={16} color="#0f172a" />
@@ -1655,7 +1718,7 @@ export const ReportsPage = ({
             </div>
 
             {/* Cargo Category Distribution */}
-            <div style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '1.25rem', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '1.25rem', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '1rem' }}>
                 <Layers size={16} color="#0f172a" />
                 <h3 style={{ fontSize: '0.9375rem', color: '#0f172a', margin: 0, fontWeight: 700 }}>
@@ -1697,7 +1760,7 @@ export const ReportsPage = ({
             </div>
 
             {/* Payment & Cash Settlement Mix */}
-            <div style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '1.25rem', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+            <div style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '1.25rem', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '1rem' }}>
                 <CreditCard size={16} color="#0f172a" />
                 <h3 style={{ fontSize: '0.9375rem', color: '#0f172a', margin: 0, fontWeight: 700 }}>

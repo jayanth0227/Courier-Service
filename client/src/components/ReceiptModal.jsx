@@ -140,16 +140,92 @@ const ConsignmentBill = ({
     booking.busDetails?.busName ||
     'TRAVELBUS';
 
+  // Dynamic layout calculations based on copyCount and item count to fully utilize A4 sheet without whitespace gaps
+  const itemCount = items.length;
+  const isFewItems = itemCount <= 2;
+  const isSingleItem = itemCount <= 1;
+
+  // Header sizing defaults (2 Copies default)
+  let headerGridCols = '95px 1fr 100px';
+  let headerPadding = '6px 8px';
+  let logoMaxHeight = '56px';
+  let logoMaxWidth = '92px';
+  let fallbackLogoSize = 52;
+  let companyTitleSize = '20px';
+  let addressSize = '10.5px';
+  let phoneSize = '10px';
+
+  // Table sizing
+  let tableFontSize = '10px';
+  let tableLineHeight = 1.25;
+  let itemRowPadding = isSingleItem ? '5px 8px' : '3.5px 6px';
+  let tableFillerHeight = isSingleItem ? '8px' : '3px';
+
+  // Terms & Conditions sizing
+  let termsTitleSize = isSingleItem ? '10.5px' : '9.5px';
+  let termsFontSize = isSingleItem ? '9.8px' : (isFewItems ? '9.0px' : '8.2px');
+  let termsLineHeight = isSingleItem ? 1.34 : (isFewItems ? 1.26 : 1.20);
+  let termsGap = isSingleItem ? '1.5px' : (isFewItems ? '1.0px' : '0.5px');
+  let termsPadding = '6px 8px';
+  let signatureFontSize = '8.5px';
+  let signatureMarginTop = isSingleItem ? '8px' : '4px';
+
+  if (copyCount === 1) {
+    headerGridCols = '120px 1fr 125px';
+    headerPadding = '8px 12px';
+    logoMaxHeight = '68px';
+    logoMaxWidth = '110px';
+    fallbackLogoSize = 64;
+    companyTitleSize = '24px';
+    addressSize = '12px';
+    phoneSize = '11px';
+
+    tableFontSize = '11.5px';
+    tableLineHeight = 1.35;
+    itemRowPadding = isSingleItem ? '8px 10px' : '5px 8px';
+    tableFillerHeight = isSingleItem ? '16px' : '6px';
+
+    termsTitleSize = '12px';
+    termsFontSize = isFewItems ? '11px' : '10px';
+    termsLineHeight = 1.40;
+    termsGap = '2px';
+    termsPadding = '8px 12px';
+    signatureFontSize = '10px';
+    signatureMarginTop = '14px';
+  } else if (copyCount === 3) {
+    headerGridCols = '70px 1fr 75px';
+    headerPadding = '3px 6px';
+    logoMaxHeight = '36px';
+    logoMaxWidth = '68px';
+    fallbackLogoSize = 36;
+    companyTitleSize = '14.5px';
+    addressSize = '8.5px';
+    phoneSize = '8px';
+
+    tableFontSize = '8.2px';
+    tableLineHeight = 1.15;
+    itemRowPadding = '2px 4px';
+    tableFillerHeight = '2px';
+
+    termsTitleSize = '8px';
+    termsFontSize = isSingleItem ? '7.8px' : '7.2px';
+    termsLineHeight = 1.16;
+    termsGap = '0.4px';
+    termsPadding = '2px 4px';
+    signatureFontSize = '7px';
+    signatureMarginTop = '2px';
+  }
+
   return (
     <div className={`bw-bill-box ${isDriverCopy ? 'bw-driver-copy' : ''}`}>
-      {/* 1. Header Bar: Logo (Left) | Company & Dynamic Address (Center) | Travel Bus Sketch (Right) */}
+      {/* 1. Header Bar: Logo (Left) | Company & Dynamic Address (Center) | Super Admin Logo (Right) */}
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: copyCount === 3 ? '60px 1fr 70px' : '85px 1fr 95px',
+          gridTemplateColumns: headerGridCols,
           alignItems: 'center',
           borderBottom: '1px solid #000000',
-          padding: copyCount === 3 ? '2px 5px' : '4px 8px',
+          padding: headerPadding,
           gap: '6px',
         }}
       >
@@ -160,16 +236,16 @@ const ConsignmentBill = ({
               src={company.logoUrl}
               alt="Logo"
               style={{
-                maxHeight: copyCount === 3 ? '28px' : '46px',
-                maxWidth: copyCount === 3 ? '55px' : '75px',
+                maxHeight: logoMaxHeight,
+                maxWidth: logoMaxWidth,
                 objectFit: 'contain',
               }}
             />
           ) : (
             <div
               style={{
-                width: copyCount === 3 ? '32px' : '48px',
-                height: copyCount === 3 ? '32px' : '48px',
+                width: `${fallbackLogoSize}px`,
+                height: `${fallbackLogoSize}px`,
                 border: '1.5px solid #000000',
                 borderRadius: '4px',
                 display: 'flex',
@@ -177,14 +253,14 @@ const ConsignmentBill = ({
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontWeight: 900,
-                fontSize: copyCount === 3 ? '10px' : '14px',
+                fontSize: copyCount === 3 ? '11px' : (copyCount === 2 ? '14px' : '16px'),
                 lineHeight: 1.1,
                 textAlign: 'center',
                 backgroundColor: '#f8fafc',
               }}
             >
               <span>SV</span>
-              <span style={{ fontSize: '7px', fontWeight: 700 }}>LOGISTICS</span>
+              <span style={{ fontSize: copyCount === 3 ? '7px' : '8.5px', fontWeight: 700 }}>LOGISTICS</span>
             </div>
           )}
         </div>
@@ -198,16 +274,17 @@ const ConsignmentBill = ({
               textTransform: 'uppercase',
               letterSpacing: '0.04em',
               lineHeight: 1.15,
+              fontSize: companyTitleSize,
             }}
           >
             {company.companyName || 'SRI VINAYAKA LOGISTICS'}
           </div>
           <div
             style={{
-              fontSize: copyCount === 3 ? '8.5px' : (copyCount === 2 ? '10px' : '11px'),
+              fontSize: addressSize,
               fontWeight: 600,
               color: '#000000',
-              marginTop: '1px',
+              marginTop: '1.5px',
               lineHeight: 1.25,
             }}
           >
@@ -215,10 +292,10 @@ const ConsignmentBill = ({
           </div>
           <div
             style={{
-              fontSize: copyCount === 3 ? '8px' : (copyCount === 2 ? '9.5px' : '10.5px'),
+              fontSize: phoneSize,
               color: '#000000',
               fontWeight: 700,
-              marginTop: '1px',
+              marginTop: '1.5px',
               lineHeight: 1.2,
             }}
           >
@@ -232,8 +309,8 @@ const ConsignmentBill = ({
             src={superadminLogo || '/logo.png'}
             alt="Super Admin Logo"
             style={{
-              maxHeight: copyCount === 3 ? '28px' : (copyCount === 2 ? '42px' : '48px'),
-              maxWidth: copyCount === 3 ? '60px' : (copyCount === 2 ? '80px' : '90px'),
+              maxHeight: logoMaxHeight,
+              maxWidth: logoMaxWidth,
               objectFit: 'contain',
             }}
             onError={(e) => {
@@ -368,15 +445,10 @@ const ConsignmentBill = ({
                   verticalAlign: 'top',
                 }}
               >
-                <div>To: <strong style={{ textTransform: 'uppercase' }}>{toCityName}</strong></div>
+                <div>To: <strong style={{ textTransform: 'uppercase' }}>{fullToAddress || toCityName}</strong></div>
                 <div>Consignee: <strong>{booking.receiverName || 'Counter Consignee'}</strong></div>
                 <div>Mobile No: <strong>{booking.receiverPhone || 'N/A'}</strong></div>
                 <div>GST No: <span>{booking.receiverGst || '-'}</span></div>
-                {stopAddress && (
-                  <div style={{ fontSize: copyCount === 3 ? '7.5px' : '8.5px', marginTop: '1px' }}>
-                    Stop: <strong>{fullToAddress}</strong>
-                  </div>
-                )}
                 {bookingRemarks && (
                   <div style={{ fontSize: copyCount === 3 ? '7.5px' : '8.5px', marginTop: '1.5px', color: '#000000' }}>
                     Remarks: <strong>{bookingRemarks}</strong>
@@ -411,14 +483,14 @@ const ConsignmentBill = ({
             </tr>
 
             {/* Line 3: Items Sub-Table (Col 1 & 2) | Total & Booked By (Col 3) */}
-            <tr style={{ height: copyCount === 3 ? 'auto' : '100%', borderBottom: '1px solid #000000' }}>
-              <td colSpan={2} style={{ borderRight: '1px solid #000000', padding: 0, verticalAlign: 'top', height: copyCount === 3 ? 'auto' : '100%' }}>
-                <table style={{ width: '100%', height: copyCount === 3 ? 'auto' : '100%', borderCollapse: 'collapse', fontSize: copyCount === 3 ? '7.8px' : '9.5px' }}>
+            <tr style={{ height: 'auto', borderBottom: '1px solid #000000' }}>
+              <td colSpan={2} style={{ borderRight: '1px solid #000000', padding: 0, verticalAlign: 'top' }}>
+                <table style={{ width: '100%', height: 'auto', borderCollapse: 'collapse', fontSize: tableFontSize, lineHeight: tableLineHeight }}>
                   <thead>
                     <tr style={{ borderBottom: '1px solid #000000', backgroundColor: '#f8fafc', fontWeight: 800 }}>
-                      <th style={{ width: '14%', borderRight: '1px solid #000000', padding: copyCount === 3 ? '1.5px 3px' : '2px 4px', textAlign: 'center' }}>Qty</th>
-                      <th style={{ width: '56%', borderRight: '1px solid #000000', padding: copyCount === 3 ? '1.5px 5px' : '2px 6px', textAlign: 'left' }}>Description</th>
-                      <th style={{ width: '30%', padding: copyCount === 3 ? '1.5px 5px' : '2px 6px', textAlign: 'left' }}>INV / Value</th>
+                      <th style={{ width: '14%', borderRight: '1px solid #000000', padding: copyCount === 3 ? '1.5px 3px' : '2.5px 5px', textAlign: 'center' }}>Qty</th>
+                      <th style={{ width: '56%', borderRight: '1px solid #000000', padding: copyCount === 3 ? '1.5px 5px' : '2.5px 7px', textAlign: 'left' }}>Description</th>
+                      <th style={{ width: '30%', padding: copyCount === 3 ? '1.5px 5px' : '2.5px 7px', textAlign: 'left' }}>Value</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -432,10 +504,10 @@ const ConsignmentBill = ({
                                 : (items.length === 1 && booking.amount ? `₹${Number(booking.amount).toFixed(2)}` : '0.00')));
                       return (
                         <tr key={idx} style={{ borderBottom: '1px solid #000000' }}>
-                          <td style={{ borderRight: '1px solid #000000', padding: copyCount === 3 ? '1.5px 3px' : '3px 6px', textAlign: 'center', fontWeight: 800 }}>
+                          <td style={{ borderRight: '1px solid #000000', padding: itemRowPadding, textAlign: 'center', fontWeight: 800 }}>
                             {it.quantity || 1}
                           </td>
-                          <td style={{ borderRight: '1px solid #000000', padding: copyCount === 3 ? '1.5px 5px' : '3px 8px', fontWeight: 700 }}>
+                          <td style={{ borderRight: '1px solid #000000', padding: itemRowPadding, fontWeight: 700 }}>
                             <div>{it.parcelType || 'General Parcel'}{it.notes ? ` - ${it.notes}` : ''}</div>
                             {bookingRemarks && idx === 0 && (
                               <div style={{ fontSize: copyCount === 3 ? '7px' : '8.5px', color: '#000000', fontWeight: 600, marginTop: '1px' }}>
@@ -443,17 +515,16 @@ const ConsignmentBill = ({
                               </div>
                             )}
                           </td>
-                          <td style={{ padding: copyCount === 3 ? '1.5px 5px' : '3px 8px' }}>
-                            <div>INV: {it.invoiceNumber || '-'}</div>
-                            <div style={{ fontWeight: 800, marginTop: '0.5px' }}>
-                              Value: {showAmount ? itemVal : '***'}
+                          <td style={{ padding: itemRowPadding }}>
+                            <div style={{ fontWeight: 800 }}>
+                              {showAmount ? itemVal : '***'}
                             </div>
                           </td>
                         </tr>
                       );
                     })}
-                    {/* Filler row ensuring vertical column borders span cleanly */}
-                    <tr style={{ height: copyCount === 3 ? '4px' : '100%' }}>
+                    {/* Filler row ensuring vertical column borders span cleanly without creating huge gaps */}
+                    <tr style={{ height: tableFillerHeight }}>
                       <td style={{ borderRight: '1px solid #000000', padding: 0 }}>&nbsp;</td>
                       <td style={{ borderRight: '1px solid #000000', padding: 0 }}>&nbsp;</td>
                       <td style={{ padding: 0 }}>&nbsp;</td>
@@ -463,47 +534,49 @@ const ConsignmentBill = ({
               </td>
 
               {/* Col 3: Total & Staff Signature / Time */}
-              <td style={{ padding: 0, verticalAlign: 'top', height: copyCount === 3 ? 'auto' : '100%' }}>
+              <td style={{ padding: 0, verticalAlign: 'top' }}>
                 <div
                   style={{
                     display: 'flex',
                     flexDirection: 'column',
-                    justifyContent: 'flex-end',
+                    justifyContent: 'space-between',
                     height: '100%',
-                    minHeight: copyCount === 3 ? '26px' : '52px',
+                    minHeight: copyCount === 3 ? '26px' : (isSingleItem ? '48px' : '40px'),
                   }}
                 >
-                  <div style={{ flex: '1 1 auto', minHeight: copyCount === 3 ? '3px' : '24px' }}></div>
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      padding: copyCount === 3 ? '2px 4px' : '4px 7px',
-                      borderTop: '1px solid #000000',
-                      borderBottom: '1px solid #000000',
-                      fontWeight: 900,
-                      fontSize: copyCount === 3 ? '8.5px' : '11px',
-                      backgroundColor: '#f8fafc',
-                    }}
-                  >
-                    <span>Total</span>
-                    <span>
-                      {showAmount
-                        ? `${Number(booking.amount || 0).toFixed(2)}`
-                        : '***'}
-                    </span>
-                  </div>
+                  <div style={{ flex: '1 1 auto', minHeight: copyCount === 3 ? '2px' : '8px' }}></div>
+                  <div>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        padding: copyCount === 3 ? '2px 4px' : '4px 7px',
+                        borderTop: '1px solid #000000',
+                        borderBottom: '1px solid #000000',
+                        fontWeight: 900,
+                        fontSize: copyCount === 3 ? '8.5px' : (copyCount === 2 ? '10.5px' : '11.5px'),
+                        backgroundColor: '#f8fafc',
+                      }}
+                    >
+                      <span>Total</span>
+                      <span>
+                        {showAmount
+                          ? `${Number(booking.amount || 0).toFixed(2)}`
+                          : '***'}
+                      </span>
+                    </div>
 
-                  <div
-                    style={{
-                      padding: copyCount === 3 ? '1.5px 3px' : '3px 6px',
-                      fontSize: copyCount === 3 ? '7px' : '8.5px',
-                      fontWeight: 700,
-                      color: '#000000',
-                      textAlign: 'right',
-                    }}
-                  >
-                    {bookedByWithTime}
+                    <div
+                      style={{
+                        padding: copyCount === 3 ? '1.5px 3px' : '3px 6px',
+                        fontSize: copyCount === 3 ? '7px' : '8.5px',
+                        fontWeight: 700,
+                        color: '#000000',
+                        textAlign: 'right',
+                      }}
+                    >
+                      {bookedByWithTime}
+                    </div>
                   </div>
                 </div>
               </td>
@@ -514,37 +587,44 @@ const ConsignmentBill = ({
 
       {/* 4. Terms and Conditions (Directly below table matching reference photo) */}
       <div
+        className="bw-terms-section"
         style={{
           borderTop: '1px solid #000000',
-          padding: copyCount === 3 ? '1.5px 4px' : '4px 8px',
-          fontSize: copyCount === 3 ? '6.8px' : (copyCount === 2 ? '8.5px' : '9.5px'),
-          lineHeight: copyCount === 3 ? 1.12 : 1.25,
+          padding: termsPadding,
+          fontSize: termsFontSize,
+          lineHeight: termsLineHeight,
           color: '#000000',
+          flex: '1 1 auto',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
         }}
       >
-        <div style={{ fontWeight: 800, marginBottom: copyCount === 3 ? '0.5px' : '1px' }}>
-          Goods booked At Owner's risk and said to contain basis.
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: copyCount === 3 ? '0.2px' : '0.5px' }}>
-          {dynamicTerms.map((term, i) => (
-            <div key={i} style={{ color: '#000000' }}>
-              {term}
-            </div>
-          ))}
+        <div>
+          <div style={{ fontWeight: 800, fontSize: termsTitleSize, marginBottom: copyCount === 3 ? '1px' : '2px' }}>
+            Goods booked At Owner's risk and said to contain basis.
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: termsGap }}>
+            {dynamicTerms.map((term, i) => (
+              <div key={i} style={{ color: '#000000' }}>
+                {term}
+              </div>
+            ))}
+          </div>
         </div>
         <div
           style={{
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'flex-end',
-            marginTop: copyCount === 3 ? '1.5px' : '4px',
-            paddingTop: copyCount === 3 ? '1px' : '2px',
+            marginTop: signatureMarginTop,
+            paddingTop: copyCount === 3 ? '1px' : '3px',
           }}
         >
-          <span style={{ fontWeight: 800 }}>
+          <span style={{ fontWeight: 800, fontSize: signatureFontSize }}>
             Subject to {fromCityName || 'Hyderabad'} Jurisdiction.
           </span>
-          <div style={{ display: 'flex', gap: copyCount === 3 ? '12px' : '20px', fontSize: copyCount === 3 ? '6.5px' : '8px', fontWeight: 600 }}>
+          <div style={{ display: 'flex', gap: copyCount === 3 ? '12px' : '22px', fontSize: signatureFontSize, fontWeight: 700 }}>
             <span>Consignor Signature</span>
             <span>Authorized Signatory</span>
           </div>
@@ -555,18 +635,7 @@ const ConsignmentBill = ({
 };
 
 export const ReceiptModal = ({ booking, onClose, companySettings: propCompanySettings }) => {
-  if (!booking) return null;
-
   const { companySettings: contextCompanySettings } = useCompanySettings();
-  const company = propCompanySettings || contextCompanySettings || {
-    companyName: 'SRI VINAYAKA LOGISTICS',
-    companyPhone: '+91 9010253076',
-    companyAddress: 'Central Bus Terminal Office',
-    companyEmail: 'jayanthyeswanth9@gmail.com',
-    gstin: '',
-  };
-
-  // User selectable copies per A4 page: 1, 2, or 3 (Defaults to 2: Consignor & Driver)
   const [copyCount, setCopyCount] = useState(2);
   const [superadminLogo, setSuperadminLogo] = useState('/logo.png');
 
@@ -584,6 +653,17 @@ export const ReceiptModal = ({ booking, onClose, companySettings: propCompanySet
       isMounted = false;
     };
   }, []);
+
+  if (!booking) return null;
+
+  const company = propCompanySettings || contextCompanySettings || {
+    companyName: 'SRI VINAYAKA LOGISTICS',
+    companyPhone: '+91 9010253076',
+    companyAddress: 'Central Bus Terminal Office',
+    companyEmail: 'jayanthyeswanth9@gmail.com',
+    gstin: '',
+  };
+
 
   const handlePrint = () => {
     window.print();

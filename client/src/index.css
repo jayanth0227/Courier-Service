@@ -885,7 +885,7 @@ input[type="number"]::-webkit-inner-spin-button {
 
   .bw-table-wrapper,
   .ref-table-wrapper {
-    flex: 1 1 auto !important;
+    flex: 0 0 auto !important;
     display: flex !important;
     flex-direction: column !important;
     min-height: 0 !important;
@@ -897,11 +897,17 @@ input[type="number"]::-webkit-inner-spin-button {
   .bw-table,
   .ref-bill-table {
     width: 100% !important;
-    height: 100% !important;
+    height: auto !important;
   }
   .bw-copies-3 .bw-table,
   .bw-copies-3 .ref-bill-table {
     height: auto !important;
+  }
+  .bw-terms-section {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    flex: 1 1 auto !important;
   }
 }
 

@@ -18,6 +18,20 @@
         height: 0 !important;
       }
     </style>
+    <script>
+      /* Early protection guard before bundle hydration */
+      (function() {
+        document.addEventListener('contextmenu', function(e) { e.preventDefault(); }, { capture: true });
+        window.addEventListener('keydown', function(e) {
+          var k = e.key ? e.key.toUpperCase() : '';
+          var code = e.keyCode || e.which;
+          var ctrl = e.ctrlKey || e.metaKey;
+          if (k === 'F12' || code === 123) { e.preventDefault(); return false; }
+          if (ctrl && e.shiftKey && (k === 'I' || k === 'J' || k === 'C' || k === 'K' || k === 'E')) { e.preventDefault(); return false; }
+          if (ctrl && (k === 'U' || k === 'S')) { e.preventDefault(); return false; }
+        }, { capture: true });
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

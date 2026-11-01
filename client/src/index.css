@@ -1097,4 +1097,15 @@ input[type="number"]::-webkit-inner-spin-button {
   border-radius: 14px;
 }
 
+/* Ensure inputs, textareas, and select elements are always interactive & selectable */
+input,
+textarea,
+select,
+[contenteditable="true"] {
+  -webkit-user-select: text !important;
+  user-select: text !important;
+}
+
+
+
 

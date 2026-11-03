@@ -18,26 +18,11 @@ export const WhatsAppModal = ({ booking, onClose, onSuccess }) => {
   const receiverPhone = booking.receiverWhatsapp || booking.receiverPhone || '';
   const receiverName = booking.receiverName || 'Receiver';
 
-  const busNo = booking.busDetails?.busNumber || '';
-  const busName = booking.busDetails?.busName || booking.busDetails?.operator || '';
-  const busDisplay = busNo ? `${busNo}${busName ? ` (${busName})` : ''}` : (busName || 'Assigned Bus');
-  const route = booking.busDetails?.route || booking.destination || `${booking.fromCity || 'Origin'} → ${booking.toCity || 'Destination'}`;
-  const driverName = booking.busDetails?.driverName || '';
-  const driverPhone = booking.busDetails?.driverPhone || '';
-  const driverInfo = driverName || driverPhone
-    ? `${driverName ? `${driverName} ` : ''}${driverPhone ? `(${driverPhone})` : ''}`.trim()
-    : '';
-
   const cleanToCity = booking.toCity || (booking.destination?.includes('→') ? booking.destination.split('→').slice(1).join('→').trim() : '');
   const stopAddr = booking.deliveryAddress || booking.busDetails?.destinationAddress || '';
-  const fullStop = stopAddr && cleanToCity && !stopAddr.toLowerCase().includes(cleanToCity.toLowerCase())
+  const fullDest = stopAddr && cleanToCity && !stopAddr.toLowerCase().includes(cleanToCity.toLowerCase())
     ? `${cleanToCity} - ${stopAddr}`
     : (stopAddr || cleanToCity || 'Destination Counter');
-
-  const payStatus = (booking.paymentStatus || 'PAID').toUpperCase();
-  const payDisplay = payStatus === 'TO PAY'
-    ? `₹${Number(booking.amount || 0).toFixed(2)} (TO PAY)`
-    : `PAID (₹${Number(booking.amount || 0).toFixed(2)})`;
 
   const isSenderTab = activeTab === 'SENDER';
   const currentRecipientName = isSenderTab ? senderName : receiverName;
@@ -46,27 +31,29 @@ export const WhatsAppModal = ({ booking, onClose, onSuccess }) => {
   const cleanId = String(booking.orderId || '').replace(/^#/, '');
   const brand = booking.companyName || companySettings?.companyName || 'Mr Cargo';
   const companyPhone = companySettings?.companyPhone || '';
+  const route = `${booking.fromCity || 'Origin'} → ${cleanToCity || 'Destination'}`;
+  const remarks = (booking.remarks || booking.notes || '').trim();
 
   const lines = [
-    `*${brand} - Parcel In Transit*`,
+    `*${brand} - Booking Confirmation*`,
     '',
-    `Dear ${currentRecipientName}, your parcel is on the way.`,
+    `Dear ${currentRecipientName}, your parcel has been booked successfully.`,
     '',
     `• LR Number: #${cleanId}`,
-    `• Bus / Vehicle: ${busDisplay}`,
+    `• Route: ${route}`,
+    `• Delivery Stop: ${fullDest}`,
   ];
 
-  if (driverInfo) {
-    lines.push(`• Driver: ${driverInfo}`);
+  if (remarks) {
+    lines.push(`• Remarks: ${remarks}`);
   }
-  lines.push(`• Delivery Counter: ${fullStop}`);
+
   lines.push('');
-  lines.push('Track live:');
+  lines.push('Track online:');
   lines.push(`https://mrcargo.online/#track?id=${cleanId}`);
-  lines.push('');
-  lines.push(`*Show LR #${cleanId} at the counter to collect.*`);
 
   if (companyPhone) {
+    lines.push('');
     lines.push(`Help: ${companyPhone}`);
   }
 
@@ -88,7 +75,7 @@ export const WhatsAppModal = ({ booking, onClose, onSuccess }) => {
       setSending(true);
       const res = await api.notifications.resend(booking._id);
       if (res.success) {
-        showToast(`WhatsApp dispatch notifications triggered for Sender & Receiver!`, 'success');
+        showToast('WhatsApp booking confirmation sent to Sender & Receiver!', 'success');
         if (onSuccess) onSuccess();
       } else {
         showToast(res.message || 'Notification triggered', 'info');
@@ -122,7 +109,7 @@ export const WhatsAppModal = ({ booking, onClose, onSuccess }) => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <MessageSquare size={18} color="#2563eb" />
             <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: '#0f172a' }}>
-              Send WhatsApp Bus & Parcel Dispatch Notification
+              WhatsApp Booking Confirmation
             </h3>
           </div>
           <span style={{ fontSize: '0.75rem', color: '#16a34a', fontWeight: 700 }}>
@@ -165,7 +152,7 @@ export const WhatsAppModal = ({ booking, onClose, onSuccess }) => {
 
         <label className="form-label" style={{ fontSize: '0.75rem', color: '#64748b', display: 'flex', justifyContent: 'space-between' }}>
           <span>Notification Message Preview ({isSenderTab ? 'Sender Copy' : 'Receiver Copy'}):</span>
-          <span style={{ color: '#16a34a', fontWeight: 600 }}>Clean & Concise Format</span>
+          <span style={{ color: '#16a34a', fontWeight: 600 }}>Booking Confirmation</span>
         </label>
         <div className="whatsapp-preview-box" style={{ marginBottom: '1.25rem', whiteSpace: 'pre-wrap', maxHeight: '280px', overflowY: 'auto' }}>
           {messageText}

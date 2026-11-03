@@ -172,7 +172,14 @@ class WhatsAppNotificationService {
    * @returns {object} - { success, provider, response }
    */
   async sendTextMessage(phone, message, tenantSettings = null) {
-    const settings = tenantSettings || (await Setting.findOne()) || {};
+    let settings = tenantSettings;
+    if (!settings) {
+      try {
+        settings = (await Setting.findOne()) || {};
+      } catch {
+        settings = {};
+      }
+    }
     const provider = settings.whatsappProvider || this.provider || 'MOCK';
     const formattedPhone = this.formatPhoneNumber(phone);
 
@@ -281,10 +288,8 @@ class WhatsAppNotificationService {
       // Ignore
     }
 
-    // Only send if provider is not MOCK
-    if (!settings || settings.whatsappProvider === 'MOCK') {
-      return { success: false, skipped: true, reason: 'WhatsApp provider is MOCK' };
-    }
+    const provider = settings?.whatsappProvider || process.env.WHATSAPP_PROVIDER || 'MOCK';
+    const activeSettings = settings || { whatsappProvider: provider };
 
     const senderPhone = (booking.customerWhatsapp || booking.customerPhone || '').trim();
     const senderName = (booking.customerName || '').trim();
@@ -335,18 +340,27 @@ class WhatsAppNotificationService {
         companyPhone,
       });
 
-      const res = await this.sendTextMessage(r.phone, message, settings);
-      results.push({
-        recipientRole: r.role,
-        recipientPhone: r.phone,
-        success: res.success,
-        message,
-        error: res.error,
-      });
+      const directLink = this.generateWhatsAppLink(r.phone, message);
+      let status = 'SENT';
+      let failureReason = null;
+      let providerResponse = null;
+
+      try {
+        const res = await this.sendTextMessage(r.phone, message, activeSettings);
+        providerResponse = res.response;
+        if (!res.success) {
+          status = 'FAILED';
+          failureReason = res.error;
+        }
+      } catch (err) {
+        status = 'FAILED';
+        failureReason = err.message;
+      }
 
       // Log notification to DB
+      let notification = null;
       try {
-        await Notification.create({
+        notification = await Notification.create({
           tenantId: booking.tenantId || settings?.tenantId,
           bookingId: booking._id,
           orderId: booking.orderId,
@@ -355,18 +369,55 @@ class WhatsAppNotificationService {
           type: 'WHATSAPP',
           recipientPhone: r.phone,
           message,
-          provider: settings.whatsappProvider || 'MOCK',
-          status: res.success ? 'SENT' : 'FAILED',
-          failureReason: res.error || null,
-          providerResponse: res.response || null,
+          provider: provider,
+          status,
+          failureReason,
+          providerResponse,
           sentAt: new Date(),
         });
       } catch (err) {
         console.error('Failed to log booking confirmation notification:', err.message);
       }
+
+      results.push({
+        success: status === 'SENT',
+        recipientRole: r.role,
+        recipientLabel: r.roleLabel,
+        recipientName: r.name,
+        phone: r.phone,
+        recipientPhone: r.phone,
+        notificationId: notification?._id,
+        status,
+        failureReason,
+        message,
+        directLink,
+      });
     }
 
-    return results.length === 1 ? results[0] : { success: results.some((r) => r.success), results };
+    const anySent = results.length > 0 && results.some((r) => r.success);
+    const allSent = results.length > 0 && results.every((r) => r.success);
+
+    // Update booking notification tracking if booking model instance is passed
+    if (booking && typeof booking.save === 'function') {
+      try {
+        booking.notificationStatus = anySent ? 'SENT' : (results.length > 0 ? 'NOT_SENT' : 'NOT_SENT');
+        booking.notificationSentAt = new Date();
+        booking.lastNotificationMessage = results.map((r) => '[' + r.recipientRole + '] ' + r.message).join('\n---\n');
+        await booking.save();
+      } catch (saveErr) {
+        console.warn('[WhatsApp] Could not update booking notification status:', saveErr.message);
+      }
+    }
+
+    // Attach helper properties on array for backwards compatibility
+    results.success = anySent;
+    results.allSuccess = allSent;
+    results.status = allSent ? 'SENT' : (anySent ? 'PARTIAL' : 'FAILED');
+    results.directLink = results[0]?.directLink || '';
+    results.message = results[0]?.message || '';
+    results.recipientPhone = results[0]?.phone || '';
+
+    return results;
   }
 
   /**

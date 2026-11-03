@@ -566,7 +566,7 @@ export const BusDispatchPage = ({
                     required
                   />
                   <div className="form-hint" style={{ color: '#2563eb' }}>
-                    Shared in customer WhatsApp/SMS notification
+                    Driver contact number for transit coordination
                   </div>
                 </div>
               </div>

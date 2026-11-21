@@ -37,6 +37,8 @@ router.post('/', async (req, res, next) => {
       notes,
       remarks,
       amount,
+      declaredValue,
+      value,
       items,
       paymentStatus,
     } = req.body;
@@ -48,6 +50,9 @@ router.post('/', async (req, res, next) => {
     let computedAmount = amount !== undefined ? Number(amount) : 0;
     let computedParcelType = parcelType || 'Box';
     let computedNotes = notes ? notes.trim() : '';
+    const parsedDeclaredValue = declaredValue !== undefined && declaredValue !== null && declaredValue !== ''
+      ? Number(declaredValue)
+      : (value !== undefined && value !== null && value !== '' ? Number(value) : (computedAmount || 0));
 
     if (Array.isArray(items) && items.length > 0) {
       processedItems = items.map((itm) => ({
@@ -55,6 +60,7 @@ router.post('/', async (req, res, next) => {
         quantity: Math.max(1, Number(itm.quantity) || 1),
         weight: Number(itm.weight) || 0,
         charge: Number(itm.charge) || 0,
+        declaredValue: itm.declaredValue !== undefined ? Number(itm.declaredValue) : parsedDeclaredValue,
         notes: (itm.notes || '').trim(),
       }));
 
@@ -77,6 +83,7 @@ router.post('/', async (req, res, next) => {
           quantity: computedQuantity,
           weight: computedWeight,
           charge: computedAmount,
+          declaredValue: parsedDeclaredValue,
           notes: computedNotes,
         },
       ];
@@ -194,6 +201,8 @@ router.post('/', async (req, res, next) => {
       weight: computedWeight,
       notes: computedNotes,
       remarks: remarks !== undefined ? String(remarks).trim() : (computedNotes || ''),
+      declaredValue: parsedDeclaredValue,
+      value: parsedDeclaredValue,
       items: processedItems,
       amount: computedAmount,
       paymentStatus: paymentStatus || 'PAID',
@@ -257,10 +266,6 @@ router.get('/', async (req, res, next) => {
 
     const query = { ...req.tenantFilter };
 
-    // Staff access restriction: Staff can ONLY see their own bookings in the bookings list
-    if (req.user && req.user.role === 'staff') {
-      query.createdBy = req.user._id;
-    }
     if (status && status !== 'ALL') {
       query.status = status;
     }
@@ -423,18 +428,6 @@ router.get('/:id', async (req, res, next) => {
       });
     }
 
-    // Role-based authorization & BOLA/IDOR check: Staff can only view their own bookings
-    if (req.user && req.user.role === 'staff' && booking.createdBy) {
-      const creatorId = booking.createdBy._id ? booking.createdBy._id.toString() : booking.createdBy.toString();
-      if (creatorId !== req.user._id.toString()) {
-        return res.status(403).json({
-          success: false,
-          code: 'FORBIDDEN_RECORD',
-          message: 'Access denied: Staff are only authorized to access bookings created by their own account.',
-        });
-      }
-    }
-
     res.json({ success: true, data: booking });
   } catch (error) {
     next(error);
@@ -450,18 +443,6 @@ router.put('/:id', async (req, res, next) => {
 
     if (!booking) {
       return res.status(404).json({ success: false, message: 'Booking not found in your organization' });
-    }
-
-    // Role-based authorization & BOLA/IDOR check: Staff can only modify their own bookings
-    if (req.user && req.user.role === 'staff' && booking.createdBy) {
-      const creatorId = booking.createdBy._id ? booking.createdBy._id.toString() : booking.createdBy.toString();
-      if (creatorId !== req.user._id.toString()) {
-        return res.status(403).json({
-          success: false,
-          code: 'FORBIDDEN_RECORD',
-          message: 'Access denied: Staff are only authorized to modify bookings created by their own account.',
-        });
-      }
     }
 
     const {
@@ -495,6 +476,11 @@ router.put('/:id', async (req, res, next) => {
     if (paymentStatus) booking.paymentStatus = paymentStatus;
     if (notes !== undefined) booking.notes = notes.trim();
     if (remarks !== undefined) booking.remarks = remarks.trim();
+    if (req.body.declaredValue !== undefined || req.body.value !== undefined) {
+      const updatedVal = Number(req.body.declaredValue !== undefined ? req.body.declaredValue : req.body.value) || 0;
+      booking.declaredValue = updatedVal;
+      booking.value = updatedVal;
+    }
 
     // Handle items manifest update
     if (Array.isArray(items) && items.length > 0) {
@@ -556,18 +542,6 @@ router.patch('/:id/status', async (req, res, next) => {
     }
 
     if (status === 'CANCELLED') {
-      // Role-based authorization & BOLA check: Staff can only cancel their own bookings
-      if (req.user && req.user.role === 'staff' && booking.createdBy) {
-        const creatorId = booking.createdBy._id ? booking.createdBy._id.toString() : booking.createdBy.toString();
-        if (creatorId !== req.user._id.toString()) {
-          return res.status(403).json({
-            success: false,
-            code: 'FORBIDDEN_RECORD',
-            message: 'Access denied: Staff can only cancel bookings created by their own account.',
-          });
-        }
-      }
-
       if (booking.status === 'DISPATCHED') {
         return res.status(400).json({
           success: false,

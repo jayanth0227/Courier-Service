@@ -7,7 +7,7 @@
   "scripts": {
     "clean-ports": "node ../scripts/clean-ports.js 5000",
     "predev": "node ../scripts/clean-ports.js 5000",
-    "dev": "node ../scripts/clean-ports.js 5000 && node server.js",
+    "dev": "node ../scripts/clean-ports.js 5000 && node --watch server.js",
     "start": "node server.js"
   },
   "dependencies": {

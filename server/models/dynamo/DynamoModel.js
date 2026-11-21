@@ -532,11 +532,23 @@ class DynamoModel {
 
   async _rawScan() {
     try {
-      const res = await docClient.send(new ScanCommand({ TableName: this.tableName }));
-      const items = res.Items || [];
-      this._memoryCache = items;
+      const allItems = [];
+      let lastEvaluatedKey = undefined;
+      do {
+        const scanParams = { TableName: this.tableName };
+        if (lastEvaluatedKey) {
+          scanParams.ExclusiveStartKey = lastEvaluatedKey;
+        }
+        const res = await docClient.send(new ScanCommand(scanParams));
+        if (res.Items && res.Items.length > 0) {
+          allItems.push(...res.Items);
+        }
+        lastEvaluatedKey = res.LastEvaluatedKey;
+      } while (lastEvaluatedKey);
+
+      this._memoryCache = allItems;
       this._hasCached = true;
-      return items;
+      return allItems;
     } catch (err) {
       if (err.name === 'ResourceNotFoundException') {
         console.warn(`[DynamoDB] Table "${this.tableName}" does not exist yet. Returning empty list.`);

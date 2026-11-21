@@ -423,8 +423,10 @@ export const api = {
       });
       return handleResponse(res);
     },
-    getPublic: async () => {
-      const res = await fetch(`${API_BASE}/settings/public`);
+    getPublic: async (params = {}) => {
+      const query = new URLSearchParams(params).toString();
+      const url = query ? `${API_BASE}/settings/public?${query}` : `${API_BASE}/settings/public`;
+      const res = await fetch(url);
       return handleResponse(res);
     },
     update: async (data) => {

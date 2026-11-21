@@ -119,7 +119,7 @@ export const PortalTopNav = ({
           </div>
           <div className="portal-brand-text-container">
             <div className="portal-brand-title">
-              {company.companyName || 'Logistics Management'}
+              {company.companyName || user?.tenantName || user?.tenant?.companyName || 'Sri Vinayaka Logistics'}
             </div>
             <span className="portal-brand-desk-badge">
               {isStaff ? 'Counter Desk' : 'Operations Desk'}
@@ -141,14 +141,50 @@ export const PortalTopNav = ({
             <span>{timeStr}</span>
           </div>
 
+          {/* Active Logged-In User Details */}
+          <div
+            className="portal-meta-item"
+            style={{
+              fontWeight: 600,
+              color: '#f8fafc',
+              backgroundColor: 'rgba(255,255,255,0.08)',
+              padding: '4px 10px',
+              borderRadius: '6px',
+              border: '1px solid rgba(255,255,255,0.12)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+            title={`Logged in as ${user?.name || user?.username} (${user?.role || 'staff'})`}
+          >
+            <UserCheck size={14} color="#60a5fa" />
+            <span style={{ maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {user?.name || user?.username || (user?.role === 'admin' ? 'Admin' : 'Staff')}
+            </span>
+            <span
+              style={{
+                fontSize: '0.625rem',
+                fontWeight: 700,
+                padding: '1px 6px',
+                borderRadius: '3px',
+                backgroundColor: user?.role === 'admin' ? '#2563eb' : (user?.role === 'superadmin' ? '#7c3aed' : '#475569'),
+                color: '#ffffff',
+                textTransform: 'uppercase',
+                letterSpacing: '0.04em',
+              }}
+            >
+              {user?.role === 'admin' ? 'Admin' : (user?.role === 'superadmin' ? 'Super Admin' : 'Staff')}
+            </span>
+          </div>
+
           {user?.role === 'admin' && (
             <button
               onClick={() => (onOpenStaff ? onOpenStaff() : handleModuleClick('staff'))}
               className={`portal-meta-action-btn ${activeModule === 'staff' ? 'active' : ''}`}
-              title="Manage Staff Accounts"
+              title="Manage Counter Staff Accounts"
             >
               <Users size={13} />
-              <span>Staff</span>
+              <span>Staff Accounts</span>
             </button>
           )}
 

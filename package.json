@@ -6,7 +6,7 @@
   "scripts": {
     "predev": "node scripts/clean-ports.js",
     "clean-ports": "node scripts/clean-ports.js",
-    "server": "node server/server.js",
+    "server": "node --watch server/server.js",
     "client": "npm --prefix client run dev:client-only",
     "dev": "node scripts/clean-ports.js && concurrently \"npm run server\" \"npm run client\"",
     "build:client": "npm --prefix client run build",

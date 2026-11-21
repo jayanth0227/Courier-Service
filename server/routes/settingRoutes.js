@@ -291,16 +291,19 @@ router.get('/', protect, tenantScope, async (req, res, next) => {
       const tenant = await Tenant.findById(req.tenantId);
       settings = await Setting.create({
         tenantId: req.tenantId,
-        companyName: tenant ? tenant.companyName : 'FastTrack Bus Parcel & Courier Services',
+        companyName: tenant ? tenant.companyName : 'Sri Vinayaka Logistics',
         logoUrl: '/logo.png',
         tagline: 'Parcel & Bus Dispatch Network',
-        companyPhone: tenant ? tenant.contactPhone : '+91 98765 43210',
-        companyEmail: tenant ? tenant.contactEmail : 'dispatch@fasttrackcourier.com',
-        companyAddress: tenant ? tenant.address : 'Main Bus Terminal Road, Complex #4',
+        companyPhone: tenant ? tenant.contactPhone : '9494958319',
+        companyEmail: tenant ? tenant.contactEmail : 'kkrtravels8319@gmail.com',
+        companyAddress: tenant ? (tenant.address || 'KPHB -JNTU, Hyderabad') : 'KPHB -JNTU, Hyderabad',
+        fromCity: 'KPHB -JNTU',
+        receiptAddress: tenant ? (tenant.address || 'KPHB -JNTU, Hyderabad') : 'KPHB -JNTU, Hyderabad',
+        receiptAdminName: tenant ? `${tenant.companyName} Admin` : 'Sri Vinayaka Logistics Admin',
         gstin: '',
-        receiptFooterNote: `Thank you for choosing ${tenant ? tenant.companyName : 'our service'}. Present this receipt or 6-digit Order ID at destination counter.`,
-        whatsappProvider: 'MOCK',
-        whatsappSenderNumber: tenant ? tenant.contactPhone.replace(/\D/g, '') : '+919876543210',
+        receiptFooterNote: `Thank you for choosing ${tenant ? tenant.companyName : 'Sri Vinayaka Logistics'}. Present this receipt or LR Number at destination counter.`,
+        whatsappProvider: 'OPENWA',
+        whatsappSenderNumber: tenant ? tenant.contactPhone.replace(/\D/g, '') : '9494958319',
       });
     }
 

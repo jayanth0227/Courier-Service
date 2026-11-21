@@ -22,6 +22,11 @@ import {
   Building,
   Sparkles,
   X,
+  ChevronDown,
+  ChevronUp,
+  Calendar,
+  Info,
+  Archive,
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -45,6 +50,32 @@ export const TrackingPage = ({ initialOrderId = '', onNavigate, companySettings:
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [copiedId, setCopiedId] = useState(false);
+  const [showArchivedManifest, setShowArchivedManifest] = useState(false);
+
+  // Delivery archival & completion calculation
+  const isDelivered = trackingData?.status === 'DELIVERED';
+  const deliveryTimestamp =
+    trackingData?.deliveredAt ||
+    (Array.isArray(trackingData?.timeline) &&
+      trackingData.timeline.find((t) => t.status === 'DELIVERED')?.timestamp) ||
+    (isDelivered ? trackingData?.updatedAt : null);
+
+  const isDeliveredPastOneDay = Boolean(
+    isDelivered &&
+    deliveryTimestamp &&
+    Date.now() - new Date(deliveryTimestamp).getTime() >= 24 * 60 * 60 * 1000
+  );
+
+  const deliveryDateFormatted = deliveryTimestamp
+    ? new Date(deliveryTimestamp).toLocaleString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+      })
+    : null;
 
   const fetchTracking = async (idToSearch) => {
     const cleanId = (idToSearch || orderId || '').trim().replace(/^#/, '').toUpperCase();
@@ -57,6 +88,7 @@ export const TrackingPage = ({ initialOrderId = '', onNavigate, companySettings:
       setLoading(true);
       setError('');
       setTrackingData(null);
+      setShowArchivedManifest(false);
       const res = await api.tracking.trackByOrderId(cleanId);
       if (res.success && res.data) {
         setTrackingData(res.data);
@@ -439,8 +471,8 @@ export const TrackingPage = ({ initialOrderId = '', onNavigate, companySettings:
                   alignItems: 'center',
                   flexWrap: 'wrap',
                   gap: '1rem',
-                  paddingBottom: '1.25rem',
-                  borderBottom: '1px solid var(--border-subtle)',
+                  paddingBottom: (!isDeliveredPastOneDay || showArchivedManifest) ? '1.25rem' : '0',
+                  borderBottom: (!isDeliveredPastOneDay || showArchivedManifest) ? '1px solid var(--border-subtle)' : 'none',
                 }}
               >
                 <div>
@@ -602,112 +634,403 @@ export const TrackingPage = ({ initialOrderId = '', onNavigate, companySettings:
                 </div>
               </div>
 
-              {/* TRANSIT PROGRESS STEPPER */}
-              <div style={{ margin: '2rem 0 1rem 0' }}>
+              {/* TRANSIT PROGRESS STEPPER - Hidden when parcel is delivered past 1 day unless explicitly viewing archived manifest */}
+              {(!isDeliveredPastOneDay || showArchivedManifest) && (
+                <div style={{ margin: '2rem 0 1rem 0' }}>
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(4, 1fr)',
+                      position: 'relative',
+                      gap: '0.5rem',
+                    }}
+                  >
+                    {/* Connecting Progress Track Line */}
+                    <div className="tracking-stepper-line">
+                      <div
+                        className="tracking-stepper-line-active"
+                        style={{
+                          width: isCancelled
+                            ? '0%'
+                            : `${Math.min(100, ((currentStepNum - 1) / 3) * 100)}%`,
+                        }}
+                      />
+                    </div>
+
+                    {stepsConfig.map((s) => {
+                      const isDone = !isCancelled && s.step <= currentStepNum;
+                      const isCurrent = !isCancelled && s.step === currentStepNum;
+                      const StepIcon = s.icon;
+
+                      return (
+                        <div
+                          key={s.id}
+                          style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            textAlign: 'center',
+                            position: 'relative',
+                            zIndex: 2,
+                          }}
+                        >
+                          {/* Step Node Circle */}
+                          <div
+                            style={{
+                              width: '38px',
+                              height: '38px',
+                              borderRadius: '50%',
+                              backgroundColor: isCurrent ? '#2563eb' : isDone ? '#2563eb' : '#ffffff',
+                              color: isDone ? '#ffffff' : '#94a3b8',
+                              border: isCurrent
+                                ? '3px solid #2563eb'
+                                : isDone
+                                  ? '3px solid #2563eb'
+                                  : '2px solid #cbd5e1',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              boxShadow: isCurrent
+                                ? '0 0 0 4px rgba(37, 99, 235, 0.25)'
+                                : '0 2px 4px rgba(0,0,0,0.06)',
+                              marginBottom: '0.65rem',
+                              transition: 'all 0.25s ease',
+                            }}
+                          >
+                            {isDone && !isCurrent ? (
+                              <Check size={18} strokeWidth={3} />
+                            ) : (
+                              <StepIcon size={17} />
+                            )}
+                          </div>
+
+                          {/* Step Labels */}
+                          <div
+                            style={{
+                              fontSize: '0.8125rem',
+                              fontWeight: isCurrent ? 800 : isDone ? 700 : 600,
+                              color: isCurrent ? '#2563eb' : isDone ? '#0f172a' : '#64748b',
+                            }}
+                          >
+                            {s.title}
+                          </div>
+                          <div
+                            style={{
+                              fontSize: '0.71875rem',
+                              color: '#64748b',
+                              marginTop: '2px',
+                              lineHeight: 1.3,
+                              maxWidth: '140px',
+                            }}
+                          >
+                            {s.desc}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* TWO-COLUMN DETAILS GRID OR CELEBRATORY DELIVERED COMPLETION CARD */}
+            {isDeliveredPastOneDay && !showArchivedManifest ? (
+              <div
+                style={{
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #a7f3d0',
+                  borderRadius: 'var(--radius-lg)',
+                  padding: '2.5rem 1.75rem',
+                  boxShadow: '0 10px 25px -5px rgba(16, 185, 129, 0.08), 0 8px 10px -6px rgba(16, 185, 129, 0.04)',
+                  textAlign: 'center',
+                  position: 'relative',
+                  overflow: 'hidden',
+                }}
+              >
+                {/* Subtle decorative top bar */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: '6px',
+                    background: 'linear-gradient(90deg, #10b981, #059669, #34d399)',
+                  }}
+                />
+
+                {/* Animated Checkmark Badge with Pulse Ring */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    margin: '0 auto 1.5rem auto',
+                    width: '92px',
+                    height: '92px',
+                    borderRadius: '50%',
+                    backgroundColor: '#ecfdf5',
+                    position: 'relative',
+                  }}
+                  className="delivery-pulse-ring-anim"
+                >
+                  <div
+                    className="delivery-success-badge-anim"
+                    style={{
+                      width: '68px',
+                      height: '68px',
+                      borderRadius: '50%',
+                      backgroundColor: '#10b981',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 6px 16px rgba(16, 185, 129, 0.35)',
+                    }}
+                  >
+                    <CheckCircle2 size={38} color="#ffffff" className="delivery-check-anim" strokeWidth={2.5} />
+                  </div>
+                </div>
+
+                {/* Status chip */}
+                <div
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '0.35rem 0.9rem',
+                    borderRadius: '9999px',
+                    backgroundColor: '#ecfdf5',
+                    color: '#065f46',
+                    fontSize: '0.8125rem',
+                    fontWeight: 700,
+                    letterSpacing: '0.04em',
+                    textTransform: 'uppercase',
+                    marginBottom: '0.75rem',
+                    border: '1px solid #a7f3d0',
+                  }}
+                >
+                  <ShieldCheck size={15} /> Consignment Completed & Delivered
+                </div>
+
+                <h2
+                  style={{
+                    fontSize: '1.625rem',
+                    fontWeight: 800,
+                    color: '#0f172a',
+                    margin: '0 0 0.5rem 0',
+                    letterSpacing: '-0.02em',
+                  }}
+                >
+                  Parcel Handed Over Successfully
+                </h2>
+
+                <p
+                  style={{
+                    fontSize: '0.9375rem',
+                    color: '#475569',
+                    maxWidth: '580px',
+                    margin: '0 auto 1.75rem auto',
+                    lineHeight: 1.55,
+                  }}
+                >
+                  Consignment <strong style={{ color: '#0f172a' }}>#{trackingData.orderId}</strong> was safely handed over
+                  {deliveryDateFormatted ? (
+                    <>
+                      {' '}on <strong style={{ color: '#0f172a' }}>{deliveryDateFormatted}</strong>
+                    </>
+                  ) : null}
+                  {trackingData.receiverName ? (
+                    <>
+                      {' '}to receiver <strong style={{ color: '#0f172a' }}>{trackingData.receiverName}</strong>
+                    </>
+                  ) : null}
+                  {' '}at the destination counter.
+                </p>
+
+                {/* Delivery Summary Chips */}
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    gap: '0.85rem',
+                    flexWrap: 'wrap',
+                    marginBottom: '1.75rem',
+                  }}
+                >
+                  <div
+                    style={{
+                      padding: '0.65rem 1.15rem',
+                      backgroundColor: '#f8fafc',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      fontSize: '0.8125rem',
+                    }}
+                  >
+                    <MapPin size={16} color="#059669" />
+                    <span style={{ color: '#64748b' }}>Route:</span>
+                    <strong style={{ color: '#0f172a' }}>
+                      {trackingData.destination || `${trackingData.fromCity} → ${trackingData.toCity}`}
+                    </strong>
+                  </div>
+
+                  {trackingData.parcelType && (
+                    <div
+                      style={{
+                        padding: '0.65rem 1.15rem',
+                        backgroundColor: '#f8fafc',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        fontSize: '0.8125rem',
+                      }}
+                    >
+                      <Package size={16} color="#059669" />
+                      <span style={{ color: '#64748b' }}>Cargo:</span>
+                      <strong style={{ color: '#0f172a' }}>
+                        {trackingData.quantity || 1} {trackingData.parcelType}
+                      </strong>
+                    </div>
+                  )}
+
+                  {deliveryDateFormatted && (
+                    <div
+                      style={{
+                        padding: '0.65rem 1.15rem',
+                        backgroundColor: '#f8fafc',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        fontSize: '0.8125rem',
+                      }}
+                    >
+                      <Calendar size={16} color="#059669" />
+                      <span style={{ color: '#64748b' }}>Delivered On:</span>
+                      <strong style={{ color: '#0f172a' }}>{deliveryDateFormatted}</strong>
+                    </div>
+                  )}
+                </div>
+
+                {/* 90-Day Retention Notice */}
+                <div
+                  style={{
+                    maxWidth: '640px',
+                    margin: '0 auto 1.5rem auto',
+                    padding: '0.85rem 1.15rem',
+                    backgroundColor: '#f8fafc',
+                    border: '1px dashed #cbd5e1',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '10px',
+                    fontSize: '0.8rem',
+                    color: '#64748b',
+                    textAlign: 'left',
+                  }}
+                >
+                  <Info size={18} color="#059669" style={{ flexShrink: 0 }} />
+                  <div>
+                    <strong style={{ color: '#334155' }}>90-Day Auto Retention Policy:</strong> Active dispatch logs and bus assignment details are automatically hidden 24 hours after completion. All booking manifests remain accessible in your database for 90 days from creation before automatic archival cleanup.
+                  </div>
+                </div>
+
+                {/* Toggle button to expand manifest if needed */}
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => setShowArchivedManifest(true)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '0.6rem 1.35rem',
+                      borderRadius: '8px',
+                      border: '1px solid #cbd5e1',
+                      backgroundColor: '#ffffff',
+                      color: '#334155',
+                      fontSize: '0.8125rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#f1f5f9';
+                      e.currentTarget.style.borderColor = '#94a3b8';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = '#ffffff';
+                      e.currentTarget.style.borderColor = '#cbd5e1';
+                    }}
+                  >
+                    <Archive size={15} color="#64748b" />
+                    View Archived Consignment Manifest & Dispatch Details
+                    <ChevronDown size={15} color="#64748b" />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                {/* Archive header banner if expanded */}
+                {isDeliveredPastOneDay && showArchivedManifest && (
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: '0.75rem',
+                      padding: '0.75rem 1.25rem',
+                      marginBottom: '1rem',
+                      backgroundColor: '#ecfdf5',
+                      border: '1px solid #a7f3d0',
+                      borderRadius: 'var(--radius-md)',
+                      fontSize: '0.8125rem',
+                      color: '#065f46',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600 }}>
+                      <CheckCircle2 size={16} color="#059669" />
+                      <span>Viewing Archived Consignment Manifest (Delivered on {deliveryDateFormatted || 'schedule'})</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowArchivedManifest(false)}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        padding: '0.35rem 0.75rem',
+                        borderRadius: '6px',
+                        border: '1px solid #a7f3d0',
+                        backgroundColor: '#ffffff',
+                        color: '#047857',
+                        fontSize: '0.75rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Hide Details <ChevronUp size={14} />
+                    </button>
+                  </div>
+                )}
+
+                {/* TWO-COLUMN DETAILS GRID */}
                 <div
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(4, 1fr)',
-                    position: 'relative',
-                    gap: '0.5rem',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+                    gap: '1.25rem',
                   }}
                 >
-                  {/* Connecting Progress Track Line */}
-                  <div className="tracking-stepper-line">
-                    <div
-                      className="tracking-stepper-line-active"
-                      style={{
-                        width: isCancelled
-                          ? '0%'
-                          : `${Math.min(100, ((currentStepNum - 1) / 3) * 100)}%`,
-                      }}
-                    />
-                  </div>
-
-                  {stepsConfig.map((s) => {
-                    const isDone = !isCancelled && s.step <= currentStepNum;
-                    const isCurrent = !isCancelled && s.step === currentStepNum;
-                    const StepIcon = s.icon;
-
-                    return (
-                      <div
-                        key={s.id}
-                        style={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          textAlign: 'center',
-                          position: 'relative',
-                          zIndex: 2,
-                        }}
-                      >
-                        {/* Step Node Circle */}
-                        <div
-                          style={{
-                            width: '38px',
-                            height: '38px',
-                            borderRadius: '50%',
-                            backgroundColor: isCurrent ? '#2563eb' : isDone ? '#2563eb' : '#ffffff',
-                            color: isDone ? '#ffffff' : '#94a3b8',
-                            border: isCurrent
-                              ? '3px solid #2563eb'
-                              : isDone
-                                ? '3px solid #2563eb'
-                                : '2px solid #cbd5e1',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            boxShadow: isCurrent
-                              ? '0 0 0 4px rgba(37, 99, 235, 0.25)'
-                              : '0 2px 4px rgba(0,0,0,0.06)',
-                            marginBottom: '0.65rem',
-                            transition: 'all 0.25s ease',
-                          }}
-                        >
-                          {isDone && !isCurrent ? (
-                            <Check size={18} strokeWidth={3} />
-                          ) : (
-                            <StepIcon size={17} />
-                          )}
-                        </div>
-
-                        {/* Step Labels */}
-                        <div
-                          style={{
-                            fontSize: '0.8125rem',
-                            fontWeight: isCurrent ? 800 : isDone ? 700 : 600,
-                            color: isCurrent ? '#2563eb' : isDone ? '#0f172a' : '#64748b',
-                          }}
-                        >
-                          {s.title}
-                        </div>
-                        <div
-                          style={{
-                            fontSize: '0.71875rem',
-                            color: '#64748b',
-                            marginTop: '2px',
-                            lineHeight: 1.3,
-                            maxWidth: '140px',
-                          }}
-                        >
-                          {s.desc}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-
-            {/* TWO-COLUMN DETAILS GRID */}
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-                gap: '1.25rem',
-              }}
-            >
-              {/* Left Card: Consignment Details */}
+                  {/* Left Card: Consignment Details */}
               <div
                 style={{
                   backgroundColor: '#ffffff',
@@ -973,6 +1296,8 @@ export const TrackingPage = ({ initialOrderId = '', onNavigate, companySettings:
             </div>
           </div>
         )}
+      </div>
+    )}
 
         {/* 4. DEFAULT INITIAL STATE: RICH INFORMATIVE PORTAL (Replaces barren empty white void) */}
         {!trackingData && !loading && (

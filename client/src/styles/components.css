@@ -1356,6 +1356,10 @@
   outline: none !important;
 }
 
+.docket-input.docket-input-currency {
+  padding-left: 2.25rem !important;
+}
+
 .docket-route-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -3716,3 +3720,62 @@
 }
 
 
+
+
+/* ========================================================
+   DELIVERY COMPLETION CELEBRATION & ARCHIVE ANIMATIONS
+   ======================================================== */
+@keyframes deliverySuccessBounce {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.12);
+  }
+  75% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes deliveryPulseRing {
+  0% {
+    transform: scale(0.92);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.45);
+  }
+  70% {
+    transform: scale(1.04);
+    box-shadow: 0 0 0 18px rgba(16, 185, 129, 0);
+  }
+  100% {
+    transform: scale(0.92);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+@keyframes deliveryCheckSpin {
+  0% {
+    transform: rotate(-45deg) scale(0.7);
+    opacity: 0;
+  }
+  100% {
+    transform: rotate(0deg) scale(1);
+    opacity: 1;
+  }
+}
+
+.delivery-success-badge-anim {
+  animation: deliverySuccessBounce 0.75s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.delivery-pulse-ring-anim {
+  animation: deliveryPulseRing 2.4s infinite ease-in-out;
+}
+
+.delivery-check-anim {
+  animation: deliveryCheckSpin 0.5s ease-out 0.2s both;
+}

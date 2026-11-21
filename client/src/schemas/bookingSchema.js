@@ -61,6 +61,11 @@ export const bookingFormSchema = z.object({
     .string()
     .trim()
     .optional(),
+  declaredValue: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined ? undefined : Number(val)),
+    z.number({ required_error: 'Consignment value (₹) is required', invalid_type_error: 'Consignment value must be a number' })
+      .min(0, 'Consignment value must be 0 or greater')
+  ),
   remarks: z
     .string()
     .optional()

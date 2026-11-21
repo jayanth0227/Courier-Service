@@ -264,15 +264,33 @@ export const SettingsPage = ({ onRefreshGlobalDestinations }) => {
   const handleLogoFileUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      showToast('Logo file size should be less than 5MB', 'error');
+    if (file.size > 10 * 1024 * 1024) {
+      showToast('Logo file size should be less than 10MB', 'error');
       return;
     }
     const reader = new FileReader();
     reader.onload = (event) => {
-      const base64 = event.target.result;
-      setSettings((prev) => ({ ...prev, logoUrl: base64 }));
-      showToast('New logo loaded! Click "Save Company Details" below to apply changes.', 'success');
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const maxW = 360;
+        const maxH = 180;
+        let w = img.width;
+        let h = img.height;
+        if (w > maxW || h > maxH) {
+          const ratio = Math.min(maxW / w, maxH / h);
+          w = Math.round(w * ratio);
+          h = Math.round(h * ratio);
+        }
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        const optimizedBase64 = canvas.toDataURL('image/png', 0.92);
+        setSettings((prev) => ({ ...prev, logoUrl: optimizedBase64 }));
+        showToast('New logo optimized! Click "Save Company Details" below to apply.', 'success');
+      };
+      img.src = event.target.result;
     };
     reader.readAsDataURL(file);
   };

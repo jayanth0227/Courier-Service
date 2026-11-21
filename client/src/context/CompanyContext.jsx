@@ -179,19 +179,27 @@ export const CompanyProvider = ({ children }) => {
       setLoading(true);
       let res = null;
 
+      // Immediately apply tenant identity if present in user object
+      const initialTenantName = user?.tenantName || user?.tenant?.companyName;
+      if (initialTenantName) {
+        setCompanySettings((prev) => ({
+          ...prev,
+          companyName: prev.companyName || initialTenantName,
+        }));
+      }
+
       // Determine if active user context is tenant-specific or platform CMS
       const isTenantContext = Boolean(
         token &&
-        user?.tenantId &&
-        (user?.role === 'admin' || user?.role === 'staff' || isImpersonating) &&
-        user?.role !== 'superadmin'
+        (user?.tenantId || isImpersonating) &&
+        (user?.role === 'admin' || user?.role === 'staff' || isImpersonating)
       );
 
       if (isTenantContext) {
         try {
           res = await api.settings.get();
         } catch {
-          res = await api.settings.getPublic();
+          res = await api.settings.getPublic(user?.tenantId ? { tenantId: user.tenantId } : {});
         }
       } else {
         res = await api.settings.getPublic();
@@ -201,9 +209,10 @@ export const CompanyProvider = ({ children }) => {
         setCompanySettings((prev) => ({
           ...prev,
           ...res.data,
+          companyName: res.data.companyName || initialTenantName || prev.companyName,
         }));
-        if (res.data.companyName) {
-          applyDocumentTitle(res.data.companyName);
+        if (res.data.companyName || initialTenantName) {
+          applyDocumentTitle(res.data.companyName || initialTenantName);
         }
         if (res.data.logoUrl) {
           applyFavicon(res.data.logoUrl);

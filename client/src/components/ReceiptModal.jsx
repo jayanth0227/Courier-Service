@@ -123,6 +123,8 @@ const ConsignmentBill = ({
             quantity: booking.quantity || 1,
             weight: booking.weight || 0,
             charge: booking.amount,
+            declaredValue: booking.declaredValue ?? booking.value,
+            value: booking.declaredValue ?? booking.value,
             notes: booking.notes || '-',
           },
         ];
@@ -247,7 +249,7 @@ const ConsignmentBill = ({
       >
         {/* Left: Organization / Deity Logo */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          {company.logoUrl && company.logoUrl !== '/logo.png' ? (
+          {company.logoUrl ? (
             <img
               src={company.logoUrl}
               alt="Logo"
@@ -256,29 +258,32 @@ const ConsignmentBill = ({
                 maxWidth: logoMaxWidth,
                 objectFit: 'contain',
               }}
-            />
-          ) : (
-            <div
-              style={{
-                width: `${fallbackLogoSize}px`,
-                height: `${fallbackLogoSize}px`,
-                border: '1.5px solid #000000',
-                borderRadius: '4px',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 900,
-                fontSize: copyCount === 3 ? '11px' : (copyCount === 2 ? '14px' : '16px'),
-                lineHeight: 1.1,
-                textAlign: 'center',
-                backgroundColor: '#f8fafc',
+              onError={(e) => {
+                e.target.style.display = 'none';
+                if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex';
               }}
-            >
-              <span>SV</span>
-              <span style={{ fontSize: copyCount === 3 ? '7px' : '8.5px', fontWeight: 700 }}>LOGISTICS</span>
-            </div>
-          )}
+            />
+          ) : null}
+          <div
+            style={{
+              display: company.logoUrl ? 'none' : 'flex',
+              width: `${fallbackLogoSize}px`,
+              height: `${fallbackLogoSize}px`,
+              border: '1.5px solid #000000',
+              borderRadius: '4px',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: 900,
+              fontSize: copyCount === 3 ? '11px' : (copyCount === 2 ? '14px' : '16px'),
+              lineHeight: 1.1,
+              textAlign: 'center',
+              backgroundColor: '#f8fafc',
+            }}
+          >
+            <span>SV</span>
+            <span style={{ fontSize: copyCount === 3 ? '7px' : '8.5px', fontWeight: 700 }}>LOGISTICS</span>
+          </div>
         </div>
 
         {/* Center: Company Name & Dynamic Header Address */}
@@ -519,13 +524,20 @@ const ConsignmentBill = ({
                   </thead>
                   <tbody>
                     {items.map((it, idx) => {
-                      const itemVal = it.charge != null && it.charge !== ''
-                        ? `₹${Number(it.charge).toFixed(2)}`
-                        : (it.declaredValue != null && it.declaredValue !== ''
-                            ? `₹${Number(it.declaredValue).toFixed(2)}`
-                            : (it.amount != null && it.amount !== ''
-                                ? `₹${Number(it.amount).toFixed(2)}`
-                                : (items.length === 1 && booking.amount ? `₹${Number(booking.amount).toFixed(2)}` : '0.00')));
+                      const candidateVal = [
+                        it.declaredValue,
+                        it.value,
+                        booking.declaredValue,
+                        booking.value,
+                      ].find((v) => v !== undefined && v !== null && v !== '' && !isNaN(Number(v)));
+
+                      const resolvedVal = candidateVal !== undefined ? Number(candidateVal) : null;
+
+                      const itemVal = resolvedVal !== null
+                        ? `₹${resolvedVal.toFixed(2)}`
+                        : (it.charge != null && it.charge !== ''
+                            ? `₹${Number(it.charge).toFixed(2)}`
+                            : (items.length === 1 && booking.amount ? `₹${Number(booking.amount).toFixed(2)}` : '0.00'));
                       return (
                         <tr key={idx} style={{ borderBottom: '1px solid #000000' }}>
                           <td style={{ borderRight: '1px solid #000000', padding: itemRowPadding, textAlign: 'center', fontWeight: 800 }}>
@@ -541,7 +553,7 @@ const ConsignmentBill = ({
                           </td>
                           <td style={{ padding: itemRowPadding }}>
                             <div style={{ fontWeight: 800 }}>
-                              {showAmount ? itemVal : '***'}
+                              {itemVal}
                             </div>
                           </td>
                         </tr>
@@ -680,12 +692,17 @@ export const ReceiptModal = ({ booking, onClose, companySettings: propCompanySet
 
   if (!booking) return null;
 
-  const company = propCompanySettings || contextCompanySettings || {
-    companyName: 'SRI VINAYAKA LOGISTICS',
-    companyPhone: '+91 9010253076',
-    companyAddress: 'Central Bus Terminal Office',
-    companyEmail: 'jayanthyeswanth9@gmail.com',
-    gstin: '',
+  const rawCompany = propCompanySettings || contextCompanySettings || {};
+  const company = {
+    companyName: rawCompany.companyName || 'SRI VINAYAKA LOGISTICS',
+    companyPhone: rawCompany.companyPhone || '9494958319',
+    companyAddress: rawCompany.companyAddress || 'KPHB -JNTU, Hyderabad',
+    companyEmail: rawCompany.companyEmail || 'kkrtravels8319@gmail.com',
+    receiptAddress: rawCompany.receiptAddress || rawCompany.companyAddress || 'KPHB -JNTU, Hyderabad',
+    receiptAdminName: rawCompany.receiptAdminName || 'Sri Vinayaka Logistics Admin',
+    logoUrl: rawCompany.logoUrl || '/logo.png',
+    gstin: rawCompany.gstin || '',
+    termsAndConditions: rawCompany.termsAndConditions || '',
   };
 
 
@@ -894,12 +911,12 @@ export const ReceiptModal = ({ booking, onClose, companySettings: propCompanySet
             )}
             {copyCount === 2 && (
               <span>
-                <strong>Multi-Copy Rule Active:</strong> Copy 1 (Consignor) contains amount. Copy 2 (Bus Driver) has <strong>amounts masked</strong> (only cargo details and LR number are shown for transit).
+                <strong>Multi-Copy Rule Active:</strong> Copy 1 (Consignor) contains freight amount. Copy 2 (Bus Driver) has <strong>freight charge masked</strong>, but displays consignment value and cargo details for transit.
               </span>
             )}
             {copyCount === 3 && (
               <span>
-                <strong>Multi-Copy Rule Active:</strong> Copies 1 & 2 contain amount. Copy 3 (Bus Driver) has <strong>amounts masked</strong> for privacy.
+                <strong>Multi-Copy Rule Active:</strong> Copies 1 & 2 contain freight amount. Copy 3 (Bus Driver) has <strong>freight charge masked</strong> for privacy.
               </span>
             )}
           </span>

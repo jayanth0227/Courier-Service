@@ -110,6 +110,7 @@ export const CreateBookingPage = ({
     customerName: '',
     receiverPhone: '',
     receiverName: '',
+    declaredValue: '',
     remarks: '',
     paymentStatus: 'PAID',
   });
@@ -552,6 +553,7 @@ export const CreateBookingPage = ({
       customerName: (formData.customerName || '').trim(),
       receiverPhone: (formData.receiverPhone || '').trim(),
       receiverName: (formData.receiverName || '').trim(),
+      declaredValue: formData.declaredValue,
       remarks: (formData.remarks || '').trim(),
       paymentStatus: formData.paymentStatus,
       items: parcelItems.map((item) => ({
@@ -590,6 +592,7 @@ export const CreateBookingPage = ({
       else if (firstKey === 'customerPhone') document.getElementById('cb_sender_phone')?.focus();
       else if (firstKey === 'customerName') document.getElementById('cb_sender_name')?.focus();
       else if (firstKey === 'receiverPhone') document.getElementById('cb_receiver_phone')?.focus();
+      else if (firstKey === 'declaredValue') document.getElementById('cb_booking_value')?.focus();
       else if (firstKey.startsWith('items.')) {
         const parts = firstKey.split('.');
         const rowIdx = parts[1];
@@ -609,6 +612,7 @@ export const CreateBookingPage = ({
       quantity: item.quantity,
       weight: item.weight,
       charge: item.charge,
+      declaredValue: validated.declaredValue,
       notes: item.notes || '',
     }));
 
@@ -627,6 +631,8 @@ export const CreateBookingPage = ({
       customerWhatsapp: validated.customerPhone,
       receiverPhone: validated.receiverPhone || '',
       receiverName: validated.receiverName || '',
+      declaredValue: validated.declaredValue,
+      value: validated.declaredValue,
       items: cleanedItems,
       quantity: totalQuantity,
       weight: totalWeight,
@@ -652,9 +658,19 @@ export const CreateBookingPage = ({
       if (res.success && res.data) {
         showToast(`Consignment Booked Successfully! LR ID: ${res.data.orderId}`, 'success');
         setShowConfirmModal(false);
+        const enrichedBooking = {
+          ...res.data,
+          declaredValue: res.data.declaredValue ?? pendingPayload.declaredValue,
+          value: res.data.value ?? pendingPayload.declaredValue,
+          items: (res.data.items && res.data.items.length > 0 ? res.data.items : pendingPayload.items || []).map((it, idx) => ({
+            ...it,
+            declaredValue: it.declaredValue ?? pendingPayload.items?.[idx]?.declaredValue ?? pendingPayload.declaredValue,
+            value: it.value ?? pendingPayload.items?.[idx]?.declaredValue ?? pendingPayload.declaredValue,
+          })),
+        };
         setPendingPayload(null);
-        setCreatedBooking(res.data);
-        notifyLocalChange('BOOKING_CREATED', res.data);
+        setCreatedBooking(enrichedBooking);
+        notifyLocalChange('BOOKING_CREATED', enrichedBooking);
         await fetchCities();
         if (onRefreshCities) onRefreshCities();
         // WhatsApp booking confirmation is sent automatically by the server via OpenWA
@@ -678,6 +694,7 @@ export const CreateBookingPage = ({
       customerName: '',
       receiverPhone: '',
       receiverName: '',
+      declaredValue: '',
       remarks: '',
       paymentStatus: 'PAID',
     });
@@ -877,26 +894,47 @@ export const CreateBookingPage = ({
               </table>
             </div>
 
-            {/* Consignment Remarks (if recorded) */}
-            {createdBooking.remarks && (
-              <div
-                style={{
-                  marginTop: '0.85rem',
-                  padding: '0.6rem 0.85rem',
-                  backgroundColor: '#ffffff',
-                  border: '1px solid #e2e8f0',
-                  borderLeft: '4px solid #2563eb',
-                  borderRadius: '4px',
-                  fontSize: '0.8125rem',
-                  display: 'flex',
-                  gap: '6px',
-                  alignItems: 'flex-start',
-                }}
-              >
-                <strong style={{ color: '#0f172a', whiteSpace: 'nowrap' }}>Booking Remarks:</strong>
-                <span style={{ color: '#334155', fontWeight: 500 }}>{createdBooking.remarks}</span>
-              </div>
-            )}
+            {/* Consignment Declared Value & Remarks */}
+            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.85rem', flexWrap: 'wrap' }}>
+              {(createdBooking.declaredValue != null || createdBooking.value != null) && (
+                <div
+                  style={{
+                    padding: '0.6rem 0.85rem',
+                    backgroundColor: '#ffffff',
+                    border: '1px solid #e2e8f0',
+                    borderLeft: '4px solid #10b981',
+                    borderRadius: '4px',
+                    fontSize: '0.8125rem',
+                    display: 'flex',
+                    gap: '6px',
+                    alignItems: 'center',
+                  }}
+                >
+                  <strong style={{ color: '#0f172a', whiteSpace: 'nowrap' }}>Consignment Value:</strong>
+                  <span style={{ color: '#047857', fontWeight: 700 }}>₹{createdBooking.declaredValue ?? createdBooking.value}</span>
+                </div>
+              )}
+              {createdBooking.remarks && (
+                <div
+                  style={{
+                    flex: 1,
+                    minWidth: '240px',
+                    padding: '0.6rem 0.85rem',
+                    backgroundColor: '#ffffff',
+                    border: '1px solid #e2e8f0',
+                    borderLeft: '4px solid #2563eb',
+                    borderRadius: '4px',
+                    fontSize: '0.8125rem',
+                    display: 'flex',
+                    gap: '6px',
+                    alignItems: 'flex-start',
+                  }}
+                >
+                  <strong style={{ color: '#0f172a', whiteSpace: 'nowrap' }}>Booking Remarks:</strong>
+                  <span style={{ color: '#334155', fontWeight: 500 }}>{createdBooking.remarks}</span>
+                </div>
+              )}
+            </div>
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '0.75rem', marginTop: '1.25rem' }}>
@@ -1636,7 +1674,7 @@ export const CreateBookingPage = ({
               </div>
             )}
 
-            {/* Optional Booking Remarks & Special Instructions */}
+            {/* Consignment Value (Required) & Booking Remarks in the Same Line */}
             <div
               style={{
                 backgroundColor: '#ffffff',
@@ -1646,25 +1684,91 @@ export const CreateBookingPage = ({
                 marginBottom: '1rem',
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem', flexWrap: 'wrap', gap: '0.25rem' }}>
-                <label htmlFor="cb_booking_remarks" className="docket-field-label" style={{ marginBottom: 0, fontWeight: 700, color: '#0f172a' }}>
-                  Booking Remarks / Special Instructions
-                </label>
-                <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 500 }}>
-                  (Optional - prints on official LR copy)
-                </span>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                  gap: '1rem',
+                  alignItems: 'flex-start',
+                }}
+              >
+                {/* 1. First Field: Consignment Value (Required) */}
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem', flexWrap: 'wrap', gap: '0.25rem' }}>
+                    <label htmlFor="cb_booking_value" className="docket-field-label" style={{ marginBottom: 0, fontWeight: 700, color: '#0f172a' }}>
+                      Consignment / Goods Value (₹) <span style={{ color: '#dc2626' }}>*</span>
+                    </label>
+                    <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 500 }}>
+                      (Required - prints in Value column)
+                    </span>
+                  </div>
+                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                    <span
+                      style={{
+                        position: 'absolute',
+                        left: '11px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        fontWeight: 700,
+                        color: '#64748b',
+                        fontSize: '0.9rem',
+                        pointerEvents: 'none',
+                        zIndex: 2,
+                      }}
+                    >
+                      ₹
+                    </span>
+                    <input
+                      type="number"
+                      id="cb_booking_value"
+                      name="cb_booking_value"
+                      className={`form-control docket-input docket-input-currency ${fieldErrors.declaredValue ? 'is-invalid' : ''}`}
+                      placeholder="e.g. 500 or 5000"
+                      min="0"
+                      step="any"
+                      value={formData.declaredValue !== undefined ? formData.declaredValue : ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setFormData((prev) => ({ ...prev, declaredValue: val }));
+                        if (fieldErrors.declaredValue) {
+                          setFieldErrors((prev) => ({ ...prev, declaredValue: undefined }));
+                        }
+                      }}
+                      autoComplete="off"
+                      data-lpignore="true"
+                      required
+                    />
+                  </div>
+                  {fieldErrors.declaredValue && (
+                    <div className="form-error-msg" style={{ marginTop: '0.3rem', fontSize: '0.75rem', color: '#dc2626' }}>
+                      {fieldErrors.declaredValue}
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. Next Field: Booking Remarks / Special Instructions (Optional) */}
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem', flexWrap: 'wrap', gap: '0.25rem' }}>
+                    <label htmlFor="cb_booking_remarks" className="docket-field-label" style={{ marginBottom: 0, fontWeight: 700, color: '#0f172a' }}>
+                      Booking Remarks / Special Instructions
+                    </label>
+                    <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 500 }}>
+                      (Optional - prints on official LR copy)
+                    </span>
+                  </div>
+                  <input
+                    type="text"
+                    id="cb_booking_remarks"
+                    name="cb_booking_remarks"
+                    className="form-control docket-input"
+                    placeholder="e.g. Fragile glassware / Handle with care / Call receiver"
+                    value={formData.remarks || ''}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, remarks: e.target.value }))}
+                    autoComplete="off"
+                    data-lpignore="true"
+                  />
+                </div>
               </div>
-              <input
-                type="text"
-                id="cb_booking_remarks"
-                name="cb_booking_remarks"
-                className="form-control docket-input"
-                placeholder="e.g. Fragile glassware / Handle with care / Call receiver before delivery / Deliver after 4 PM"
-                value={formData.remarks || ''}
-                onChange={(e) => setFormData((prev) => ({ ...prev, remarks: e.target.value }))}
-                autoComplete="off"
-                data-lpignore="true"
-              />
             </div>
 
             {/* Live Totals & Payment Summary Bar - Modern Executive Card */}
@@ -2191,12 +2295,14 @@ export const CreateBookingPage = ({
                 </div>
               </div>
 
-              {/* Total & Payment Mode Banner */}
+              {/* Total, Declared Value & Payment Mode Banner */}
               <div
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '0.75rem',
                   padding: '0.85rem 1.1rem',
                   backgroundColor: '#f0fdf4',
                   border: '1px solid #bbf7d0',
@@ -2211,6 +2317,16 @@ export const CreateBookingPage = ({
                     ₹{pendingPayload.amount}
                   </div>
                 </div>
+                {(pendingPayload.declaredValue != null || pendingPayload.value != null) && (
+                  <div>
+                    <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      Consignment Value
+                    </div>
+                    <div style={{ fontSize: '1.15rem', fontWeight: 700, color: '#0f172a' }}>
+                      ₹{pendingPayload.declaredValue ?? pendingPayload.value}
+                    </div>
+                  </div>
+                )}
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: '0.2rem' }}>
                     Payment Mode

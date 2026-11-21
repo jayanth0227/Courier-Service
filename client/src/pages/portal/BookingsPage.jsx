@@ -219,7 +219,7 @@ export const BookingsPage = ({
       if (destination !== 'ALL') params.destination = destination;
       if (parcelType !== 'ALL') params.parcelType = parcelType;
       if (isStaff) {
-        params.bookedByRole = 'staff';
+        params.createdBy = user?._id || user?.id;
       } else if (bookedByRole !== 'ALL') {
         params.bookedByRole = bookedByRole;
       }
@@ -262,7 +262,11 @@ export const BookingsPage = ({
     // 1. Newly created booking across any counter/device
     const unsubCreated = subscribeToEvent('BOOKING_CREATED', (newBooking) => {
       if (!newBooking || !newBooking._id) return;
-      if (isStaff && newBooking.bookedByRole !== 'staff') return;
+      if (isStaff) {
+        const myUserId = String(user?._id || user?.id || '');
+        const creatorId = String(newBooking.createdBy?._id || newBooking.createdBy || '');
+        if (creatorId && creatorId !== myUserId) return;
+      }
 
       const statusMatch = status === 'ALL' || status === newBooking.status;
       const destMatch =
@@ -291,6 +295,11 @@ export const BookingsPage = ({
     // 2. Booking status or details updated in real time (e.g. dispatched, delivered, cancelled)
     const unsubUpdated = subscribeToEvent('BOOKING_UPDATED', (updatedBooking) => {
       if (!updatedBooking || !updatedBooking._id) return;
+      if (isStaff) {
+        const myUserId = String(user?._id || user?.id || '');
+        const creatorId = String(updatedBooking.createdBy?._id || updatedBooking.createdBy || '');
+        if (creatorId && creatorId !== myUserId) return;
+      }
 
       setBookings((prev) =>
         prev.map((b) => (b._id === updatedBooking._id ? { ...b, ...updatedBooking } : b))

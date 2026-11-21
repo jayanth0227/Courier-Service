@@ -281,9 +281,9 @@ router.get('/', async (req, res, next) => {
     }
 
     // Filter by who booked the order (admin vs staff)
-    // Role-based visibility: Staff users can ONLY see bookings made by staff (admin bookings are hidden from staff)
+    // Role-based visibility: Staff users can ONLY see bookings created by themselves
     if (req.user?.role === 'staff') {
-      query.bookedByRole = 'staff';
+      query.createdBy = String(req.user._id || req.user.id);
     } else if (bookedByRole && bookedByRole !== 'ALL') {
       query.bookedByRole = bookedByRole.toLowerCase();
     }
@@ -414,7 +414,7 @@ router.get('/:id', async (req, res, next) => {
       : { _id: req.params.id, ...req.tenantFilter };
 
     if (req.user?.role === 'staff') {
-      query.bookedByRole = 'staff';
+      query.createdBy = String(req.user._id || req.user.id);
     }
 
     const booking = await Booking.findOne(query)
@@ -448,7 +448,7 @@ router.put('/:id', async (req, res, next) => {
   try {
     const bookingQuery = { _id: req.params.id, ...req.tenantFilter };
     if (req.user?.role === 'staff') {
-      bookingQuery.bookedByRole = 'staff';
+      bookingQuery.createdBy = String(req.user._id || req.user.id);
     }
     const booking = await Booking.findOne(bookingQuery);
 
@@ -544,7 +544,7 @@ router.patch('/:id/status', async (req, res, next) => {
     const { status, cancellationReason, deliveryNotes } = req.body;
     const bookingQuery = { _id: req.params.id, ...req.tenantFilter };
     if (req.user?.role === 'staff') {
-      bookingQuery.bookedByRole = 'staff';
+      bookingQuery.createdBy = String(req.user._id || req.user.id);
     }
     const booking = await Booking.findOne(bookingQuery);
 

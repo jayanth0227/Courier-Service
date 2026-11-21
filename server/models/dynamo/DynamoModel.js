@@ -130,7 +130,7 @@ function matchesFilter(item, filter = {}) {
     const cleanFilterVal = filterVal?._id ? String(filterVal._id) : String(filterVal);
     const cleanItemVal = itemVal?._id ? String(itemVal._id) : String(itemVal);
 
-    if (key === '_id' || key === 'id' || key.toLowerCase().endsWith('id')) {
+    if (key === '_id' || key === 'id' || key.toLowerCase().endsWith('id') || key === 'createdBy' || key === 'customer' || key === 'tenantId') {
       if (cleanItemVal.toLowerCase() !== cleanFilterVal.toLowerCase()) {
         return false;
       }

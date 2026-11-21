@@ -218,7 +218,11 @@ export const BookingsPage = ({
       if (status !== 'ALL') params.status = status;
       if (destination !== 'ALL') params.destination = destination;
       if (parcelType !== 'ALL') params.parcelType = parcelType;
-      if (bookedByRole !== 'ALL') params.bookedByRole = bookedByRole;
+      if (isStaff) {
+        params.bookedByRole = 'staff';
+      } else if (bookedByRole !== 'ALL') {
+        params.bookedByRole = bookedByRole;
+      }
       if (startDate) params.startDate = startDate;
       if (endDate) params.endDate = endDate;
 
@@ -258,6 +262,7 @@ export const BookingsPage = ({
     // 1. Newly created booking across any counter/device
     const unsubCreated = subscribeToEvent('BOOKING_CREATED', (newBooking) => {
       if (!newBooking || !newBooking._id) return;
+      if (isStaff && newBooking.bookedByRole !== 'staff') return;
 
       const statusMatch = status === 'ALL' || status === newBooking.status;
       const destMatch =
@@ -1014,24 +1019,26 @@ export const BookingsPage = ({
         </form>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-          <select
-            className="form-control"
-            style={{
-              width: '145px',
-              height: '38px',
-              fontSize: '0.8125rem',
-              borderRadius: '8px',
-              border: '1px solid #e2e8f0',
-              cursor: 'pointer',
-            }}
-            value={bookedByRole}
-            onChange={(e) => setBookedByRole(e.target.value)}
-            title="Filter by who booked the order (Admin or Counter Staff)"
-          >
-            <option value="ALL">All Operators</option>
-            <option value="admin">Admin Booked</option>
-            <option value="staff">Staff Booked</option>
-          </select>
+          {!isStaff && (
+            <select
+              className="form-control"
+              style={{
+                width: '145px',
+                height: '38px',
+                fontSize: '0.8125rem',
+                borderRadius: '8px',
+                border: '1px solid #e2e8f0',
+                cursor: 'pointer',
+              }}
+              value={bookedByRole}
+              onChange={(e) => setBookedByRole(e.target.value)}
+              title="Filter by who booked the order (Admin or Counter Staff)"
+            >
+              <option value="ALL">All Operators</option>
+              <option value="admin">Admin Booked</option>
+              <option value="staff">Staff Booked</option>
+            </select>
+          )}
 
           <select
             className="form-control"

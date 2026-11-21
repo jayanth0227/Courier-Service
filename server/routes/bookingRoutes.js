@@ -281,7 +281,10 @@ router.get('/', async (req, res, next) => {
     }
 
     // Filter by who booked the order (admin vs staff)
-    if (bookedByRole && bookedByRole !== 'ALL') {
+    // Role-based visibility: Staff users can ONLY see bookings made by staff (admin bookings are hidden from staff)
+    if (req.user?.role === 'staff') {
+      query.bookedByRole = 'staff';
+    } else if (bookedByRole && bookedByRole !== 'ALL') {
       query.bookedByRole = bookedByRole.toLowerCase();
     }
 
@@ -410,6 +413,10 @@ router.get('/:id', async (req, res, next) => {
       ? { orderId: rawId.toUpperCase(), ...req.tenantFilter }
       : { _id: req.params.id, ...req.tenantFilter };
 
+    if (req.user?.role === 'staff') {
+      query.bookedByRole = 'staff';
+    }
+
     const booking = await Booking.findOne(query)
       .populate('customer')
       .populate('createdBy', 'name username role branch')
@@ -439,7 +446,11 @@ router.get('/:id', async (req, res, next) => {
 // @access  Private
 router.put('/:id', async (req, res, next) => {
   try {
-    const booking = await Booking.findOne({ _id: req.params.id, ...req.tenantFilter });
+    const bookingQuery = { _id: req.params.id, ...req.tenantFilter };
+    if (req.user?.role === 'staff') {
+      bookingQuery.bookedByRole = 'staff';
+    }
+    const booking = await Booking.findOne(bookingQuery);
 
     if (!booking) {
       return res.status(404).json({ success: false, message: 'Booking not found in your organization' });
@@ -531,7 +542,11 @@ router.put('/:id', async (req, res, next) => {
 router.patch('/:id/status', async (req, res, next) => {
   try {
     const { status, cancellationReason, deliveryNotes } = req.body;
-    const booking = await Booking.findOne({ _id: req.params.id, ...req.tenantFilter });
+    const bookingQuery = { _id: req.params.id, ...req.tenantFilter };
+    if (req.user?.role === 'staff') {
+      bookingQuery.bookedByRole = 'staff';
+    }
+    const booking = await Booking.findOne(bookingQuery);
 
     if (!booking) {
       return res.status(404).json({ success: false, message: 'Booking not found in your organization' });
